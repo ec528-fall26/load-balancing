@@ -11,8 +11,16 @@
 ## Quick start
 
 ```bash
-# clone, build, and run the smallest thing that shows the system working
+uv sync
+uv run python -m unittest discover -s tests -v
 ```
+
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/) first. `uv sync`
+creates a local `.venv` using Python 3.12 and the versions in `uv.lock`.
+The environment stays on each teammate's machine; commit `pyproject.toml`,
+`.python-version`, and `uv.lock` so everyone uses the same project setup.
+Add future runtime dependencies with `uv add <package>` and commit the updated
+project file and lockfile together. There are no third-party dependencies yet.
 
 ## Repository layout
 
