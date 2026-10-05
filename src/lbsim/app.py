@@ -4,6 +4,7 @@ import streamlit as st
 from lbsim.metrics import summarize
 from lbsim.server import Execution, Request
 from lbsim.settings import build_config
+from lbsim.results import display_summary
 
 st.set_page_config(page_title="Load balancing simulator", page_icon="⚖️")
 st.title("Load balancing simulator")
@@ -53,6 +54,4 @@ if "config" in st.session_state:
                Execution(Request(1, 1, 2), 0, 3, 5),
                Execution(Request(3, 3, 1), 0, 5, 6)]
     summary = summarize(example, [2], duration=4, server_capacities={0: 1})
-    st.json(summary)
-    st.caption("Response times are in seconds and include queue waiting. "
-               "Utilization is a fraction of occupied slots during the arrival window, not CPU usage.")
+    display_summary(summary)

@@ -1,9 +1,12 @@
-"""Settings-form validation; returns the dictionary described in simulation-model.md."""
+"""Shared configuration validation for the UI, engine and experiment scripts."""
+
+from collections.abc import Mapping
 
 from math import isfinite
 
 
-def build_config(**values) -> dict:
+def validate_config(values: Mapping) -> dict:
+    """Validate configuration fields and return a new config dictionary."""
     errors = []
     for key in ("server_count", "concurrency", "queue_limit", "seed"):
         value = values.get(key)
@@ -25,3 +28,8 @@ def build_config(**values) -> dict:
     keys = ("server_count", "concurrency", "queue_limit", "arrival_rate", "duration",
             "service_min", "service_max", "seed", "policy")
     return {key: values[key] for key in keys}
+
+
+def build_config(**values) -> dict:
+    """Build a validated config from form values."""
+    return validate_config(values)

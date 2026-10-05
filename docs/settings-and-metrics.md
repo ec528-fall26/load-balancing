@@ -1,6 +1,6 @@
 # Settings form and summary metrics
 
-These implement D2-09 and D2-08 on top of `sean-dev`.
+These implement D2-09, D2-08, D2-04 and D2-10 on top of `sean-dev`.
 
 ## Run locally
 
@@ -20,8 +20,12 @@ The sample results are the fixed worked example in `simulation-model.md` and
 are explicitly independent of the form values. No workload or engine runs yet.
 Connecting the engine remains D2-11. The policy strings are `round_robin` and
 `least_active_requests`; routing implementations should agree on these names.
-`lbsim.settings.build_config` provides form-boundary validation that can later
-call a shared configuration validator when D2-04 is integrated.
+`lbsim.settings.validate_config(mapping)` validates the shared configuration and
+returns a new dictionary. The UI calls it through `build_config(**values)`.
+The engine and experiment scripts can call the same validator directly. It
+rejects missing fields, booleans/fractions for integer fields, nonpositive or
+nonfinite rates and durations, reversed service bounds and unsupported policies.
+Zero queue capacity, equal service bounds and negative integer seeds are valid.
 
 ## Metrics integration
 
@@ -58,3 +62,13 @@ p95 4 s, and full utilization for the one-slot server over four seconds. Tests
 also check concurrent capacity, idle servers, nearest-rank p95 with 20 samples,
 empty/rejected-only runs, invalid denominators, duplicate results, and form
 submission, resubmission and error handling through Streamlit AppTest.
+
+## Result display
+
+`lbsim.results.display_summary(summary)` renders a metrics summary in Streamlit.
+Counts appear as whole numbers, response times use seconds with three decimal
+places, and per-server utilization appears as percentages in server-ID order.
+No completed requests yields N/A latency values and an explanatory message;
+idle servers still show 0%. The form uses the fixed example until D2-11 connects
+the engine. Tests verify the actual displayed values for sample, empty and
+rejected-only results.

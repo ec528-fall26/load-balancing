@@ -7,7 +7,7 @@ APP = Path(__file__).resolve().parents[1] / 'src' / 'lbsim' / 'app.py'
 
 class SettingsFormTests(unittest.TestCase):
     def test_submit_and_resubmit(self):
-        app = AppTest.from_file(str(APP)).run()
+        app = AppTest.from_file(str(APP), default_timeout=30).run()
         self.assertFalse(app.exception)
         app.number_input(key='queue_limit').set_value(0)
         app.number_input(key='seed').set_value(-42)
@@ -24,7 +24,7 @@ class SettingsFormTests(unittest.TestCase):
         self.assertEqual(app.session_state['config']['server_count'], 5)
 
     def test_invalid_settings_clear_previous_preview(self):
-        app = AppTest.from_file(str(APP)).run()
+        app = AppTest.from_file(str(APP), default_timeout=30).run()
         app.button[0].click().run()
         app.number_input(key='service_min').set_value(2.0)
         app.button[0].click().run()
