@@ -20,7 +20,7 @@ creates a local `.venv` using Python 3.12 and the versions in `uv.lock`.
 The environment stays on each teammate's machine; commit `pyproject.toml`,
 `.python-version`, and `uv.lock` so everyone uses the same project setup.
 Add future runtime dependencies with `uv add <package>` and commit the updated
-project file and lockfile together. There are no third-party dependencies yet.
+project file and lockfile together. Streamlit provides the local settings interface.
 
 ## Repository layout
 
@@ -48,3 +48,9 @@ on the day of that demo. See the
 | Demo 2 | `demo-2` | slides, code, `docs/design-document.md`, demo video |
 | Demo 3 | `demo-3` | slides, code, updated `docs/design-document.md`, demo video |
 | Final | `final-demo` | slides, code, artifact documentation, recorded video presentation |
+
+## Settings preview and metrics
+
+Run `uv run streamlit run src/lbsim/app.py` for the settings form. The engine is
+not connected; results are a labeled sample. See [settings and metrics](docs/settings-and-metrics.md)
+for the metrics API, validation behavior, and test coverage.
