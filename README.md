@@ -22,6 +22,15 @@ The environment stays on each teammate's machine; commit `pyproject.toml`,
 Add future runtime dependencies with `uv add <package>` and commit the updated
 project file and lockfile together. Streamlit provides the local settings interface.
 
+## Demo 1 materials
+
+- [Design proposal](docs/design-proposal.md) and [original PDF](docs/design-proposal.pdf).
+- [Presented slides](slides/demo-1.pdf), including simulation architecture and milestones.
+
+These materials were consolidated after grading on October 6, 2026. The original
+snapshot remains at [d01e823](https://github.com/ec528-fall26/load-balancing/tree/d01e823).
+The PDF is the original proposal; the Markdown includes the added architecture diagram.
+
 ## Repository layout
 
 | Path | Contents |
