@@ -1,6 +1,9 @@
-# Load balancing simulator: implemented design
+# Design Document
 
-This describes the working Demo 2 prototype on `neev-d2` as of October 6, 2026,
+## Load balancing simulator: implemented design
+
+This describes the working Demo 2 prototype on the `demo-2` submission branch
+as of October 6, 2026,
 including the D2-13 benchmark in commit `27393a4`. The app, examples, tests and
 benchmark use implemented code and the checked-in lockfile. No future feature
 or version is required to follow this document.
@@ -149,7 +152,7 @@ Open a new terminal so uv is on `PATH`. From a parent directory where you want
 the checkout, run these commands (PowerShell or Bash):
 
 ```sh
-git clone --branch neev-d2 https://github.com/ec528-fall26/load-balancing.git
+git clone --branch demo-2 https://github.com/ec528-fall26/load-balancing.git
 cd load-balancing
 uv sync --locked
 uv run python --version
