@@ -16,7 +16,7 @@ class ResultsTests(unittest.TestCase):
     def test_fixture_display(self):
         app = self.render(dict(completed_count=3, rejected_count=1,
                                mean_response_time=10 / 3, p95_response_time=4,
-                               per_server_utilization={9: 0.125, 0: 1}))
+                               per_server_utilization={9: 0.125, 0: 1}, response_times=[3, 4, 3]))
         self.assertFalse(app.exception)
         self.assertEqual([m.value for m in app.metric], ['3', '1', '3.333 s', '4.000 s'])
         table = app.table[0].value

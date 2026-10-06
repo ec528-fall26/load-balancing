@@ -85,3 +85,12 @@ rejected-only results.
 Tests cover changing settings between runs, normal traffic, overloaded queues,
 draining after the arrival window, seeded replay, empty workloads, unsupported
 policies, and isolation of server/random state between runs.
+
+## Charts and layout
+
+Configure a run in the sidebar. The main view shows request outcome bars, a
+response-time histogram with a p95 reference line, and per-server slot utilization.
+The histogram includes only completed requests, including work finished during
+draining. `run_simulation` supplies the actual `response_times` alongside the summary.
+Large server sets use a line chart; exact utilization values remain available
+in the Server details tab. The last run's configuration is available in an expander.

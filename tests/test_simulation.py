@@ -16,6 +16,9 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(set(smaller['per_server_utilization']), {0})
         self.assertEqual(run_simulation(config), first)
         self.assertEqual(first['completed_count'] + first['rejected_count'], 7)
+        self.assertEqual(len(first['response_times']), first['completed_count'])
+        self.assertAlmostEqual(sum(first['response_times']) / len(first['response_times']),
+                               first['mean_response_time'])
 
     def test_empty_run_and_unimplemented_policy(self):
         config = dict(server_count=1, concurrency=1, queue_limit=0,
