@@ -1,10 +1,11 @@
 import random
 from lbsim.server import Request, Server
 
-server_map = {}
-
 def route(server_count: int, concurrency: int, queue_limit: int, policy: str, arrival_rate: float, duration: float, service_min: float, service_max: float, seed: int):
-    random.seed(seed)
+    if policy != "round_robin":
+        raise ValueError("Only round-robin routing is implemented yet.")
+    rng = random.Random(seed)
+    server_map = {}
     for i in range(server_count):
         server_map[i] = Server(i, concurrency, queue_limit, None, None)
 
@@ -14,7 +15,7 @@ def route(server_count: int, concurrency: int, queue_limit: int, policy: str, ar
     for request_id in range(total_requests):
         # Increment arrival time by a fixed amount
         arrival_time = request_id / arrival_rate
-        service_time = random.uniform(service_min, service_max)
+        service_time = rng.uniform(service_min, service_max)
         requests.append(Request(request_id, arrival_time, service_time))
 
     pending = []  # Stores pending completions as tuples of (completion_time, server_id, request_id)
@@ -58,8 +59,6 @@ def route(server_count: int, concurrency: int, queue_limit: int, policy: str, ar
             if policy == "round_robin":
                 target_server = server_map[counter % server_count]
                 counter += 1
-            elif policy == "least_active_requests":
-                pass
             
             admission = target_server.submit(req, now)
             

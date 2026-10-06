@@ -1,25 +1,33 @@
 # Settings form and summary metrics
 
-These implement D2-09, D2-08, D2-04 and D2-10 on top of `sean-dev`.
+The app connects the settings form, simulator, metrics and result display (D2-11) on `dev`.
 
 ## Run locally
 
 ```sh
 uv sync --locked
-uv run streamlit run src/lbsim/app.py
+PYTHONPATH=src uv run streamlit run src/lbsim/app.py
 uv run python -m unittest discover -s tests -v
 ```
 
 Open the local URL printed by Streamlit. Enter server count, slots, queue limit,
 arrival rate, arrival duration, service-time bounds, seed and routing policy.
-Click **Preview settings**. Invalid inputs produce an error; a zero queue limit
+Click **Run simulation**. Invalid inputs produce an error; a zero queue limit
 and a negative integer seed are valid. The preview stores the agreed config
 as a plain dictionary in `st.session_state["config"]`.
 
-The sample results are the fixed worked example in `simulation-model.md` and
-are explicitly independent of the form values. No workload or engine runs yet.
-Connecting the engine remains D2-11. The policy strings are `round_robin` and
-`least_active_requests`; routing implementations should agree on these names.
+The results come from the selected configuration after all accepted requests
+finish. A new run replaces the previous configuration and summary. Invalid
+settings clear the previous results. Round-robin is the currently supported
+policy; least-active-requests is excluded from the form until implemented.
+
+The current prototype uses `int(arrival_rate * duration)` requests with evenly
+spaced arrivals starting at time zero and uniform service durations. This is
+Daniel's initial workload model; exponential arrivals remain a proposal for team
+review. Each run uses its own server objects and seeded random generator.
+`lbsim.simulation.run_simulation(config)` validates inputs, runs the event loop,
+and returns the metrics summary. It can also be called from experiment scripts.
+
 `lbsim.settings.validate_config(mapping)` validates the shared configuration and
 returns a new dictionary. The UI calls it through `build_config(**values)`.
 The engine and experiment scripts can call the same validator directly. It
@@ -69,6 +77,11 @@ submission, resubmission and error handling through Streamlit AppTest.
 Counts appear as whole numbers, response times use seconds with three decimal
 places, and per-server utilization appears as percentages in server-ID order.
 No completed requests yields N/A latency values and an explanatory message;
-idle servers still show 0%. The form uses the fixed example until D2-11 connects
-the engine. Tests verify the actual displayed values for sample, empty and
+idle servers still show 0%. The form passes the actual run summary to this display. Tests verify the actual displayed values for sample, empty and
 rejected-only results.
+
+## Integration checks
+
+Tests cover changing settings between runs, normal traffic, overloaded queues,
+draining after the arrival window, seeded replay, empty workloads, unsupported
+policies, and isolation of server/random state between runs.

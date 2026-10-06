@@ -1,15 +1,14 @@
 """Launch with uv run streamlit run src/lbsim/app.py."""
 import streamlit as st
 
-from lbsim.metrics import summarize
-from lbsim.server import Execution, Request
+from lbsim.simulation import run_simulation
 from lbsim.settings import build_config
 from lbsim.results import display_summary
 
 st.set_page_config(page_title="Load balancing simulator", page_icon="⚖️")
 st.title("Load balancing simulator")
 st.write("Choose your servers and traffic settings.")
-st.info("Settings preview only. The simulation engine is not connected yet.")
+st.caption("Arrivals are evenly spaced. Service times are sampled using the random seed.")
 with st.form("simulation_settings"):
     left, right = st.columns(2)
     with left:
@@ -18,7 +17,7 @@ with st.form("simulation_settings"):
         concurrency = st.number_input("Slots per server", value=1, step=1, key="concurrency")
         queue_limit = st.number_input("Waiting queue limit per server", value=10, step=1,
                                       key="queue_limit", help="Zero means no waiting queue.")
-        policy = st.selectbox("Routing policy", ["round_robin", "least_active_requests"],
+        policy = st.selectbox("Routing policy", ["round_robin"],
                              format_func=lambda x: x.replace("_", " ").capitalize(), key="policy")
     with right:
         st.subheader("Traffic")
@@ -29,7 +28,7 @@ with st.form("simulation_settings"):
         service_max = st.number_input("Maximum service time (seconds)", value=1.0,
                                       format="%.3f", key="service_max")
         seed = st.number_input("Random seed", value=42, step=1, key="seed")
-    submitted = st.form_submit_button("Preview settings", type="primary")
+    submitted = st.form_submit_button("Run simulation", type="primary")
 
 if submitted:
     try:
@@ -37,21 +36,19 @@ if submitted:
                               queue_limit=queue_limit, policy=policy, arrival_rate=arrival_rate,
                               duration=duration, service_min=service_min, service_max=service_max,
                               seed=seed)
+        with st.spinner("Running simulation..."):
+            summary = run_simulation(config)
     except ValueError as error:
         st.session_state.pop("config", None)
+        st.session_state.pop("summary", None)
         st.error(str(error))
     else:
         st.session_state["config"] = config
+        st.session_state["summary"] = summary
 
-if "config" in st.session_state:
-    st.success("Settings are valid.")
-    st.subheader("Selected configuration")
+if "config" in st.session_state and "summary" in st.session_state:
+    st.success("Simulation complete.")
+    st.subheader("Run configuration")
     st.json(st.session_state["config"])
-    st.subheader("Sample results")
-    st.caption("Fixed example: one server, one slot, a 4-second arrival window. "
-               "These results do not reflect your selected settings.")
-    example = [Execution(Request(0, 0, 3), 0, 0, 3),
-               Execution(Request(1, 1, 2), 0, 3, 5),
-               Execution(Request(3, 3, 1), 0, 5, 6)]
-    summary = summarize(example, [2], duration=4, server_capacities={0: 1})
-    display_summary(summary)
+    st.subheader("Results")
+    display_summary(st.session_state["summary"])

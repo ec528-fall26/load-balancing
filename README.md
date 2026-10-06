@@ -49,8 +49,9 @@ on the day of that demo. See the
 | Demo 3 | `demo-3` | slides, code, updated `docs/design-document.md`, demo video |
 | Final | `final-demo` | slides, code, artifact documentation, recorded video presentation |
 
-## Settings preview and metrics
+## Run a simulation
 
-Run `uv run streamlit run src/lbsim/app.py` for the settings form. The engine is
-not connected; results are a labeled sample. See [settings and metrics](docs/settings-and-metrics.md)
-for the metrics API, validation behavior, and test coverage.
+Run `PYTHONPATH=src uv run streamlit run src/lbsim/app.py` for the local app.
+Choose settings and click **Run simulation** to see the actual round-robin results.
+See [settings and metrics](docs/settings-and-metrics.md) for the model, metrics API,
+validation behavior, and test coverage.

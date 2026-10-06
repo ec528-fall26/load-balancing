@@ -20,7 +20,11 @@ finite and nonnegative. IDs are unique within a run. The seed is an integer.
 All servers initially have identical capacity; concurrency is the only server
 size setting. Hardware types and reliability/failures remain optional extensions.
 
-Proposed workload generator: exponential interarrival times with mean
+The connected prototype currently uses `int(arrival_rate * duration)` requests
+with evenly spaced arrivals starting at zero. Service durations are uniform
+between the configured bounds. Each run uses a local seeded generator.
+
+Proposed alternative for team review: exponential interarrival times with mean
 `1 / arrival_rate`, starting from time zero; uniform service durations between
 the two bounds. Generate arrivals strictly before `duration`. Use a local seeded
 random generator and create the complete trace before routing, so both policies
@@ -92,5 +96,5 @@ From the repository root:
 uv run python -m unittest discover -s tests -v
 ```
 
-Only the request/execution records and server lifecycle are implemented here.
-The event engine, workload generator, policies, metrics and UI are subsequent tasks.
+The server lifecycle, fixed-interval workload generator, round-robin event loop,
+metrics and UI are connected. Least-active-requests remains a subsequent task.
