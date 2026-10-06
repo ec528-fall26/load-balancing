@@ -46,6 +46,9 @@ if submitted:
         st.session_state.pop("summary", None)
         st.error(str(error))
     else:
+        for key in list(st.session_state):
+            if key.startswith("playback_"):
+                del st.session_state[key]
         st.session_state["config"] = config
         st.session_state["summary"] = summary
 
@@ -54,7 +57,7 @@ if "config" in st.session_state and "summary" in st.session_state:
     st.caption(f"Last completed run · {config['server_count']} servers · "
                f"{config['arrival_rate']:g} requests/s · {config['duration']:g} s arrival window · "
                f"seed {config['seed']} · Round robin")
-    display_summary(st.session_state["summary"])
+    display_summary(st.session_state["summary"], config)
     with st.expander("Run configuration"):
         st.json(config)
 else:

@@ -94,3 +94,24 @@ The histogram includes only completed requests, including work finished during
 draining. `run_simulation` supplies the actual `response_times` alongside the summary.
 Large server sets use a line chart; exact utilization values remain available
 in the Server details tab. The last run's configuration is available in an expander.
+
+The Datacenter tab presents one high-contrast server panel per actual server.
+Racks are schematic groups of eight, not modeled physical locations. Large runs
+are paged in groups of 32 servers.
+
+- **Playback:** Play, pause, restart, change speed (0.25×–10×), or jump to a time.
+  At 1×, one simulated second takes one real second. Panels show current running
+  slots and waiting requests in separate sections: teal for execution, orange for
+  waiting. Each section has its own count and stack of positions; “Full” marks a
+  full queue. Large stacks group positions into labeled blocks (× gives the count).
+  A Task pool panel shows not-yet-arrived, running, waiting, completed, and rejected
+  requests across all servers. A zero-capacity queue is labeled “Disabled”. Completed and rejected totals update with time.
+- **Run averages:** Bars show average occupied slots during the arrival window.
+  The text stays dark on white panels at every utilization level.
+
+Playback uses the same run's recorded admission/completion events. Completions
+at the same time as arrivals are processed first, and replay continues until the
+accepted requests have drained. It does not re-run routing or change the results.
+The display refreshes five times per second, so very short events may occur
+between frames; the counts still include every event. New simulations reset
+playback. Playback starts paused.

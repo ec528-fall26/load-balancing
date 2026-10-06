@@ -1,7 +1,7 @@
 import random
 from lbsim.server import Request, Server
 
-def route(server_count: int, concurrency: int, queue_limit: int, policy: str, arrival_rate: float, duration: float, service_min: float, service_max: float, seed: int):
+def route(server_count: int, concurrency: int, queue_limit: int, policy: str, arrival_rate: float, duration: float, service_min: float, service_max: float, seed: int, events: list | None = None):
     if policy != "round_robin":
         raise ValueError("Only round-robin routing is implemented yet.")
     rng = random.Random(seed)
@@ -44,6 +44,8 @@ def route(server_count: int, concurrency: int, queue_limit: int, policy: str, ar
             c = server.complete(req_id, now)
             
             completed.append(c.finished)
+            if events is not None:
+                events.append((now, server_id, len(server.running), len(server.waiting), "completed", req_id))
             
             # If the server pulled a request from its queue, keep track of that
             if c.started:
@@ -61,6 +63,9 @@ def route(server_count: int, concurrency: int, queue_limit: int, policy: str, ar
                 counter += 1
             
             admission = target_server.submit(req, now)
+            if events is not None:
+                events.append((now, target_server.id, len(target_server.running),
+                               len(target_server.waiting), admission.status, req.id))
             
             if admission.status == "started":
                 # Request has been sent, put id in pending
