@@ -45,16 +45,22 @@ class Completion:
 
 
 class Server:
-    def __init__(self, id: int, concurrency: int, queue_limit: int):
+    def __init__(self, id: int, concurrency: int, queue_limit: int, size: int | None = None, reliability: float | None = 1.0):
         if type(id) is not int:
             raise ValueError("server ID must be an integer")
         if type(concurrency) is not int or concurrency <= 0:
             raise ValueError("concurrency must be a positive integer")
         if type(queue_limit) is not int or queue_limit < 0:
             raise ValueError("queue limit must be a nonnegative integer")
+        if size is not None and (type(size) is not int or size <= 0):
+            raise ValueError("size must be an integer")
+        if reliability is not None and (type(reliability) is not float or reliability <= 0.0 or reliability > 1.0):
+            raise ValueError("reliability must be a float between 0 and 1")
         self.id = id
         self.concurrency = concurrency
         self.queue_limit = queue_limit
+        self.size = size
+        self.reliability = reliability
         self._running: dict[int, Execution] = {}
         self._waiting: deque[Request] = deque()
         self._last_time = 0.0
