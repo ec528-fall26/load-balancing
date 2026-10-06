@@ -1,42 +1,47 @@
 # EC528 Project — Load Modeling and Load Balancing Simulation Platform
 
-**Team:** <names>
+**Team:** Daniel Thomas, Kimone Walker, Neev Jain, Sean O'Connor
+
 **Mentor:** Shripad Nadgowda (Meta)
-**Project:** <one sentence: what this system does>
 
-## What this is
+A proposed web application for simulating incoming requests, server queues, and
+load-balancing policies. It will compare repeatable workloads using response
+times, utilization, completions, and rejections.
 
-<2-3 sentences. The problem, and what your system does about it.>
+## Demo 1 materials
 
-## Quick start
-
-```bash
-# clone, build, and run the smallest thing that shows the system working
-```
-
-## Repository layout
-
-| Path | Contents |
+| Material | File |
 | --- | --- |
-| `docs/` | Design proposal and design document |
-| `slides/` | Demo slides (`demo-1.pdf`, `demo-2.pdf`, ...) |
-| `src/` | Source code |
-| `experiments/` | Scripts that reproduce every result you claim |
+| Design proposal, editable Markdown | [docs/design-proposal.md](docs/design-proposal.md) |
+| Original proposal PDF, renamed | [docs/design-proposal.pdf](docs/design-proposal.pdf) |
+| Presented slides, 11 pages | [slides/demo-1.pdf](slides/demo-1.pdf) |
 
-## Reproducing our results
+The slides include the simulation engine architecture and milestones added on
+the day of the presentation. The Markdown contains the actual proposal and an
+architecture diagram, replacing the placeholder at the expected course path.
+The original proposal PDF remains a historical companion, rather than a new
+export of the Markdown.
 
-See [`docs/design-document.md`](docs/design-document.md). Every claim we make in a
-demo or in the final presentation has a corresponding script in `experiments/`.
+## Post-grading consolidation
 
-## Submission checklist
+These files were consolidated on October 6, 2026, after Demo 1 was graded.
+The original branch snapshot remains available at commit
+[`d01e823`](https://github.com/ec528-fall26/load-balancing/tree/d01e823).
+This cleanup records the presented materials and corrects filenames; it does
+not change the original deadline snapshot or grading record.
 
-Deliverables are collected from a **branch named for the demo**, at **12:00 noon**
-on the day of that demo. See the
-[submission instructions](https://ec528.github.io/ec528/fall26/setup/).
+This branch records the Demo 1 proposal. Implementation continues on
+[`dev`](https://github.com/ec528-fall26/load-balancing/tree/dev).
+The design document in `docs/design-document.md` is a template for later demos.
 
-| Deliverable | Branch | Must contain |
-| --- | --- | --- |
-| Demo 1 | `demo-1` | slides, code, `docs/design-proposal.md` |
-| Demo 2 | `demo-2` | slides, code, `docs/design-document.md`, demo video |
-| Demo 3 | `demo-3` | slides, code, updated `docs/design-document.md`, demo video |
-| Final | `final-demo` | slides, code, artifact documentation, recorded video presentation |
+## Course submission branches
+
+See the [course submission instructions](https://ec528.github.io/ec528/fall26/setup/).
+Deliverables are due at 12:00 noon Boston time on the demo date.
+
+| Deliverable | Date | Branch | Required materials |
+| --- | --- | --- | --- |
+| Demo 1 | September 23 | `demo-1` | Slides, code, design proposal |
+| Demo 2 | October 21 | `demo-2` | Slides, code, design document, demo video |
+| Demo 3 | November 16 | `demo-3` | Slides, code, updated design document, demo video |
+| Final | December 9 | `final-demo` | Slides, code, artifact documentation, recorded presentation |
