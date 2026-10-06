@@ -1,6 +1,7 @@
 """Display actual run metrics and accessible chart data in Streamlit."""
 
 import streamlit as st
+from lbsim.datacenter import display_datacenter
 
 TEAL = '#147D92'
 ORANGE = '#B85A27'
@@ -14,7 +15,7 @@ def chart(spec: dict, height: int = 240, alt: str = "Simulation results chart"):
     }, width="stretch", alt=alt)
 
 
-def display_summary(summary: dict):
+def display_summary(summary: dict, config: dict | None = None):
     columns = st.columns(4)
     columns[0].metric("Completed requests", summary["completed_count"])
     columns[1].metric("Rejected requests", summary["rejected_count"])
@@ -28,7 +29,7 @@ def display_summary(summary: dict):
     if summary["completed_count"] == 0:
         st.info("No completed requests. Response times are unavailable.")
     st.caption("Response times include queue waiting and service, in simulated seconds.")
-    overview, details = st.tabs(['Overview', 'Server details'])
+    overview, datacenter, details = st.tabs(['Overview', 'Datacenter', 'Server details'])
     with overview:
         outcomes, latency = st.columns(2)
         with outcomes:
@@ -86,6 +87,8 @@ def display_summary(summary: dict):
         else:
             st.info('No server utilization data available.')
         st.caption('Occupied slots during the arrival window. Draining time is excluded; this is modeled utilization.')
+    with datacenter:
+        display_datacenter(summary['per_server_utilization'], config, summary.get('events', []))
     with details:
         st.caption('Values behind the utilization chart.')
         st.table(rows)
