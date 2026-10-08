@@ -166,8 +166,9 @@ because uv installs the package. Open the printed local URL, usually
 `http://localhost:8501`. Stop with Ctrl+C. If the port is occupied, append
 `--server.port 8502` to the run command.
 
-The existing suite contains 30 tests for validation, lifecycle, routing, metrics,
-UI integration and playback. Success ends with `Ran 30 tests` and `OK`.
+The existing suite contains 33 tests for validation, lifecycle, routing, metrics,
+UI integration, playback and whole-run correctness. Success ends with
+`Ran 33 tests` and `OK`.
 Streamlit AppTest can print `missing ScriptRunContext` warnings during tests;
 the assertions and final status determine success.
 

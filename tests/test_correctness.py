@@ -8,7 +8,7 @@ from lbsim.utils.generate_seed import route
 class SimulatorCorrectnessTests(unittest.TestCase):
 
     def assert_run_invariants(self, config):
-        """Check invariants that should hold for every complete simulation run."""
+        #check invariants that should hold for every complete simulation run
         config = validate_config(config)
 
         #runs the lower-level engine, we can inspect raw executions
@@ -59,6 +59,16 @@ class SimulatorCorrectnessTests(unittest.TestCase):
                 execution.completion_time,
             )
 
+        #each server starts its requests in arrival order (FIFO)
+        by_arrival = sorted(completed, key=lambda execution: execution.request.id)
+        for server_id in range(config["server_count"]):
+            start_times = [
+                execution.start_time
+                for execution in by_arrival
+                if execution.server_id == server_id
+            ]
+            self.assertEqual(start_times, sorted(start_times))
+
         #start every server idle and unused servers are checked too
         states = {
             server_id: (0, 0)
@@ -89,6 +99,33 @@ class SimulatorCorrectnessTests(unittest.TestCase):
             self.assertGreaterEqual(waiting, 0)
             self.assertLessEqual(waiting, config["queue_limit"])
 
+            #each event moves the server's (running, waiting) state by one valid step
+            previous_running, previous_waiting = states[server_id]
+            full = (config["concurrency"], config["queue_limit"])
+            if action == "started":
+                self.assertEqual(
+                    (running, waiting),
+                    (previous_running + 1, previous_waiting),
+                )
+            elif action == "queued":
+                self.assertEqual(previous_running, config["concurrency"])
+                self.assertEqual(
+                    (running, waiting),
+                    (previous_running, previous_waiting + 1),
+                )
+            elif action == "rejected":
+                #reject only when every slot and queue space is already taken
+                self.assertEqual((previous_running, previous_waiting), full)
+                self.assertEqual((running, waiting), full)
+            elif previous_waiting:
+                #a completion immediately starts the next queued request
+                self.assertEqual(
+                    (running, waiting),
+                    (previous_running, previous_waiting - 1),
+                )
+            else:
+                self.assertEqual((running, waiting), (previous_running - 1, 0))
+
             #at equal timestamps, all completions must precede arrivals
             if timestamp != current_time:
                 current_time = timestamp
@@ -107,6 +144,12 @@ class SimulatorCorrectnessTests(unittest.TestCase):
 
         #every generated request should have exactly one arrival event
         self.assertEqual(arrival_ids, expected_ids)
+
+        #completion events match the raw completed executions, in order
+        self.assertEqual(
+            [event[5] for event in events if event[4] == "completed"],
+            completed_ids,
+        )
 
         #after draining, every server's idle with an empty queue
         for server_id, state in states.items():
@@ -270,6 +313,18 @@ class SimulatorCorrectnessTests(unittest.TestCase):
                 "service_min": 2.0,
                 "service_max": 2.0,
                 "seed": 7,
+                "policy": "round_robin",
+            },
+            #varied service times so seeded replay and deeper queues are exercised
+            "mixed_service": {
+                "server_count": 3,
+                "concurrency": 2,
+                "queue_limit": 3,
+                "arrival_rate": 20.0,
+                "duration": 5.0,
+                "service_min": 0.1,
+                "service_max": 1.0,
+                "seed": 11,
                 "policy": "round_robin",
             },
             "empty_run": {
