@@ -3,8 +3,9 @@
 ## Load balancing simulator: implemented design
 
 This describes the working Demo 2 prototype on the `demo-2` submission branch
-as of October 6, 2026,
-including the D2-13 benchmark in commit `27393a4`. The app, examples, tests and
+verified on October 20, 2026, at commit `734d2a7`,
+including the D2-13 benchmark recorded on October 6 and committed in `27393a4`.
+The app, examples, tests and
 benchmark use implemented code and the checked-in lockfile. No future feature
 or version is required to follow this document.
 
@@ -108,15 +109,17 @@ Tests and the benchmark check these properties.
 
 ## 2. Design decisions
 
-- **Local Python and Streamlit:** one process serves the browser and direct
-  experiments. Distributed services would add unnecessary operational complexity.
+- **Local Python and Streamlit:** the app runs locally in one Python process.
+  Tests and experiment scripts call the same package independently; benchmark
+  samples use fresh worker processes. Distributed services would add unnecessary
+  operational complexity.
 - **Event-driven execution:** jumping between events separates simulated time
   from machine scheduling; threads and sleeps would introduce timing variation.
 - **Separate routing and admission:** the engine selects a target; `Server`
   owns slots, queue capacity and FIFO behavior, including rejection on a full target.
 - **Repeatability:** a local random generator and new server objects isolate
-  runs from each other and global random state. Implemented arrivals use fixed
-  intervals rather than the exponential process discussed in the proposal.
+  runs from each other and global random state. Arrivals use fixed intervals;
+  the seed controls sampled service durations.
 - **Drain latency, clip utilization:** accepted requests finish before latency
   calculation, while occupancy stays tied to the arrival window.
 - **Recorded playback:** replay changes the display clock using saved events;
@@ -130,7 +133,8 @@ The measured baseline is not presented as optimized.
 
 Use Git, uv, a terminal and a browser. `.python-version` selects Python 3.12.
 `uv sync --locked` creates `.venv`, installs the importable `lbsim` package and
-uses `uv.lock`. Verification used Python 3.12.13 and Streamlit 1.65.0.
+uses `uv.lock`. The October 20 fresh-clone verification used uv 0.11.32,
+Python 3.12.13 and Streamlit 1.65.0.
 `pyproject.toml` permits Python `>=3.12,<3.15`, but these instructions use the
 selected 3.12 environment. No GPU is required. Initial installation needs internet.
 
@@ -169,6 +173,9 @@ because uv installs the package. Open the printed local URL, usually
 The existing suite contains 33 tests for validation, lifecycle, routing, metrics,
 UI integration, playback and whole-run correctness. Success ends with
 `Ran 33 tests` and `OK`.
+Allow roughly 10 seconds for the suite after dependencies are installed;
+the repeat verification took about 3 seconds on the tested Windows machine.
+It runs locally and requires no cloud resources or GPU.
 Streamlit AppTest can print `missing ScriptRunContext` warnings during tests;
 the assertions and final status determine success.
 
@@ -198,7 +205,10 @@ show an error and clear prior results. Editing inputs alone does not run the mod
 
 Use one server, one slot, one waiting place, 4 requests/s, a 1-second arrival
 window, both service bounds 1 second, and seed 42. Reproduce it without a browser
-with this command from the repository root:
+with this command from the repository root. Allow roughly 10 seconds including
+command startup after dependencies are installed; the four-request simulation
+itself is much shorter. It needs only the local Python environment, with no
+cloud resources or GPU:
 
 ```sh
 uv run python -c "from lbsim.simulation import run_simulation; c=dict(server_count=1,concurrency=1,queue_limit=1,arrival_rate=4.0,duration=1.0,service_min=1.0,service_max=1.0,seed=42,policy='round_robin'); s=run_simulation(c); print({k:s[k] for k in ('completed_count','rejected_count','mean_response_time','p95_response_time','per_server_utilization','response_times')})"
@@ -249,7 +259,17 @@ read before post-run validation; it is not incremental or whole-machine memory.
 | Expected runtime | Typically under one minute on the recorded machine; each worker has a 120-second timeout. |
 | Expected output | Nine sample lines, followed by `trace.csv`, `samples.csv`, and `report.json` in the chosen directory. A different directory preserves the saved baseline. |
 
-The script checks the actual generated trace against the saved trace's SHA-256 for every sample, verifies seeded replay and request conservation, and checks that every server is idle after draining. Counts and trace hashes should match the recorded run; wall-clock time and peak memory vary by machine and load. This experiment is a round-robin baseline, not a comparison of routing policies.
+For each invocation, the script generates a reference trace and writes it to the
+chosen output directory. Every worker's generated workload hash must match that
+reference. The script also verifies seeded replay, request conservation, idle
+servers after draining, and consistent deterministic results across repetitions.
+These checks do not automatically compare a rerun with the checked-in baseline.
+To compare with that baseline, check the trace hash in `report.json` and the
+counts, latency metrics and final event times in `samples.csv` against the files
+in `experiments/results/d2-13/`. All nine samples matched those deterministic
+fields in the October 20 verification. Wall-clock time and peak memory vary by
+machine and load. This experiment is a round-robin baseline, not a comparison of
+routing policies.
 
 The workload uses 100 requests/s for 100 seconds, seed 42, service times 0.1-1.0
 seconds, one slot and ten waiting places per server. Recorded Windows baseline,
@@ -282,15 +302,13 @@ playback and a reproducible local baseline.
 - Configuration/results live in Streamlit session state. The UI does not export,
   import, persist or compare saved runs. Benchmark CSV/JSON files are experiment
   artifacts, not a general UI export/reload feature.
-- Playback refreshes five times per second. Short events can fall between frames,
-  while replay counts process every event. Racks are display organization, not topology.
+- While playing, playback requests updates every 0.2 seconds; actual refresh
+  timing depends on execution and browser load. Short events can fall between
+  frames, while replay counts process every event. Racks are display organization,
+  not topology.
 - The engine stores the workload/event log in memory and uses list front removals
   and completion sorting. There is no resource cap for arbitrary configurations;
   large runs can block the synchronous UI or exhaust RAM.
 - The baseline covers one seed/workload and three repetitions on one machine.
   It establishes local measurements, not cloud performance, production guarantees,
   optimized complexity or a general scalability bound.
-
-This document is usable with the current implementation. It does not assert
-completion of slides, a demo recording or release-branch submission; those are
-separate deliverables.
