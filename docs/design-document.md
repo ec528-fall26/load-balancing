@@ -2,13 +2,6 @@
 
 ## Load balancing simulator: implemented design
 
-This describes the working Demo 2 prototype on the `demo-2` submission branch
-verified on October 20, 2026, at commit `734d2a7`,
-including the D2-13 benchmark recorded on October 6 and committed in `27393a4`.
-The app, examples, tests and
-benchmark use implemented code and the checked-in lockfile. No future feature
-or version is required to follow this document.
-
 ## 1. Architecture
 
 The product is a local Streamlit app backed by an importable Python simulation
