@@ -97,9 +97,7 @@ on the demo date. See the
 | Demo 3 | November 16 | `demo-3` | Slides, code, updated design document, demo video |
 | Final | December 9 | `final-demo` | Slides, code, artifact documentation, recorded video presentation |
 
-The `demo-2` branch is created. Demo 2 slides and the video still need to be added
-before submission. Sync the completed work from `dev` into `demo-2` and push it
-before the deadline.
+Demo 2 submission: [slides](slides/demo-2.pdf) · [demo video](videos/demo-2.mp4)
 
 For each demo, two multiple-choice questions with marked answers are due to the
 instructor by **5:30 pm** that day. Keep those questions within the team before
