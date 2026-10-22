@@ -20,12 +20,13 @@ class IntegrationTests(unittest.TestCase):
         self.assertAlmostEqual(sum(first['response_times']) / len(first['response_times']),
                                first['mean_response_time'])
 
-    def test_empty_run_and_unimplemented_policy(self):
+    def test_empty_run_and_unsupported_policy(self):
         config = dict(server_count=1, concurrency=1, queue_limit=0,
                       arrival_rate=1.0, duration=0.1, service_min=1.0,
                       service_max=1.0, seed=42, policy='round_robin')
         summary = run_simulation(config)
         self.assertEqual(summary['completed_count'], 0)
         self.assertIsNone(summary['p95_response_time'])
-        with self.assertRaisesRegex(ValueError, 'round-robin'):
-            run_simulation({**config, 'policy': 'least_active_requests'})
+        self.assertEqual(run_simulation({**config, 'policy': 'least_active_requests'}), summary)
+        with self.assertRaisesRegex(ValueError, 'policy'):
+            run_simulation({**config, 'policy': 'unknown'})

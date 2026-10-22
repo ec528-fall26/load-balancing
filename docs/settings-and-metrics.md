@@ -18,8 +18,10 @@ as a plain dictionary in `st.session_state["config"]`.
 
 The results come from the selected configuration after all accepted requests
 finish. A new run replaces the previous configuration and summary. Invalid
-settings clear the previous results. Round-robin is the currently supported
-policy; least-active-requests is excluded from the form until implemented.
+settings clear the previous results. The form supports round-robin and
+least-active-requests. Least-active-requests reads current running counts before
+each decision and breaks ties by lowest server ID. Waiting requests do not count;
+a full selected server rejects the request without trying another server.
 
 The current prototype uses `int(arrival_rate * duration)` requests with evenly
 spaced arrivals starting at time zero and uniform service durations. This is

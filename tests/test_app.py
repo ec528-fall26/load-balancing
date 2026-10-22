@@ -20,10 +20,34 @@ class SimulationAppTests(unittest.TestCase):
         self.assertFalse(app.error)
         self.assertEqual([m.value for m in app.metric], ['4', '0', '0.100 s', '0.100 s'])
         self.assertEqual(app.session_state['config']['seed'], -42)
-        self.assertEqual(app.selectbox(key='policy').options, ['Round robin'])
+        self.assertEqual(app.selectbox(key='policy').options,
+                         ['Round robin', 'Least active requests'])
         app.number_input(key='arrival_rate').set_value(3.0)
         next(b for b in app.button if b.label == 'Run simulation').click().run()
         self.assertEqual(app.metric[0].value, '6')
+
+    def test_switch_policy_and_replay_seeded_run(self):
+        app = self.app()
+        for key, value in dict(server_count=2, concurrency=1, queue_limit=1,
+                               arrival_rate=2.0, duration=2.0,
+                               service_min=0.1, service_max=0.1).items():
+            app.number_input(key=key).set_value(value)
+        app.selectbox(key='policy').set_value('least_active_requests')
+        next(b for b in app.button if b.label == 'Run simulation').click().run()
+        self.assertFalse(app.exception)
+        self.assertFalse(app.error)
+        self.assertEqual(app.session_state['config']['policy'], 'least_active_requests')
+        self.assertTrue(any('Least active requests' in c.value for c in app.caption))
+        first = app.session_state['summary'].copy()
+        arrivals = [e for e in first['events'] if e[4] != 'completed']
+        self.assertEqual([e[1] for e in arrivals], [0, 0, 0, 0])
+        next(b for b in app.button if b.label == 'Run simulation').click().run()
+        self.assertEqual(app.session_state['summary'], first)
+        app.selectbox(key='policy').set_value('round_robin')
+        next(b for b in app.button if b.label == 'Run simulation').click().run()
+        self.assertFalse(app.exception)
+        arrivals = [e for e in app.session_state['summary']['events'] if e[4] != 'completed']
+        self.assertEqual([e[1] for e in arrivals], [0, 1, 0, 1])
 
     def test_overload_drains_and_replays(self):
         app = self.app()

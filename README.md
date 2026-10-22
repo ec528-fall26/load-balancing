@@ -82,7 +82,10 @@ peak memory depend on the machine.
 
 The model uses identical servers and evenly spaced arrivals. Utilization means
 occupied execution slots, not measured CPU use. Playback replays recorded events;
-it does not run real servers or network requests. Only round-robin is implemented.
+it does not run real servers or network requests. Development on `dev` now supports
+round-robin and least-active-requests. The latter counts running requests only,
+breaks ties by lowest server ID, and does not skip full targets. The graded
+Demo 2 snapshot remains on `demo-2`.
 
 ## Submission checklist
 
