@@ -5,6 +5,8 @@ from lbsim.simulation import run_simulation
 from lbsim.settings import build_config
 from lbsim.results import display_summary
 from lbsim.exports import build_exports
+from lbsim.saved_runs import load_configuration, replay_configuration
+from lbsim.comparison import display_saved_comparison
 
 st.set_page_config(page_title="Load balancing simulator", layout="wide")
 
@@ -35,28 +37,50 @@ with st.sidebar:
             st.caption("Keep the settings and seed unchanged to repeat a run.")
         submitted = st.form_submit_button("Run simulation", type="primary", width="stretch")
     st.caption("Evenly spaced arrivals, sampled service times, and identical servers.")
+    saved_configuration = None
+    replay_requested = False
+    with st.expander("Replay a saved run"):
+        upload = st.file_uploader("Configuration export (JSON)", type=["json"],
+                                  key="saved_config_upload")
+        if upload is not None:
+            try:
+                saved_configuration = load_configuration(upload.getvalue())
+            except ValueError as error:
+                st.error(str(error))
+            else:
+                st.json(saved_configuration.config)
+                st.caption("Replay uses these saved settings and seed, independently "
+                           "of the settings form above. It verifies the saved metrics "
+                           "before replacing the current results.")
+                replay_requested = st.button("Replay saved configuration")
 
 st.title("Load balancing simulator")
 st.write("Explore how traffic and server capacity affect waiting, latency, and rejected requests.")
+run_feedback = st.container()
 
-if submitted:
+if submitted or replay_requested:
     try:
-        config = build_config(server_count=server_count, concurrency=concurrency,
-                              queue_limit=queue_limit, policy=policy, arrival_rate=arrival_rate,
-                              duration=duration, service_min=service_min, service_max=service_max,
-                              seed=seed)
-        with st.spinner("Running simulation..."):
-            summary = run_simulation(config)
+        config = (saved_configuration.config if replay_requested else
+                  build_config(server_count=server_count, concurrency=concurrency,
+                               queue_limit=queue_limit, policy=policy, arrival_rate=arrival_rate,
+                               duration=duration, service_min=service_min, service_max=service_max,
+                               seed=seed))
+        with run_feedback, st.spinner("Running simulation..."):
+            summary = (replay_configuration(saved_configuration) if replay_requested
+                       else run_simulation(config))
     except ValueError as error:
-        st.session_state.pop("config", None)
-        st.session_state.pop("summary", None)
-        st.error(str(error))
+        if submitted:
+            st.session_state.pop("config", None)
+            st.session_state.pop("summary", None)
+        run_feedback.error(str(error))
     else:
         for key in list(st.session_state):
             if key.startswith("playback_"):
                 del st.session_state[key]
         st.session_state["config"] = config
         st.session_state["summary"] = summary
+        if replay_requested:
+            run_feedback.success("Replay verified: configuration and exported metrics match the saved run.")
 
 if "config" in st.session_state and "summary" in st.session_state:
     config = st.session_state["config"]
@@ -86,3 +110,5 @@ else:
     st.subheader("What you'll see")
     st.write("Request outcomes show whether capacity kept up with traffic. Response times include "
              "both queue waiting and service. Server utilization shows how evenly work was distributed.")
+
+display_saved_comparison()
