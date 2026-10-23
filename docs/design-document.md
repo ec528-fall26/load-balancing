@@ -166,9 +166,9 @@ because uv installs the package. Open the printed local URL, usually
 `http://localhost:8501`. Stop with Ctrl+C. If the port is occupied, append
 `--server.port 8502` to the run command.
 
-The existing suite contains 39 tests for validation, lifecycle, routing, metrics,
-UI integration, playback and whole-run correctness. Success ends with
-`Ran 39 tests` and `OK`.
+The existing suite contains 43 tests for validation, lifecycle, routing, metrics,
+UI integration, playback, whole-run correctness and run exports. Success ends with
+`Ran 43 tests` and `OK`.
 Allow roughly 10 seconds for the suite after dependencies are installed;
 the repeat verification took about 3 seconds on the tested Windows machine.
 It runs locally and requires no cloud resources or GPU.
@@ -237,6 +237,14 @@ For a normal run, keep other settings and change both service bounds to 0.1 seco
 All four requests complete, none are rejected, mean/p95 are 0.100 seconds and
 server utilization is 40%.
 
+### Downloading a completed run (D3-03)
+
+Open **Download run** below the results to save configuration/seed as versioned
+JSON and results as CSV. The files describe the last completed run, including
+when form inputs have been edited but not submitted. CSV contains whole-run
+metrics and one utilization row per server. Empty-run latency cells are blank.
+See [the export format](run-exports.md) for every field and the real-run example.
+
 ## 4. Running the experiments
 
 The existing benchmark measures the full `run_simulation` call, including
@@ -284,6 +292,16 @@ See [methodology](../experiments/README.md),
 capacity. Ten servers reject most requests. These results do not isolate the
 cost of server count or prove 1,000 servers faster than 100.
 
+### Experiment 2: export a real run
+
+Run `uv run python experiments/export_run.py --output experiments/results/d3-03-rerun`
+from the repository root. It completes in seconds and writes configuration JSON
+and results CSV for a fixed overload case. Expect two completions, two rejections,
+mean/p95 response times 1.375/1.75 seconds and utilization 1.0. The checked-in
+[example files](../experiments/results/d3-03/config.json) and
+[format documentation](run-exports.md) describe the expected output. A separate
+output directory preserves those reference files.
+
 ## 5. Claims and limitations
 
 The prototype provides configurable identical servers, fixed-interval seeded
@@ -297,9 +315,9 @@ playback and a reproducible local baseline.
   Request count truncates to `int(arrival_rate * duration)`.
 - Concurrency defines capacity. Hardware speeds, CPU/memory pressure,
   failures/reliability, regions, network delay, retries and preemption are not modeled.
-- Configuration/results live in Streamlit session state. The UI does not export,
-  import, persist or compare saved runs. Benchmark CSV/JSON files are experiment
-  artifacts, not a general UI export/reload feature.
+- Configuration/results live in Streamlit session state and can be downloaded
+  as JSON/CSV. The UI does not import, persist on the server, or compare saved runs.
+  Downloads contain summary metrics, not request traces or playback events.
 - While playing, playback requests updates every 0.2 seconds; actual refresh
   timing depends on execution and browser load. Short events can fall between
   frames, while replay counts process every event. Racks are display organization,

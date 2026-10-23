@@ -87,6 +87,14 @@ round-robin and least-active-requests. The latter counts running requests only,
 breaks ties by lowest server ID, and does not skip full targets. The graded
 Demo 2 snapshot remains on `demo-2`.
 
+## Download run configuration and results (D3-03)
+
+After running a simulation, open **Download run** to save the last completed
+configuration (JSON, including seed and schema version) and results (CSV, with
+summary metrics and per-server utilization). Downloads retain the completed
+run's settings even if you edit the form. See [the file format and real-run
+example](docs/run-exports.md). Import and side-by-side comparison are separate tasks.
+
 ## Submission checklist
 
 Deliverables are collected from the named branch at **12:00 noon Boston time**

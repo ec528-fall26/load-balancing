@@ -4,6 +4,7 @@ import streamlit as st
 from lbsim.simulation import run_simulation
 from lbsim.settings import build_config
 from lbsim.results import display_summary
+from lbsim.exports import build_exports
 
 st.set_page_config(page_title="Load balancing simulator", layout="wide")
 
@@ -65,6 +66,21 @@ if "config" in st.session_state and "summary" in st.session_state:
     display_summary(st.session_state["summary"], config)
     with st.expander("Run configuration"):
         st.json(config)
+    with st.expander("Download run"):
+        exports = build_exports(config, st.session_state["summary"])
+        st.caption("Download the last completed run's configuration and results. "
+                   "CSV includes summary metrics and per-server utilization.")
+        configuration, results = st.columns(2)
+        configuration.download_button(
+            "Download configuration (JSON)", data=exports.config_json,
+            file_name=f"lbsim-{exports.run_id[:12]}-config.json",
+            mime="application/json", on_click="ignore",
+        )
+        results.download_button(
+            "Download results (CSV)", data=exports.results_csv,
+            file_name=f"lbsim-{exports.run_id[:12]}-results.csv",
+            mime="text/csv", on_click="ignore",
+        )
 else:
     st.info("Configure your servers and traffic in the sidebar, then select Run simulation.")
     st.subheader("What you'll see")
