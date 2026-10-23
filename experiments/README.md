@@ -165,3 +165,28 @@ second and prints six ratios plus exact-output checks, then saves comparison.jso
 The comparison script requires matching environment/configuration and complete
 summary fingerprints. It compares unprofiled medians, preserving profiled timing
 as diagnostic evidence only. Choose a new output directory to retain prior runs.
+
+## D3-02: paired routing-policy comparison
+
+```sh
+PYTHONPATH=src uv run python experiments/compare_policies.py --output experiments/results/d3-02-rerun
+```
+
+Allow a few seconds locally. The script runs four fixed-load scenarios using
+seeds 42/43/44 and both policies (24 runs plus 24 public-API replays). Ten servers,
+one slot each and uniform 0.1–1.0 second service give a nominal reference capacity
+of 18.1818 requests/s. Scenarios use 50%, 90%, 120%, and 90% × 1.2 of that capacity
+for 100 simulated seconds. The +20% case is relative to the near-capacity case;
+it is a separate run, not a mid-run traffic spike.
+
+Each policy's actual generated workload must match its shared reference trace,
+including rejected requests. Validation checks current-state routing, capacity,
+request conservation, FIFO, draining and equality with the public API replay.
+The script saves 12 traces, 24 samples, 240 per-server utilization rows, every
+configuration, and aggregates with three-seed ranges and sample deviations.
+Report/source hashes identify the exact measured implementation. Use another
+output directory to preserve prior evidence. No CPU runtime measurement is made.
+
+See [results and interpretation](results/d3-02/analysis.md). Lower completed-request
+latency must be considered together with rejection rates. Mean per-run p95 is not
+a pooled p95, and three seeds do not establish a general policy ranking.

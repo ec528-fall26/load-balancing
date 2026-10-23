@@ -369,14 +369,46 @@ the save/replay/compare workflow, not a general policy-performance claim.
 Use the [reference files and UI instructions](run-exports.md#reproduce-replay-and-comparison-evidence)
 to reproduce the panels. A separate output directory preserves saved evidence.
 
+### Experiment 6: D3-02 paired policy comparison
+
+```sh
+PYTHONPATH=src uv run python experiments/compare_policies.py --output experiments/results/d3-02-rerun
+```
+
+Run from the repository root; allow a few seconds locally, with no GPU or cloud
+resources. There are 24 policy runs plus 24 public-API replays: four fixed-load
+scenarios, three seeds (42/43/44) and both policies. The fleet has 10 identical
+single-slot servers, 10 waiting places each, a 100-second arrival window and
+uniform 0.1–1.0 second service. Nominal capacity is 18.1818 requests/s. The rates
+are 50%, 90%, 120%, and 90% increased by 20% (108% of nominal capacity).
+
+Output contains 12 reference traces, samples.csv, server-utilization.csv and
+report.json with every configuration, seed, workload hash, summary fingerprint
+and aggregate. Observed requests must equal the reference for each policy;
+validation also checks state-based target selection, capacity, conservation,
+FIFO, draining and exact agreement with the public API replay.
+
+The [saved results](../experiments/results/d3-02/analysis.md) show no rejections
+at low load, but at near capacity least-active rejects 2.91% on average while
+round-robin rejects none. At overload, least-active completes requests with lower
+mean response time but rejects more (22.50% versus 12.21%). Running-only load and
+lowest-ID ties can send more work to an already-full queue. Neither policy retries
+another target, even when other queues have space. Rejections are excluded from
+latency, so lower completed-request latency alone does not establish superiority.
+
+The report describes three-seed variation; averaged per-run p95 is not a pooled
+percentile. This is one model/fleet/workload family, not a general policy ranking.
+It does not implement bursty traffic, continuous execution, failures or retries.
+
 ## 5. Claims and limitations
 
 The prototype provides configurable identical servers, fixed-interval seeded
 traffic, round-robin and least-active-requests routing, bounded FIFO queues, draining, charts, recorded
 playback and a reproducible local baseline.
 
-- Both policies run, but the saved benchmark is round-robin only. Policy-comparison
-  experiments remain D3-02. Least-active counts running requests only; lowest-ID
+- The D2 scale baseline is round-robin only; D3-02 now compares both policies
+  across four fixed-load scenarios and three seeds. Least-active counts running
+  requests only; lowest-ID
   ties can favor a full queue, and idle ties concentrate light traffic on server 0.
 - Arrivals are evenly spaced; bursty/exponential traffic is not modeled.
   Request count truncates to `int(arrival_rate * duration)`.
