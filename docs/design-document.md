@@ -284,6 +284,46 @@ See [methodology](../experiments/README.md),
 capacity. Ten servers reject most requests. These results do not isolate the
 cost of server count or prove 1,000 servers faster than 100.
 
+### Experiment 2: D3-06 engine profiling
+
+Run `PYTHONPATH=src uv run python experiments/profile_engine.py` from the root.
+It profiles the same round-robin baseline at 10,000 requests and a longer
+100,000-request workload, with 10/100/1,000 servers and three unprofiled timings
+per case. Only the arrival window grows for the longer workload. Allow roughly
+30 seconds locally; each fresh worker has a 120-second timeout. No cloud or GPU
+is needed. Output: `experiments/results/d3-06/report.json`, six raw cProfile files,
+and one printed timing per case.
+
+Profiled and unprofiled runs must produce identical complete-summary fingerprints.
+Each run also checks request conservation and idle final servers. Timing excludes
+imports, startup, hashing and output; profiled times include instrumentation
+cost and must not be compared directly with unprofiled runtime. Saved source
+hashes identify the measured code, including this uncommitted experiment script.
+
+The [analysis and narrow D3-07 plan](../experiments/results/d3-06/analysis.md)
+identify list front removals as a scaling issue. The saved before-change
+capture remains unchanged; the follow-up measurement is described below.
+
+### Experiment 3: D3-07 deque improvement
+
+Pending arrivals now use `deque.popleft()` instead of `list.pop(0)`. The entire
+seeded trace is still generated before routing. Completion sorting, routing,
+queue admission and event ordering are unchanged.
+
+Rerun Experiment 2 into `experiments/results/d3-07-rerun`, then compare:
+
+```sh
+PYTHONPATH=src uv run python experiments/compare_profiles.py experiments/results/d3-06/report.json experiments/results/d3-07-rerun/report.json --output experiments/results/d3-07-rerun/comparison.json
+```
+
+Comparison takes under a second locally, prints six timing ratios and writes
+comparison.json. It rejects different environments/configurations or full-summary
+fingerprints. See the [saved results](../experiments/results/d3-07/analysis.md).
+The 100,000-request cases improved 2.76–4.31× in these sequential local batches;
+all six complete summaries match the before-change results and all 39 tests pass.
+The result is measured local runtime improvement, not a cloud performance claim,
+a memory bound or evidence that one routing policy is universally faster.
+
 ## 5. Claims and limitations
 
 The prototype provides configurable identical servers, fixed-interval seeded

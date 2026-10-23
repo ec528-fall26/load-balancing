@@ -82,3 +82,56 @@ It does not isolate the cost of adding servers, establish asymptotic complexity,
 compare policies, or measure UI playback, network throughput, or cloud hardware.
 The engine still sorts pending completions and removes the first item from
 lists; selecting or implementing an optimization belongs to later profiling work.
+
+## D3-06: profile the engine
+
+```sh
+PYTHONPATH=src uv run python experiments/profile_engine.py --output experiments/results/d3-06
+```
+
+This profiles `run_simulation` for the round-robin baseline (10,000 requests on
+10, 100 and 1,000 servers), then repeats those fleet sizes with 100,000 requests.
+The longer workload extends the arrival window from 100 to 1,000 simulated
+seconds; arrival rate, service distribution, seed, slots and queue limits stay
+unchanged. It is a request-count scaling check, not an increase in offered load
+or a comparison of routing policies.
+
+Each case takes three unprofiled timings and one cProfile capture, all in fresh
+Python processes. Imports, process startup, result hashing and file output are
+outside the measured region. Profiled and unprofiled summaries must hash exactly
+the same, and every run checks conservation and final draining. Profiler timing
+includes instrumentation overhead; use unprofiled medians for runtime comparisons.
+Cumulative function times overlap and must not be added together.
+
+Allow about 30 seconds on the recorded machine. Each child has a 120-second
+timeout. The script writes `report.json` and six `.prof` files, overwriting the
+chosen directory. The report includes configuration, source hashes, revision,
+machine/Python details, individual unprofiled timings, result fingerprints and
+function timings. These are local CPU measurements, not cloud performance.
+
+Read the findings and D3-07 plan in [the profiling notes](results/d3-06/analysis.md).
+Inspect a raw profile with Python's standard library:
+
+```sh
+uv run python -m pstats experiments/results/d3-06/100000-requests-100-servers.prof
+```
+
+At the prompt, use `sort tottime` and `stats 15`. For another capture, choose a
+new output directory to preserve the before-change evidence.
+
+## D3-07: deque before/after comparison
+
+The pending-arrival container now uses a deque. The saved before capture is in
+results/d3-06 and the after capture in results/d3-07. See
+[the results](results/d3-07/analysis.md) for all six timings and limitations.
+
+```sh
+PYTHONPATH=src uv run python experiments/profile_engine.py --output experiments/results/d3-07-rerun
+PYTHONPATH=src uv run python experiments/compare_profiles.py experiments/results/d3-06/report.json experiments/results/d3-07-rerun/report.json --output experiments/results/d3-07-rerun/comparison.json
+```
+
+The profiling command takes roughly 30 seconds locally; comparison takes under a
+second and prints six ratios plus exact-output checks, then saves comparison.json.
+The comparison script requires matching environment/configuration and complete
+summary fingerprints. It compares unprofiled medians, preserving profiled timing
+as diagnostic evidence only. Choose a new output directory to retain prior runs.

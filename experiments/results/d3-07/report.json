@@ -1,0 +1,4405 @@
+{
+  "recorded_at_utc": "2026-10-22T14:35:15.611906+00:00",
+  "revision": "2ae52ee6d3177bf7ae024ec54a0c34304c0fba71",
+  "python": "3.12.12 | packaged by Anaconda, Inc. | (main, Oct 21 2025, 20:07:49) [Clang 20.1.8 ]",
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "machine": "arm64",
+  "processor": "arm",
+  "streamlit": "1.65.0",
+  "source_sha256": {
+    "src/lbsim/simulation.py": "dcb44657777b4bdbc2992f43324156d25cd10979847346d4c3929aa45addd64c",
+    "src/lbsim/utils/generate_seed.py": "31f62ef4f28fd58ddeae15e4e262a04019d1b39ed089f58c8144a62508fd40f9",
+    "src/lbsim/server.py": "4263090180b3987cda3fd9c86e559d224ce0c64ec6904c3c4d0d8d00c3ee32ab",
+    "src/lbsim/metrics.py": "776a0696f5337fbfa130d5f41b158f176180fdd5a18db78aa0839f19d16e2bcc",
+    "experiments/profile_engine.py": "f65914b2ce825ae21b7d14fe4cf4e0c8e15c76de3c462d08a3093862929c0ddb"
+  },
+  "scope": "run_simulation only; fresh processes; profiler overhead excluded from baseline medians",
+  "cases": [
+    {
+      "config": {
+        "concurrency": 1,
+        "queue_limit": 10,
+        "policy": "round_robin",
+        "arrival_rate": 100.0,
+        "duration": 100.0,
+        "service_min": 0.1,
+        "service_max": 1.0,
+        "seed": 42,
+        "server_count": 10
+      },
+      "elapsed_seconds": 0.06853541700002097,
+      "summary_sha256": "48c3667f3301f56f4336305cb70fe390cf9ae9452fed2f05ed177ab6f0f6a437",
+      "event_count": 11905,
+      "completed_count": 1905,
+      "rejected_count": 8095,
+      "profile_file": "10000-requests-10-servers.prof",
+      "samples_seconds": [
+        0.018470292000529298,
+        0.0222839580001164,
+        0.018616499999552616
+      ],
+      "median_unprofiled_seconds": 0.018616499999552616,
+      "functions_by_self": [
+        {
+          "file": "src/lbsim/utils/generate_seed.py",
+          "line": 5,
+          "function": "route",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.015475182,
+          "cumulative_seconds": 0.065991459
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 86,
+          "function": "submit",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.009479055,
+          "cumulative_seconds": 0.027636754000000003
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 21906,
+          "primitive_calls": 21906,
+          "self_seconds": 0.0075705880000000005,
+          "cumulative_seconds": 0.013609404
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 92,
+          "function": "<genexpr>",
+          "calls": 107450,
+          "primitive_calls": 107450,
+          "self_seconds": 0.004471813000000001,
+          "cumulative_seconds": 0.004471813000000001
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 15,
+          "function": "__post_init__",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.0023411060000000003,
+          "cumulative_seconds": 0.003355747
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.len>",
+          "calls": 43807,
+          "primitive_calls": 43807,
+          "self_seconds": 0.002242136,
+          "cumulative_seconds": 0.002242136
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 68,
+          "function": "running",
+          "calls": 11905,
+          "primitive_calls": 11905,
+          "self_seconds": 0.0020444350000000003,
+          "cumulative_seconds": 0.0027143830000000003
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'append' of 'list' objects>",
+          "calls": 27620,
+          "primitive_calls": 27620,
+          "self_seconds": 0.0018662350000000002,
+          "cumulative_seconds": 0.0018662350000000002
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 106,
+          "function": "complete",
+          "calls": 1905,
+          "primitive_calls": 1905,
+          "self_seconds": 0.001860015,
+          "cumulative_seconds": 0.004776458
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method math.isfinite>",
+          "calls": 47625,
+          "primitive_calls": 47625,
+          "self_seconds": 0.001835704,
+          "cumulative_seconds": 0.001835704
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'sort' of 'list' objects>",
+          "calls": 11905,
+          "primitive_calls": 11905,
+          "self_seconds": 0.0018008030000000001,
+          "cumulative_seconds": 0.0018008030000000001
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 72,
+          "function": "waiting",
+          "calls": 11905,
+          "primitive_calls": 11905,
+          "self_seconds": 0.001451018,
+          "cumulative_seconds": 0.001451018
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'values' of 'dict' objects>",
+          "calls": 23811,
+          "primitive_calls": 23811,
+          "self_seconds": 0.001443044,
+          "cumulative_seconds": 0.001443044
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 90,
+          "function": "<genexpr>",
+          "calls": 19990,
+          "primitive_calls": 19990,
+          "self_seconds": 0.001324131,
+          "cumulative_seconds": 0.001324131
+        },
+        {
+          "file": "src/lbsim/metrics.py",
+          "line": 9,
+          "function": "summarize",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.001279399,
+          "cumulative_seconds": 0.0022882080000000003
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 76,
+          "function": "_check_time",
+          "calls": 11905,
+          "primitive_calls": 11905,
+          "self_seconds": 0.0012540280000000001,
+          "cumulative_seconds": 0.001811546
+        },
+        {
+          "file": "/opt/homebrew/Caskroom/miniconda/base/lib/python3.12/random.py",
+          "line": 494,
+          "function": "uniform",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.001042278,
+          "cumulative_seconds": 0.0017628040000000002
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'popleft' of 'collections.deque' objects>",
+          "calls": 11895,
+          "primitive_calls": 11895,
+          "self_seconds": 0.000942585,
+          "cumulative_seconds": 0.000942585
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'append' of 'collections.deque' objects>",
+          "calls": 11895,
+          "primitive_calls": 11895,
+          "self_seconds": 0.0007411820000000001,
+          "cumulative_seconds": 0.0007411820000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'random' of '_random.Random' objects>",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.0007205260000000001,
+          "cumulative_seconds": 0.0007205260000000001
+        },
+        {
+          "file": "<string>",
+          "line": 2,
+          "function": "__init__",
+          "calls": 1905,
+          "primitive_calls": 1905,
+          "self_seconds": 0.0006053110000000001,
+          "cumulative_seconds": 0.0006053110000000001
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 80,
+          "function": "_execution",
+          "calls": 1905,
+          "primitive_calls": 1905,
+          "self_seconds": 0.000569835,
+          "cumulative_seconds": 0.00126817
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.max>",
+          "calls": 3810,
+          "primitive_calls": 3810,
+          "self_seconds": 0.000275133,
+          "cumulative_seconds": 0.000275133
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 113,
+          "function": "<genexpr>",
+          "calls": 3810,
+          "primitive_calls": 3810,
+          "self_seconds": 0.00024103700000000002,
+          "cumulative_seconds": 0.00024103700000000002
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.min>",
+          "calls": 1905,
+          "primitive_calls": 1905,
+          "self_seconds": 0.00015940100000000001,
+          "cumulative_seconds": 0.00015940100000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'pop' of 'list' objects>",
+          "calls": 1905,
+          "primitive_calls": 1905,
+          "self_seconds": 0.000151874,
+          "cumulative_seconds": 0.000151874
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'get' of 'dict' objects>",
+          "calls": 1914,
+          "primitive_calls": 1914,
+          "self_seconds": 0.000151275,
+          "cumulative_seconds": 0.000151275
+        },
+        {
+          "file": "src/lbsim/simulation.py",
+          "line": 8,
+          "function": "run_simulation",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.000127541,
+          "cumulative_seconds": 0.06841820800000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method math.fsum>",
+          "calls": 11,
+          "primitive_calls": 11,
+          "self_seconds": 3.1457e-05,
+          "cumulative_seconds": 3.1457e-05
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'disable' of '_lsprof.Profiler' objects>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 1.7125e-05,
+          "cumulative_seconds": 1.7125e-05
+        },
+        {
+          "file": "src/lbsim/settings.py",
+          "line": 8,
+          "function": "validate_config",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 8.085e-06,
+          "cumulative_seconds": 1.1000000000000001e-05
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<function Random.seed at 0x101bbda80>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 7.167e-06,
+          "cumulative_seconds": 7.167e-06
+        },
+        {
+          "file": "/opt/homebrew/Caskroom/miniconda/base/lib/python3.12/random.py",
+          "line": 135,
+          "function": "seed",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 5.833000000000001e-06,
+          "cumulative_seconds": 1.325e-05
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 48,
+          "function": "__init__",
+          "calls": 10,
+          "primitive_calls": 10,
+          "self_seconds": 5.291000000000001e-06,
+          "cumulative_seconds": 5.291000000000001e-06
+        },
+        {
+          "file": "/opt/homebrew/Caskroom/miniconda/base/lib/python3.12/random.py",
+          "line": 126,
+          "function": "__init__",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 3.041e-06,
+          "cumulative_seconds": 1.6291e-05
+        },
+        {
+          "file": "src/lbsim/metrics.py",
+          "line": 18,
+          "function": "<genexpr>",
+          "calls": 11,
+          "primitive_calls": 11,
+          "self_seconds": 1.8350000000000002e-06,
+          "cumulative_seconds": 1.8350000000000002e-06
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method math.ceil>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 5.000000000000001e-07,
+          "cumulative_seconds": 5.000000000000001e-07
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'items' of 'dict' objects>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 2.92e-07,
+          "cumulative_seconds": 2.92e-07
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.isinstance>",
+          "calls": 2,
+          "primitive_calls": 2,
+          "self_seconds": 2.5000000000000004e-07,
+          "cumulative_seconds": 2.5000000000000004e-07
+        }
+      ],
+      "functions_by_cumulative": [
+        {
+          "file": "src/lbsim/simulation.py",
+          "line": 8,
+          "function": "run_simulation",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.000127541,
+          "cumulative_seconds": 0.06841820800000001
+        },
+        {
+          "file": "src/lbsim/utils/generate_seed.py",
+          "line": 5,
+          "function": "route",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.015475182,
+          "cumulative_seconds": 0.065991459
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 86,
+          "function": "submit",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.009479055,
+          "cumulative_seconds": 0.027636754000000003
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 21906,
+          "primitive_calls": 21906,
+          "self_seconds": 0.0075705880000000005,
+          "cumulative_seconds": 0.013609404
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 106,
+          "function": "complete",
+          "calls": 1905,
+          "primitive_calls": 1905,
+          "self_seconds": 0.001860015,
+          "cumulative_seconds": 0.004776458
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 92,
+          "function": "<genexpr>",
+          "calls": 107450,
+          "primitive_calls": 107450,
+          "self_seconds": 0.004471813000000001,
+          "cumulative_seconds": 0.004471813000000001
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 15,
+          "function": "__post_init__",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.0023411060000000003,
+          "cumulative_seconds": 0.003355747
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 68,
+          "function": "running",
+          "calls": 11905,
+          "primitive_calls": 11905,
+          "self_seconds": 0.0020444350000000003,
+          "cumulative_seconds": 0.0027143830000000003
+        },
+        {
+          "file": "src/lbsim/metrics.py",
+          "line": 9,
+          "function": "summarize",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.001279399,
+          "cumulative_seconds": 0.0022882080000000003
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.len>",
+          "calls": 43807,
+          "primitive_calls": 43807,
+          "self_seconds": 0.002242136,
+          "cumulative_seconds": 0.002242136
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'append' of 'list' objects>",
+          "calls": 27620,
+          "primitive_calls": 27620,
+          "self_seconds": 0.0018662350000000002,
+          "cumulative_seconds": 0.0018662350000000002
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method math.isfinite>",
+          "calls": 47625,
+          "primitive_calls": 47625,
+          "self_seconds": 0.001835704,
+          "cumulative_seconds": 0.001835704
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 76,
+          "function": "_check_time",
+          "calls": 11905,
+          "primitive_calls": 11905,
+          "self_seconds": 0.0012540280000000001,
+          "cumulative_seconds": 0.001811546
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'sort' of 'list' objects>",
+          "calls": 11905,
+          "primitive_calls": 11905,
+          "self_seconds": 0.0018008030000000001,
+          "cumulative_seconds": 0.0018008030000000001
+        },
+        {
+          "file": "/opt/homebrew/Caskroom/miniconda/base/lib/python3.12/random.py",
+          "line": 494,
+          "function": "uniform",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.001042278,
+          "cumulative_seconds": 0.0017628040000000002
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 72,
+          "function": "waiting",
+          "calls": 11905,
+          "primitive_calls": 11905,
+          "self_seconds": 0.001451018,
+          "cumulative_seconds": 0.001451018
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'values' of 'dict' objects>",
+          "calls": 23811,
+          "primitive_calls": 23811,
+          "self_seconds": 0.001443044,
+          "cumulative_seconds": 0.001443044
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 90,
+          "function": "<genexpr>",
+          "calls": 19990,
+          "primitive_calls": 19990,
+          "self_seconds": 0.001324131,
+          "cumulative_seconds": 0.001324131
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 80,
+          "function": "_execution",
+          "calls": 1905,
+          "primitive_calls": 1905,
+          "self_seconds": 0.000569835,
+          "cumulative_seconds": 0.00126817
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'popleft' of 'collections.deque' objects>",
+          "calls": 11895,
+          "primitive_calls": 11895,
+          "self_seconds": 0.000942585,
+          "cumulative_seconds": 0.000942585
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'append' of 'collections.deque' objects>",
+          "calls": 11895,
+          "primitive_calls": 11895,
+          "self_seconds": 0.0007411820000000001,
+          "cumulative_seconds": 0.0007411820000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'random' of '_random.Random' objects>",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.0007205260000000001,
+          "cumulative_seconds": 0.0007205260000000001
+        },
+        {
+          "file": "<string>",
+          "line": 2,
+          "function": "__init__",
+          "calls": 1905,
+          "primitive_calls": 1905,
+          "self_seconds": 0.0006053110000000001,
+          "cumulative_seconds": 0.0006053110000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.max>",
+          "calls": 3810,
+          "primitive_calls": 3810,
+          "self_seconds": 0.000275133,
+          "cumulative_seconds": 0.000275133
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 113,
+          "function": "<genexpr>",
+          "calls": 3810,
+          "primitive_calls": 3810,
+          "self_seconds": 0.00024103700000000002,
+          "cumulative_seconds": 0.00024103700000000002
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.min>",
+          "calls": 1905,
+          "primitive_calls": 1905,
+          "self_seconds": 0.00015940100000000001,
+          "cumulative_seconds": 0.00015940100000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'pop' of 'list' objects>",
+          "calls": 1905,
+          "primitive_calls": 1905,
+          "self_seconds": 0.000151874,
+          "cumulative_seconds": 0.000151874
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'get' of 'dict' objects>",
+          "calls": 1914,
+          "primitive_calls": 1914,
+          "self_seconds": 0.000151275,
+          "cumulative_seconds": 0.000151275
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method math.fsum>",
+          "calls": 11,
+          "primitive_calls": 11,
+          "self_seconds": 3.1457e-05,
+          "cumulative_seconds": 3.1457e-05
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'disable' of '_lsprof.Profiler' objects>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 1.7125e-05,
+          "cumulative_seconds": 1.7125e-05
+        },
+        {
+          "file": "/opt/homebrew/Caskroom/miniconda/base/lib/python3.12/random.py",
+          "line": 126,
+          "function": "__init__",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 3.041e-06,
+          "cumulative_seconds": 1.6291e-05
+        },
+        {
+          "file": "/opt/homebrew/Caskroom/miniconda/base/lib/python3.12/random.py",
+          "line": 135,
+          "function": "seed",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 5.833000000000001e-06,
+          "cumulative_seconds": 1.325e-05
+        },
+        {
+          "file": "src/lbsim/settings.py",
+          "line": 8,
+          "function": "validate_config",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 8.085e-06,
+          "cumulative_seconds": 1.1000000000000001e-05
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<function Random.seed at 0x101bbda80>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 7.167e-06,
+          "cumulative_seconds": 7.167e-06
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 48,
+          "function": "__init__",
+          "calls": 10,
+          "primitive_calls": 10,
+          "self_seconds": 5.291000000000001e-06,
+          "cumulative_seconds": 5.291000000000001e-06
+        },
+        {
+          "file": "src/lbsim/metrics.py",
+          "line": 18,
+          "function": "<genexpr>",
+          "calls": 11,
+          "primitive_calls": 11,
+          "self_seconds": 1.8350000000000002e-06,
+          "cumulative_seconds": 1.8350000000000002e-06
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method math.ceil>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 5.000000000000001e-07,
+          "cumulative_seconds": 5.000000000000001e-07
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'items' of 'dict' objects>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 2.92e-07,
+          "cumulative_seconds": 2.92e-07
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.isinstance>",
+          "calls": 2,
+          "primitive_calls": 2,
+          "self_seconds": 2.5000000000000004e-07,
+          "cumulative_seconds": 2.5000000000000004e-07
+        }
+      ]
+    },
+    {
+      "config": {
+        "concurrency": 1,
+        "queue_limit": 10,
+        "policy": "round_robin",
+        "arrival_rate": 100.0,
+        "duration": 100.0,
+        "service_min": 0.1,
+        "service_max": 1.0,
+        "seed": 42,
+        "server_count": 100
+      },
+      "elapsed_seconds": 0.10402008399978513,
+      "summary_sha256": "eb16a5402cd7c575f6e17a21625dc46fd05809f16b90872ef69e84dc802b19d6",
+      "event_count": 20000,
+      "completed_count": 10000,
+      "rejected_count": 0,
+      "profile_file": "10000-requests-100-servers.prof",
+      "samples_seconds": [
+        0.06565349999982573,
+        0.03407416700065369,
+        0.034275582999725884
+      ],
+      "median_unprofiled_seconds": 0.034275582999725884,
+      "functions_by_self": [
+        {
+          "file": "src/lbsim/utils/generate_seed.py",
+          "line": 5,
+          "function": "route",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.023440164000000003,
+          "cumulative_seconds": 0.092732083
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 86,
+          "function": "submit",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.010119578,
+          "cumulative_seconds": 0.025194892
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'sort' of 'list' objects>",
+          "calls": 20000,
+          "primitive_calls": 20000,
+          "self_seconds": 0.009133935000000001,
+          "cumulative_seconds": 0.009133935000000001
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 106,
+          "function": "complete",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.006877638,
+          "cumulative_seconds": 0.015231513
+        },
+        {
+          "file": "src/lbsim/metrics.py",
+          "line": 9,
+          "function": "summarize",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.005339796,
+          "cumulative_seconds": 0.010459375
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 30001,
+          "primitive_calls": 30001,
+          "self_seconds": 0.005148568,
+          "cumulative_seconds": 0.008140006
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'append' of 'list' objects>",
+          "calls": 60000,
+          "primitive_calls": 60000,
+          "self_seconds": 0.003723816,
+          "cumulative_seconds": 0.003723816
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 68,
+          "function": "running",
+          "calls": 20000,
+          "primitive_calls": 20000,
+          "self_seconds": 0.003381999,
+          "cumulative_seconds": 0.004595402
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method math.isfinite>",
+          "calls": 80005,
+          "primitive_calls": 80005,
+          "self_seconds": 0.0032198640000000002,
+          "cumulative_seconds": 0.0032198640000000002
+        },
+        {
+          "file": "<string>",
+          "line": 2,
+          "function": "__init__",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.0028691940000000003,
+          "cumulative_seconds": 0.0028691940000000003
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 80,
+          "function": "_execution",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.0027270280000000003,
+          "cumulative_seconds": 0.006067779000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'values' of 'dict' objects>",
+          "calls": 40001,
+          "primitive_calls": 40001,
+          "self_seconds": 0.0025899950000000003,
+          "cumulative_seconds": 0.0025899950000000003
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.len>",
+          "calls": 50007,
+          "primitive_calls": 50007,
+          "self_seconds": 0.0024136450000000003,
+          "cumulative_seconds": 0.0024136450000000003
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 76,
+          "function": "_check_time",
+          "calls": 20000,
+          "primitive_calls": 20000,
+          "self_seconds": 0.0020989430000000002,
+          "cumulative_seconds": 0.0030093940000000003
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 15,
+          "function": "__post_init__",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.0020658440000000003,
+          "cumulative_seconds": 0.003068134
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 72,
+          "function": "waiting",
+          "calls": 20000,
+          "primitive_calls": 20000,
+          "self_seconds": 0.0018615020000000001,
+          "cumulative_seconds": 0.0018615020000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.max>",
+          "calls": 20000,
+          "primitive_calls": 20000,
+          "self_seconds": 0.0015135370000000001,
+          "cumulative_seconds": 0.0015135370000000001
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 113,
+          "function": "<genexpr>",
+          "calls": 20000,
+          "primitive_calls": 20000,
+          "self_seconds": 0.001455338,
+          "cumulative_seconds": 0.001455338
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 90,
+          "function": "<genexpr>",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.000997848,
+          "cumulative_seconds": 0.000997848
+        },
+        {
+          "file": "/opt/homebrew/Caskroom/miniconda/base/lib/python3.12/random.py",
+          "line": 494,
+          "function": "uniform",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.0009811050000000001,
+          "cumulative_seconds": 0.001537347
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'get' of 'dict' objects>",
+          "calls": 10009,
+          "primitive_calls": 10009,
+          "self_seconds": 0.0008207510000000001,
+          "cumulative_seconds": 0.0008207510000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'pop' of 'list' objects>",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.000813268,
+          "cumulative_seconds": 0.000813268
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.min>",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.000775734,
+          "cumulative_seconds": 0.000775734
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'popleft' of 'collections.deque' objects>",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.0007398070000000001,
+          "cumulative_seconds": 0.0007398070000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'random' of '_random.Random' objects>",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.0005562420000000001,
+          "cumulative_seconds": 0.0005562420000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'append' of 'collections.deque' objects>",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.000534679,
+          "cumulative_seconds": 0.000534679
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 92,
+          "function": "<genexpr>",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.0005313700000000001,
+          "cumulative_seconds": 0.0005313700000000001
+        },
+        {
+          "file": "src/lbsim/simulation.py",
+          "line": 8,
+          "function": "run_simulation",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.00047825000000000005,
+          "cumulative_seconds": 0.10368237500000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method math.fsum>",
+          "calls": 101,
+          "primitive_calls": 101,
+          "self_seconds": 0.000147665,
+          "cumulative_seconds": 0.000147665
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 48,
+          "function": "__init__",
+          "calls": 100,
+          "primitive_calls": 100,
+          "self_seconds": 0.000107256,
+          "cumulative_seconds": 0.000107256
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<function Random.seed at 0x105ed1a80>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 3.5333e-05,
+          "cumulative_seconds": 3.5333e-05
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'disable' of '_lsprof.Profiler' objects>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 1.7833e-05,
+          "cumulative_seconds": 1.7833e-05
+        },
+        {
+          "file": "/opt/homebrew/Caskroom/miniconda/base/lib/python3.12/random.py",
+          "line": 135,
+          "function": "seed",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 9.501000000000001e-06,
+          "cumulative_seconds": 4.5167e-05
+        },
+        {
+          "file": "src/lbsim/settings.py",
+          "line": 8,
+          "function": "validate_config",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 9.169e-06,
+          "cumulative_seconds": 1.2667000000000001e-05
+        },
+        {
+          "file": "src/lbsim/metrics.py",
+          "line": 18,
+          "function": "<genexpr>",
+          "calls": 101,
+          "primitive_calls": 101,
+          "self_seconds": 6.882e-06,
+          "cumulative_seconds": 6.882e-06
+        },
+        {
+          "file": "/opt/homebrew/Caskroom/miniconda/base/lib/python3.12/random.py",
+          "line": 126,
+          "function": "__init__",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 4.583e-06,
+          "cumulative_seconds": 4.975e-05
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method math.ceil>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 5.000000000000001e-07,
+          "cumulative_seconds": 5.000000000000001e-07
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.isinstance>",
+          "calls": 2,
+          "primitive_calls": 2,
+          "self_seconds": 3.3300000000000003e-07,
+          "cumulative_seconds": 3.3300000000000003e-07
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'items' of 'dict' objects>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 2.08e-07,
+          "cumulative_seconds": 2.08e-07
+        }
+      ],
+      "functions_by_cumulative": [
+        {
+          "file": "src/lbsim/simulation.py",
+          "line": 8,
+          "function": "run_simulation",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.00047825000000000005,
+          "cumulative_seconds": 0.10368237500000001
+        },
+        {
+          "file": "src/lbsim/utils/generate_seed.py",
+          "line": 5,
+          "function": "route",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.023440164000000003,
+          "cumulative_seconds": 0.092732083
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 86,
+          "function": "submit",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.010119578,
+          "cumulative_seconds": 0.025194892
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 106,
+          "function": "complete",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.006877638,
+          "cumulative_seconds": 0.015231513
+        },
+        {
+          "file": "src/lbsim/metrics.py",
+          "line": 9,
+          "function": "summarize",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.005339796,
+          "cumulative_seconds": 0.010459375
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'sort' of 'list' objects>",
+          "calls": 20000,
+          "primitive_calls": 20000,
+          "self_seconds": 0.009133935000000001,
+          "cumulative_seconds": 0.009133935000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 30001,
+          "primitive_calls": 30001,
+          "self_seconds": 0.005148568,
+          "cumulative_seconds": 0.008140006
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 80,
+          "function": "_execution",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.0027270280000000003,
+          "cumulative_seconds": 0.006067779000000001
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 68,
+          "function": "running",
+          "calls": 20000,
+          "primitive_calls": 20000,
+          "self_seconds": 0.003381999,
+          "cumulative_seconds": 0.004595402
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'append' of 'list' objects>",
+          "calls": 60000,
+          "primitive_calls": 60000,
+          "self_seconds": 0.003723816,
+          "cumulative_seconds": 0.003723816
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method math.isfinite>",
+          "calls": 80005,
+          "primitive_calls": 80005,
+          "self_seconds": 0.0032198640000000002,
+          "cumulative_seconds": 0.0032198640000000002
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 15,
+          "function": "__post_init__",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.0020658440000000003,
+          "cumulative_seconds": 0.003068134
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 76,
+          "function": "_check_time",
+          "calls": 20000,
+          "primitive_calls": 20000,
+          "self_seconds": 0.0020989430000000002,
+          "cumulative_seconds": 0.0030093940000000003
+        },
+        {
+          "file": "<string>",
+          "line": 2,
+          "function": "__init__",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.0028691940000000003,
+          "cumulative_seconds": 0.0028691940000000003
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'values' of 'dict' objects>",
+          "calls": 40001,
+          "primitive_calls": 40001,
+          "self_seconds": 0.0025899950000000003,
+          "cumulative_seconds": 0.0025899950000000003
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.len>",
+          "calls": 50007,
+          "primitive_calls": 50007,
+          "self_seconds": 0.0024136450000000003,
+          "cumulative_seconds": 0.0024136450000000003
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 72,
+          "function": "waiting",
+          "calls": 20000,
+          "primitive_calls": 20000,
+          "self_seconds": 0.0018615020000000001,
+          "cumulative_seconds": 0.0018615020000000001
+        },
+        {
+          "file": "/opt/homebrew/Caskroom/miniconda/base/lib/python3.12/random.py",
+          "line": 494,
+          "function": "uniform",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.0009811050000000001,
+          "cumulative_seconds": 0.001537347
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.max>",
+          "calls": 20000,
+          "primitive_calls": 20000,
+          "self_seconds": 0.0015135370000000001,
+          "cumulative_seconds": 0.0015135370000000001
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 113,
+          "function": "<genexpr>",
+          "calls": 20000,
+          "primitive_calls": 20000,
+          "self_seconds": 0.001455338,
+          "cumulative_seconds": 0.001455338
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 90,
+          "function": "<genexpr>",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.000997848,
+          "cumulative_seconds": 0.000997848
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'get' of 'dict' objects>",
+          "calls": 10009,
+          "primitive_calls": 10009,
+          "self_seconds": 0.0008207510000000001,
+          "cumulative_seconds": 0.0008207510000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'pop' of 'list' objects>",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.000813268,
+          "cumulative_seconds": 0.000813268
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.min>",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.000775734,
+          "cumulative_seconds": 0.000775734
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'popleft' of 'collections.deque' objects>",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.0007398070000000001,
+          "cumulative_seconds": 0.0007398070000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'random' of '_random.Random' objects>",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.0005562420000000001,
+          "cumulative_seconds": 0.0005562420000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'append' of 'collections.deque' objects>",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.000534679,
+          "cumulative_seconds": 0.000534679
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 92,
+          "function": "<genexpr>",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.0005313700000000001,
+          "cumulative_seconds": 0.0005313700000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method math.fsum>",
+          "calls": 101,
+          "primitive_calls": 101,
+          "self_seconds": 0.000147665,
+          "cumulative_seconds": 0.000147665
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 48,
+          "function": "__init__",
+          "calls": 100,
+          "primitive_calls": 100,
+          "self_seconds": 0.000107256,
+          "cumulative_seconds": 0.000107256
+        },
+        {
+          "file": "/opt/homebrew/Caskroom/miniconda/base/lib/python3.12/random.py",
+          "line": 126,
+          "function": "__init__",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 4.583e-06,
+          "cumulative_seconds": 4.975e-05
+        },
+        {
+          "file": "/opt/homebrew/Caskroom/miniconda/base/lib/python3.12/random.py",
+          "line": 135,
+          "function": "seed",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 9.501000000000001e-06,
+          "cumulative_seconds": 4.5167e-05
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<function Random.seed at 0x105ed1a80>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 3.5333e-05,
+          "cumulative_seconds": 3.5333e-05
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'disable' of '_lsprof.Profiler' objects>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 1.7833e-05,
+          "cumulative_seconds": 1.7833e-05
+        },
+        {
+          "file": "src/lbsim/settings.py",
+          "line": 8,
+          "function": "validate_config",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 9.169e-06,
+          "cumulative_seconds": 1.2667000000000001e-05
+        },
+        {
+          "file": "src/lbsim/metrics.py",
+          "line": 18,
+          "function": "<genexpr>",
+          "calls": 101,
+          "primitive_calls": 101,
+          "self_seconds": 6.882e-06,
+          "cumulative_seconds": 6.882e-06
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method math.ceil>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 5.000000000000001e-07,
+          "cumulative_seconds": 5.000000000000001e-07
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.isinstance>",
+          "calls": 2,
+          "primitive_calls": 2,
+          "self_seconds": 3.3300000000000003e-07,
+          "cumulative_seconds": 3.3300000000000003e-07
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'items' of 'dict' objects>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 2.08e-07,
+          "cumulative_seconds": 2.08e-07
+        }
+      ]
+    },
+    {
+      "config": {
+        "concurrency": 1,
+        "queue_limit": 10,
+        "policy": "round_robin",
+        "arrival_rate": 100.0,
+        "duration": 100.0,
+        "service_min": 0.1,
+        "service_max": 1.0,
+        "seed": 42,
+        "server_count": 1000
+      },
+      "elapsed_seconds": 0.1029471250003553,
+      "summary_sha256": "0dc827b4dc9a63eac7e4f89e4b5ae74545119c8251e85e911e700a3a17476eca",
+      "event_count": 20000,
+      "completed_count": 10000,
+      "rejected_count": 0,
+      "profile_file": "10000-requests-1000-servers.prof",
+      "samples_seconds": [
+        0.035130375000335334,
+        0.03555995900023845,
+        0.03454654199958895
+      ],
+      "median_unprofiled_seconds": 0.035130375000335334,
+      "functions_by_self": [
+        {
+          "file": "src/lbsim/utils/generate_seed.py",
+          "line": 5,
+          "function": "route",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.022856757000000002,
+          "cumulative_seconds": 0.09165804100000001
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 86,
+          "function": "submit",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.009917152,
+          "cumulative_seconds": 0.024936351000000002
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'sort' of 'list' objects>",
+          "calls": 20000,
+          "primitive_calls": 20000,
+          "self_seconds": 0.008924716000000001,
+          "cumulative_seconds": 0.008924716000000001
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 106,
+          "function": "complete",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.006870239,
+          "cumulative_seconds": 0.015030636000000002
+        },
+        {
+          "file": "src/lbsim/metrics.py",
+          "line": 9,
+          "function": "summarize",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.005542608,
+          "cumulative_seconds": 0.010498375
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 30001,
+          "primitive_calls": 30001,
+          "self_seconds": 0.005176138,
+          "cumulative_seconds": 0.008120008
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'append' of 'list' objects>",
+          "calls": 60000,
+          "primitive_calls": 60000,
+          "self_seconds": 0.0033985300000000003,
+          "cumulative_seconds": 0.0033985300000000003
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 68,
+          "function": "running",
+          "calls": 20000,
+          "primitive_calls": 20000,
+          "self_seconds": 0.003391191,
+          "cumulative_seconds": 0.004616515
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method math.isfinite>",
+          "calls": 80005,
+          "primitive_calls": 80005,
+          "self_seconds": 0.0032246420000000002,
+          "cumulative_seconds": 0.0032246420000000002
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 80,
+          "function": "_execution",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.0028101180000000003,
+          "cumulative_seconds": 0.006078586
+        },
+        {
+          "file": "<string>",
+          "line": 2,
+          "function": "__init__",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.00279781,
+          "cumulative_seconds": 0.00279781
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'values' of 'dict' objects>",
+          "calls": 40001,
+          "primitive_calls": 40001,
+          "self_seconds": 0.002566347,
+          "cumulative_seconds": 0.002566347
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.len>",
+          "calls": 50007,
+          "primitive_calls": 50007,
+          "self_seconds": 0.002330267,
+          "cumulative_seconds": 0.002330267
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 15,
+          "function": "__post_init__",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.0021060560000000002,
+          "cumulative_seconds": 0.0031114840000000003
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 76,
+          "function": "_check_time",
+          "calls": 20000,
+          "primitive_calls": 20000,
+          "self_seconds": 0.002084404,
+          "cumulative_seconds": 0.003000852
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 72,
+          "function": "waiting",
+          "calls": 20000,
+          "primitive_calls": 20000,
+          "self_seconds": 0.0018829010000000002,
+          "cumulative_seconds": 0.0018829010000000002
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 113,
+          "function": "<genexpr>",
+          "calls": 20000,
+          "primitive_calls": 20000,
+          "self_seconds": 0.001419698,
+          "cumulative_seconds": 0.001419698
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.max>",
+          "calls": 20000,
+          "primitive_calls": 20000,
+          "self_seconds": 0.0014047670000000001,
+          "cumulative_seconds": 0.0014047670000000001
+        },
+        {
+          "file": "/opt/homebrew/Caskroom/miniconda/base/lib/python3.12/random.py",
+          "line": 494,
+          "function": "uniform",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.000991955,
+          "cumulative_seconds": 0.001605779
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 90,
+          "function": "<genexpr>",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.0009355660000000001,
+          "cumulative_seconds": 0.0009355660000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'get' of 'dict' objects>",
+          "calls": 10009,
+          "primitive_calls": 10009,
+          "self_seconds": 0.000823231,
+          "cumulative_seconds": 0.000823231
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'pop' of 'list' objects>",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.0008060210000000001,
+          "cumulative_seconds": 0.0008060210000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.min>",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.000789713,
+          "cumulative_seconds": 0.000789713
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'popleft' of 'collections.deque' objects>",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.0007324530000000001,
+          "cumulative_seconds": 0.0007324530000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'random' of '_random.Random' objects>",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.000613824,
+          "cumulative_seconds": 0.000613824
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 92,
+          "function": "<genexpr>",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.000534575,
+          "cumulative_seconds": 0.000534575
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'append' of 'collections.deque' objects>",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.000529198,
+          "cumulative_seconds": 0.000529198
+        },
+        {
+          "file": "src/lbsim/simulation.py",
+          "line": 8,
+          "function": "run_simulation",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.00046379200000000003,
+          "cumulative_seconds": 0.10263187500000001
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 48,
+          "function": "__init__",
+          "calls": 1000,
+          "primitive_calls": 1000,
+          "self_seconds": 0.000394721,
+          "cumulative_seconds": 0.000394721
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method math.fsum>",
+          "calls": 1001,
+          "primitive_calls": 1001,
+          "self_seconds": 0.00016111900000000001,
+          "cumulative_seconds": 0.00016111900000000001
+        },
+        {
+          "file": "src/lbsim/metrics.py",
+          "line": 18,
+          "function": "<genexpr>",
+          "calls": 1001,
+          "primitive_calls": 1001,
+          "self_seconds": 5.4031000000000005e-05,
+          "cumulative_seconds": 5.4031000000000005e-05
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'disable' of '_lsprof.Profiler' objects>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 1.65e-05,
+          "cumulative_seconds": 1.65e-05
+        },
+        {
+          "file": "src/lbsim/settings.py",
+          "line": 8,
+          "function": "validate_config",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 9e-06,
+          "cumulative_seconds": 1.1667e-05
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<function Random.seed at 0x101599a80>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 6.25e-06,
+          "cumulative_seconds": 6.25e-06
+        },
+        {
+          "file": "/opt/homebrew/Caskroom/miniconda/base/lib/python3.12/random.py",
+          "line": 135,
+          "function": "seed",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 3.209e-06,
+          "cumulative_seconds": 9.75e-06
+        },
+        {
+          "file": "/opt/homebrew/Caskroom/miniconda/base/lib/python3.12/random.py",
+          "line": 126,
+          "function": "__init__",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 3e-06,
+          "cumulative_seconds": 1.2750000000000002e-05
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'items' of 'dict' objects>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 3.75e-07,
+          "cumulative_seconds": 3.75e-07
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method math.ceil>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 3.34e-07,
+          "cumulative_seconds": 3.34e-07
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.isinstance>",
+          "calls": 2,
+          "primitive_calls": 2,
+          "self_seconds": 2.91e-07,
+          "cumulative_seconds": 2.91e-07
+        }
+      ],
+      "functions_by_cumulative": [
+        {
+          "file": "src/lbsim/simulation.py",
+          "line": 8,
+          "function": "run_simulation",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.00046379200000000003,
+          "cumulative_seconds": 0.10263187500000001
+        },
+        {
+          "file": "src/lbsim/utils/generate_seed.py",
+          "line": 5,
+          "function": "route",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.022856757000000002,
+          "cumulative_seconds": 0.09165804100000001
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 86,
+          "function": "submit",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.009917152,
+          "cumulative_seconds": 0.024936351000000002
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 106,
+          "function": "complete",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.006870239,
+          "cumulative_seconds": 0.015030636000000002
+        },
+        {
+          "file": "src/lbsim/metrics.py",
+          "line": 9,
+          "function": "summarize",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.005542608,
+          "cumulative_seconds": 0.010498375
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'sort' of 'list' objects>",
+          "calls": 20000,
+          "primitive_calls": 20000,
+          "self_seconds": 0.008924716000000001,
+          "cumulative_seconds": 0.008924716000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 30001,
+          "primitive_calls": 30001,
+          "self_seconds": 0.005176138,
+          "cumulative_seconds": 0.008120008
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 80,
+          "function": "_execution",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.0028101180000000003,
+          "cumulative_seconds": 0.006078586
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 68,
+          "function": "running",
+          "calls": 20000,
+          "primitive_calls": 20000,
+          "self_seconds": 0.003391191,
+          "cumulative_seconds": 0.004616515
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'append' of 'list' objects>",
+          "calls": 60000,
+          "primitive_calls": 60000,
+          "self_seconds": 0.0033985300000000003,
+          "cumulative_seconds": 0.0033985300000000003
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method math.isfinite>",
+          "calls": 80005,
+          "primitive_calls": 80005,
+          "self_seconds": 0.0032246420000000002,
+          "cumulative_seconds": 0.0032246420000000002
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 15,
+          "function": "__post_init__",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.0021060560000000002,
+          "cumulative_seconds": 0.0031114840000000003
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 76,
+          "function": "_check_time",
+          "calls": 20000,
+          "primitive_calls": 20000,
+          "self_seconds": 0.002084404,
+          "cumulative_seconds": 0.003000852
+        },
+        {
+          "file": "<string>",
+          "line": 2,
+          "function": "__init__",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.00279781,
+          "cumulative_seconds": 0.00279781
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'values' of 'dict' objects>",
+          "calls": 40001,
+          "primitive_calls": 40001,
+          "self_seconds": 0.002566347,
+          "cumulative_seconds": 0.002566347
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.len>",
+          "calls": 50007,
+          "primitive_calls": 50007,
+          "self_seconds": 0.002330267,
+          "cumulative_seconds": 0.002330267
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 72,
+          "function": "waiting",
+          "calls": 20000,
+          "primitive_calls": 20000,
+          "self_seconds": 0.0018829010000000002,
+          "cumulative_seconds": 0.0018829010000000002
+        },
+        {
+          "file": "/opt/homebrew/Caskroom/miniconda/base/lib/python3.12/random.py",
+          "line": 494,
+          "function": "uniform",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.000991955,
+          "cumulative_seconds": 0.001605779
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 113,
+          "function": "<genexpr>",
+          "calls": 20000,
+          "primitive_calls": 20000,
+          "self_seconds": 0.001419698,
+          "cumulative_seconds": 0.001419698
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.max>",
+          "calls": 20000,
+          "primitive_calls": 20000,
+          "self_seconds": 0.0014047670000000001,
+          "cumulative_seconds": 0.0014047670000000001
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 90,
+          "function": "<genexpr>",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.0009355660000000001,
+          "cumulative_seconds": 0.0009355660000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'get' of 'dict' objects>",
+          "calls": 10009,
+          "primitive_calls": 10009,
+          "self_seconds": 0.000823231,
+          "cumulative_seconds": 0.000823231
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'pop' of 'list' objects>",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.0008060210000000001,
+          "cumulative_seconds": 0.0008060210000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.min>",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.000789713,
+          "cumulative_seconds": 0.000789713
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'popleft' of 'collections.deque' objects>",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.0007324530000000001,
+          "cumulative_seconds": 0.0007324530000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'random' of '_random.Random' objects>",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.000613824,
+          "cumulative_seconds": 0.000613824
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 92,
+          "function": "<genexpr>",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.000534575,
+          "cumulative_seconds": 0.000534575
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'append' of 'collections.deque' objects>",
+          "calls": 10000,
+          "primitive_calls": 10000,
+          "self_seconds": 0.000529198,
+          "cumulative_seconds": 0.000529198
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 48,
+          "function": "__init__",
+          "calls": 1000,
+          "primitive_calls": 1000,
+          "self_seconds": 0.000394721,
+          "cumulative_seconds": 0.000394721
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method math.fsum>",
+          "calls": 1001,
+          "primitive_calls": 1001,
+          "self_seconds": 0.00016111900000000001,
+          "cumulative_seconds": 0.00016111900000000001
+        },
+        {
+          "file": "src/lbsim/metrics.py",
+          "line": 18,
+          "function": "<genexpr>",
+          "calls": 1001,
+          "primitive_calls": 1001,
+          "self_seconds": 5.4031000000000005e-05,
+          "cumulative_seconds": 5.4031000000000005e-05
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'disable' of '_lsprof.Profiler' objects>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 1.65e-05,
+          "cumulative_seconds": 1.65e-05
+        },
+        {
+          "file": "/opt/homebrew/Caskroom/miniconda/base/lib/python3.12/random.py",
+          "line": 126,
+          "function": "__init__",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 3e-06,
+          "cumulative_seconds": 1.2750000000000002e-05
+        },
+        {
+          "file": "src/lbsim/settings.py",
+          "line": 8,
+          "function": "validate_config",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 9e-06,
+          "cumulative_seconds": 1.1667e-05
+        },
+        {
+          "file": "/opt/homebrew/Caskroom/miniconda/base/lib/python3.12/random.py",
+          "line": 135,
+          "function": "seed",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 3.209e-06,
+          "cumulative_seconds": 9.75e-06
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<function Random.seed at 0x101599a80>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 6.25e-06,
+          "cumulative_seconds": 6.25e-06
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'items' of 'dict' objects>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 3.75e-07,
+          "cumulative_seconds": 3.75e-07
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method math.ceil>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 3.34e-07,
+          "cumulative_seconds": 3.34e-07
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.isinstance>",
+          "calls": 2,
+          "primitive_calls": 2,
+          "self_seconds": 2.91e-07,
+          "cumulative_seconds": 2.91e-07
+        }
+      ]
+    },
+    {
+      "config": {
+        "concurrency": 1,
+        "queue_limit": 10,
+        "policy": "round_robin",
+        "arrival_rate": 100.0,
+        "duration": 1000.0,
+        "service_min": 0.1,
+        "service_max": 1.0,
+        "seed": 42,
+        "server_count": 10
+      },
+      "elapsed_seconds": 0.6565960419993644,
+      "summary_sha256": "4ca07065e12839a2dd52b138e6ece2af8abc4a6461511461a13f29bef98d8a01",
+      "event_count": 118292,
+      "completed_count": 18292,
+      "rejected_count": 81708,
+      "profile_file": "100000-requests-10-servers.prof",
+      "samples_seconds": [
+        0.20344808400022885,
+        0.19757566699991003,
+        0.20074437499988562
+      ],
+      "median_unprofiled_seconds": 0.20074437499988562,
+      "functions_by_self": [
+        {
+          "file": "src/lbsim/utils/generate_seed.py",
+          "line": 5,
+          "function": "route",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.147420344,
+          "cumulative_seconds": 0.6320335420000001
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 86,
+          "function": "submit",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.09718776700000001,
+          "cumulative_seconds": 0.272952886
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 218293,
+          "primitive_calls": 218293,
+          "self_seconds": 0.074302781,
+          "cumulative_seconds": 0.13395357100000002
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 92,
+          "function": "<genexpr>",
+          "calls": 1081063,
+          "primitive_calls": 1081063,
+          "self_seconds": 0.043531625000000004,
+          "cumulative_seconds": 0.043531625000000004
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.len>",
+          "calls": 436581,
+          "primitive_calls": 436581,
+          "self_seconds": 0.020909982,
+          "cumulative_seconds": 0.020909982
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 15,
+          "function": "__post_init__",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.020417641,
+          "cumulative_seconds": 0.030393915
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 68,
+          "function": "running",
+          "calls": 118292,
+          "primitive_calls": 118292,
+          "self_seconds": 0.019814202,
+          "cumulative_seconds": 0.026134719
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method math.isfinite>",
+          "calls": 473173,
+          "primitive_calls": 473173,
+          "self_seconds": 0.018080133,
+          "cumulative_seconds": 0.018080133
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 106,
+          "function": "complete",
+          "calls": 18292,
+          "primitive_calls": 18292,
+          "self_seconds": 0.017377611,
+          "cumulative_seconds": 0.045501019000000004
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'sort' of 'list' objects>",
+          "calls": 118292,
+          "primitive_calls": 118292,
+          "self_seconds": 0.017012688,
+          "cumulative_seconds": 0.017012688
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'append' of 'list' objects>",
+          "calls": 273168,
+          "primitive_calls": 273168,
+          "self_seconds": 0.016024355,
+          "cumulative_seconds": 0.016024355
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 90,
+          "function": "<genexpr>",
+          "calls": 199990,
+          "primitive_calls": 199990,
+          "self_seconds": 0.013544844,
+          "cumulative_seconds": 0.013544844
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'values' of 'dict' objects>",
+          "calls": 236585,
+          "primitive_calls": 236585,
+          "self_seconds": 0.013168547000000001,
+          "cumulative_seconds": 0.013168547000000001
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 72,
+          "function": "waiting",
+          "calls": 118292,
+          "primitive_calls": 118292,
+          "self_seconds": 0.013015591,
+          "cumulative_seconds": 0.013015591
+        },
+        {
+          "file": "src/lbsim/metrics.py",
+          "line": 9,
+          "function": "summarize",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.012446552000000001,
+          "cumulative_seconds": 0.021314917000000003
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 76,
+          "function": "_check_time",
+          "calls": 118292,
+          "primitive_calls": 118292,
+          "self_seconds": 0.011969191,
+          "cumulative_seconds": 0.017653369000000002
+        },
+        {
+          "file": "/opt/homebrew/Caskroom/miniconda/base/lib/python3.12/random.py",
+          "line": 494,
+          "function": "uniform",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.00979583,
+          "cumulative_seconds": 0.015596513000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'popleft' of 'collections.deque' objects>",
+          "calls": 118282,
+          "primitive_calls": 118282,
+          "self_seconds": 0.008308449,
+          "cumulative_seconds": 0.008308449
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'append' of 'collections.deque' objects>",
+          "calls": 118282,
+          "primitive_calls": 118282,
+          "self_seconds": 0.006513532000000001,
+          "cumulative_seconds": 0.006513532000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'random' of '_random.Random' objects>",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.005800683,
+          "cumulative_seconds": 0.005800683
+        },
+        {
+          "file": "<string>",
+          "line": 2,
+          "function": "__init__",
+          "calls": 18292,
+          "primitive_calls": 18292,
+          "self_seconds": 0.005440202000000001,
+          "cumulative_seconds": 0.005440202000000001
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 80,
+          "function": "_execution",
+          "calls": 18292,
+          "primitive_calls": 18292,
+          "self_seconds": 0.005353224,
+          "cumulative_seconds": 0.011730442
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 113,
+          "function": "<genexpr>",
+          "calls": 36584,
+          "primitive_calls": 36584,
+          "self_seconds": 0.00257253,
+          "cumulative_seconds": 0.00257253
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.max>",
+          "calls": 36584,
+          "primitive_calls": 36584,
+          "self_seconds": 0.002508305,
+          "cumulative_seconds": 0.002508305
+        },
+        {
+          "file": "src/lbsim/simulation.py",
+          "line": 8,
+          "function": "run_simulation",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.001466541,
+          "cumulative_seconds": 0.6548227080000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'pop' of 'list' objects>",
+          "calls": 18292,
+          "primitive_calls": 18292,
+          "self_seconds": 0.0014380220000000002,
+          "cumulative_seconds": 0.0014380220000000002
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'get' of 'dict' objects>",
+          "calls": 18301,
+          "primitive_calls": 18301,
+          "self_seconds": 0.0014189830000000002,
+          "cumulative_seconds": 0.0014189830000000002
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.min>",
+          "calls": 18292,
+          "primitive_calls": 18292,
+          "self_seconds": 0.0013615790000000001,
+          "cumulative_seconds": 0.0013615790000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method math.fsum>",
+          "calls": 11,
+          "primitive_calls": 11,
+          "self_seconds": 0.00030675,
+          "cumulative_seconds": 0.00030675
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'disable' of '_lsprof.Profiler' objects>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 1.4000000000000001e-05,
+          "cumulative_seconds": 1.4000000000000001e-05
+        },
+        {
+          "file": "src/lbsim/settings.py",
+          "line": 8,
+          "function": "validate_config",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 6.041e-06,
+          "cumulative_seconds": 7.708e-06
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<function Random.seed at 0x103465a80>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 5.291000000000001e-06,
+          "cumulative_seconds": 5.291000000000001e-06
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 48,
+          "function": "__init__",
+          "calls": 10,
+          "primitive_calls": 10,
+          "self_seconds": 4.416000000000001e-06,
+          "cumulative_seconds": 4.416000000000001e-06
+        },
+        {
+          "file": "/opt/homebrew/Caskroom/miniconda/base/lib/python3.12/random.py",
+          "line": 135,
+          "function": "seed",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 3.0420000000000003e-06,
+          "cumulative_seconds": 8.666e-06
+        },
+        {
+          "file": "src/lbsim/metrics.py",
+          "line": 18,
+          "function": "<genexpr>",
+          "calls": 11,
+          "primitive_calls": 11,
+          "self_seconds": 1.791e-06,
+          "cumulative_seconds": 1.791e-06
+        },
+        {
+          "file": "/opt/homebrew/Caskroom/miniconda/base/lib/python3.12/random.py",
+          "line": 126,
+          "function": "__init__",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 1.667e-06,
+          "cumulative_seconds": 1.0333000000000001e-05
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method math.ceil>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 4.5800000000000005e-07,
+          "cumulative_seconds": 4.5800000000000005e-07
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'items' of 'dict' objects>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 3.75e-07,
+          "cumulative_seconds": 3.75e-07
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.isinstance>",
+          "calls": 2,
+          "primitive_calls": 2,
+          "self_seconds": 3.3300000000000003e-07,
+          "cumulative_seconds": 3.3300000000000003e-07
+        }
+      ],
+      "functions_by_cumulative": [
+        {
+          "file": "src/lbsim/simulation.py",
+          "line": 8,
+          "function": "run_simulation",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.001466541,
+          "cumulative_seconds": 0.6548227080000001
+        },
+        {
+          "file": "src/lbsim/utils/generate_seed.py",
+          "line": 5,
+          "function": "route",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.147420344,
+          "cumulative_seconds": 0.6320335420000001
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 86,
+          "function": "submit",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.09718776700000001,
+          "cumulative_seconds": 0.272952886
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 218293,
+          "primitive_calls": 218293,
+          "self_seconds": 0.074302781,
+          "cumulative_seconds": 0.13395357100000002
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 106,
+          "function": "complete",
+          "calls": 18292,
+          "primitive_calls": 18292,
+          "self_seconds": 0.017377611,
+          "cumulative_seconds": 0.045501019000000004
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 92,
+          "function": "<genexpr>",
+          "calls": 1081063,
+          "primitive_calls": 1081063,
+          "self_seconds": 0.043531625000000004,
+          "cumulative_seconds": 0.043531625000000004
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 15,
+          "function": "__post_init__",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.020417641,
+          "cumulative_seconds": 0.030393915
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 68,
+          "function": "running",
+          "calls": 118292,
+          "primitive_calls": 118292,
+          "self_seconds": 0.019814202,
+          "cumulative_seconds": 0.026134719
+        },
+        {
+          "file": "src/lbsim/metrics.py",
+          "line": 9,
+          "function": "summarize",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.012446552000000001,
+          "cumulative_seconds": 0.021314917000000003
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.len>",
+          "calls": 436581,
+          "primitive_calls": 436581,
+          "self_seconds": 0.020909982,
+          "cumulative_seconds": 0.020909982
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method math.isfinite>",
+          "calls": 473173,
+          "primitive_calls": 473173,
+          "self_seconds": 0.018080133,
+          "cumulative_seconds": 0.018080133
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 76,
+          "function": "_check_time",
+          "calls": 118292,
+          "primitive_calls": 118292,
+          "self_seconds": 0.011969191,
+          "cumulative_seconds": 0.017653369000000002
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'sort' of 'list' objects>",
+          "calls": 118292,
+          "primitive_calls": 118292,
+          "self_seconds": 0.017012688,
+          "cumulative_seconds": 0.017012688
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'append' of 'list' objects>",
+          "calls": 273168,
+          "primitive_calls": 273168,
+          "self_seconds": 0.016024355,
+          "cumulative_seconds": 0.016024355
+        },
+        {
+          "file": "/opt/homebrew/Caskroom/miniconda/base/lib/python3.12/random.py",
+          "line": 494,
+          "function": "uniform",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.00979583,
+          "cumulative_seconds": 0.015596513000000001
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 90,
+          "function": "<genexpr>",
+          "calls": 199990,
+          "primitive_calls": 199990,
+          "self_seconds": 0.013544844,
+          "cumulative_seconds": 0.013544844
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'values' of 'dict' objects>",
+          "calls": 236585,
+          "primitive_calls": 236585,
+          "self_seconds": 0.013168547000000001,
+          "cumulative_seconds": 0.013168547000000001
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 72,
+          "function": "waiting",
+          "calls": 118292,
+          "primitive_calls": 118292,
+          "self_seconds": 0.013015591,
+          "cumulative_seconds": 0.013015591
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 80,
+          "function": "_execution",
+          "calls": 18292,
+          "primitive_calls": 18292,
+          "self_seconds": 0.005353224,
+          "cumulative_seconds": 0.011730442
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'popleft' of 'collections.deque' objects>",
+          "calls": 118282,
+          "primitive_calls": 118282,
+          "self_seconds": 0.008308449,
+          "cumulative_seconds": 0.008308449
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'append' of 'collections.deque' objects>",
+          "calls": 118282,
+          "primitive_calls": 118282,
+          "self_seconds": 0.006513532000000001,
+          "cumulative_seconds": 0.006513532000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'random' of '_random.Random' objects>",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.005800683,
+          "cumulative_seconds": 0.005800683
+        },
+        {
+          "file": "<string>",
+          "line": 2,
+          "function": "__init__",
+          "calls": 18292,
+          "primitive_calls": 18292,
+          "self_seconds": 0.005440202000000001,
+          "cumulative_seconds": 0.005440202000000001
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 113,
+          "function": "<genexpr>",
+          "calls": 36584,
+          "primitive_calls": 36584,
+          "self_seconds": 0.00257253,
+          "cumulative_seconds": 0.00257253
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.max>",
+          "calls": 36584,
+          "primitive_calls": 36584,
+          "self_seconds": 0.002508305,
+          "cumulative_seconds": 0.002508305
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'pop' of 'list' objects>",
+          "calls": 18292,
+          "primitive_calls": 18292,
+          "self_seconds": 0.0014380220000000002,
+          "cumulative_seconds": 0.0014380220000000002
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'get' of 'dict' objects>",
+          "calls": 18301,
+          "primitive_calls": 18301,
+          "self_seconds": 0.0014189830000000002,
+          "cumulative_seconds": 0.0014189830000000002
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.min>",
+          "calls": 18292,
+          "primitive_calls": 18292,
+          "self_seconds": 0.0013615790000000001,
+          "cumulative_seconds": 0.0013615790000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method math.fsum>",
+          "calls": 11,
+          "primitive_calls": 11,
+          "self_seconds": 0.00030675,
+          "cumulative_seconds": 0.00030675
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'disable' of '_lsprof.Profiler' objects>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 1.4000000000000001e-05,
+          "cumulative_seconds": 1.4000000000000001e-05
+        },
+        {
+          "file": "/opt/homebrew/Caskroom/miniconda/base/lib/python3.12/random.py",
+          "line": 126,
+          "function": "__init__",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 1.667e-06,
+          "cumulative_seconds": 1.0333000000000001e-05
+        },
+        {
+          "file": "/opt/homebrew/Caskroom/miniconda/base/lib/python3.12/random.py",
+          "line": 135,
+          "function": "seed",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 3.0420000000000003e-06,
+          "cumulative_seconds": 8.666e-06
+        },
+        {
+          "file": "src/lbsim/settings.py",
+          "line": 8,
+          "function": "validate_config",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 6.041e-06,
+          "cumulative_seconds": 7.708e-06
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<function Random.seed at 0x103465a80>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 5.291000000000001e-06,
+          "cumulative_seconds": 5.291000000000001e-06
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 48,
+          "function": "__init__",
+          "calls": 10,
+          "primitive_calls": 10,
+          "self_seconds": 4.416000000000001e-06,
+          "cumulative_seconds": 4.416000000000001e-06
+        },
+        {
+          "file": "src/lbsim/metrics.py",
+          "line": 18,
+          "function": "<genexpr>",
+          "calls": 11,
+          "primitive_calls": 11,
+          "self_seconds": 1.791e-06,
+          "cumulative_seconds": 1.791e-06
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method math.ceil>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 4.5800000000000005e-07,
+          "cumulative_seconds": 4.5800000000000005e-07
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'items' of 'dict' objects>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 3.75e-07,
+          "cumulative_seconds": 3.75e-07
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.isinstance>",
+          "calls": 2,
+          "primitive_calls": 2,
+          "self_seconds": 3.3300000000000003e-07,
+          "cumulative_seconds": 3.3300000000000003e-07
+        }
+      ]
+    },
+    {
+      "config": {
+        "concurrency": 1,
+        "queue_limit": 10,
+        "policy": "round_robin",
+        "arrival_rate": 100.0,
+        "duration": 1000.0,
+        "service_min": 0.1,
+        "service_max": 1.0,
+        "seed": 42,
+        "server_count": 100
+      },
+      "elapsed_seconds": 1.0320947919999526,
+      "summary_sha256": "f069a159efee27345352263a480e0e996c57704716e2545ad46b4d9562b00638",
+      "event_count": 200000,
+      "completed_count": 100000,
+      "rejected_count": 0,
+      "profile_file": "100000-requests-100-servers.prof",
+      "samples_seconds": [
+        0.3599722919998385,
+        0.36362354200082336,
+        0.3706780829998024
+      ],
+      "median_unprofiled_seconds": 0.36362354200082336,
+      "functions_by_self": [
+        {
+          "file": "src/lbsim/utils/generate_seed.py",
+          "line": 5,
+          "function": "route",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.22563422500000002,
+          "cumulative_seconds": 0.9226683330000001
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 86,
+          "function": "submit",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.128927933,
+          "cumulative_seconds": 0.273525788
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'sort' of 'list' objects>",
+          "calls": 200000,
+          "primitive_calls": 200000,
+          "self_seconds": 0.090442801,
+          "cumulative_seconds": 0.090442801
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 106,
+          "function": "complete",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.065931328,
+          "cumulative_seconds": 0.14528876100000002
+        },
+        {
+          "file": "src/lbsim/metrics.py",
+          "line": 9,
+          "function": "summarize",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.051444084,
+          "cumulative_seconds": 0.10081166600000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 300001,
+          "primitive_calls": 300001,
+          "self_seconds": 0.048893848000000004,
+          "cumulative_seconds": 0.077034633
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'append' of 'list' objects>",
+          "calls": 600000,
+          "primitive_calls": 600000,
+          "self_seconds": 0.033719861000000004,
+          "cumulative_seconds": 0.033719861000000004
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 68,
+          "function": "running",
+          "calls": 200000,
+          "primitive_calls": 200000,
+          "self_seconds": 0.032925568,
+          "cumulative_seconds": 0.044116028
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method math.isfinite>",
+          "calls": 800005,
+          "primitive_calls": 800005,
+          "self_seconds": 0.030879777,
+          "cumulative_seconds": 0.030879777
+        },
+        {
+          "file": "<string>",
+          "line": 2,
+          "function": "__init__",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.028290276000000003,
+          "cumulative_seconds": 0.028290276000000003
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 80,
+          "function": "_execution",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.026285777000000003,
+          "cumulative_seconds": 0.058948464000000006
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'values' of 'dict' objects>",
+          "calls": 400001,
+          "primitive_calls": 400001,
+          "self_seconds": 0.024333027,
+          "cumulative_seconds": 0.024333027
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.len>",
+          "calls": 500007,
+          "primitive_calls": 500007,
+          "self_seconds": 0.022831171,
+          "cumulative_seconds": 0.022831171
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 15,
+          "function": "__post_init__",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.020859815,
+          "cumulative_seconds": 0.030827429000000003
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 76,
+          "function": "_check_time",
+          "calls": 200000,
+          "primitive_calls": 200000,
+          "self_seconds": 0.019683184000000003,
+          "cumulative_seconds": 0.02841772
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 72,
+          "function": "waiting",
+          "calls": 200000,
+          "primitive_calls": 200000,
+          "self_seconds": 0.018037973000000002,
+          "cumulative_seconds": 0.018037973000000002
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 113,
+          "function": "<genexpr>",
+          "calls": 200000,
+          "primitive_calls": 200000,
+          "self_seconds": 0.014433644,
+          "cumulative_seconds": 0.014433644
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.max>",
+          "calls": 200000,
+          "primitive_calls": 200000,
+          "self_seconds": 0.013649900000000001,
+          "cumulative_seconds": 0.013649900000000001
+        },
+        {
+          "file": "/opt/homebrew/Caskroom/miniconda/base/lib/python3.12/random.py",
+          "line": 494,
+          "function": "uniform",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.009852227,
+          "cumulative_seconds": 0.015705687
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 90,
+          "function": "<genexpr>",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.008608287000000001,
+          "cumulative_seconds": 0.008608287000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'pop' of 'list' objects>",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.007962796000000001,
+          "cumulative_seconds": 0.007962796000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'get' of 'dict' objects>",
+          "calls": 100009,
+          "primitive_calls": 100009,
+          "self_seconds": 0.007792214,
+          "cumulative_seconds": 0.007792214
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.min>",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.007390595000000001,
+          "cumulative_seconds": 0.007390595000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'popleft' of 'collections.deque' objects>",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.007208478000000001,
+          "cumulative_seconds": 0.007208478000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'random' of '_random.Random' objects>",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.00585346,
+          "cumulative_seconds": 0.00585346
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'append' of 'collections.deque' objects>",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.005204182,
+          "cumulative_seconds": 0.005204182
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 92,
+          "function": "<genexpr>",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.005091729000000001,
+          "cumulative_seconds": 0.005091729000000001
+        },
+        {
+          "file": "src/lbsim/simulation.py",
+          "line": 8,
+          "function": "run_simulation",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.005041834,
+          "cumulative_seconds": 1.0285309580000002
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method math.fsum>",
+          "calls": 101,
+          "primitive_calls": 101,
+          "self_seconds": 0.001278573,
+          "cumulative_seconds": 0.001278573
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 48,
+          "function": "__init__",
+          "calls": 100,
+          "primitive_calls": 100,
+          "self_seconds": 8.6921e-05,
+          "cumulative_seconds": 8.6921e-05
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'disable' of '_lsprof.Profiler' objects>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 2.5750000000000002e-05,
+          "cumulative_seconds": 2.5750000000000002e-05
+        },
+        {
+          "file": "src/lbsim/settings.py",
+          "line": 8,
+          "function": "validate_config",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 7.418000000000001e-06,
+          "cumulative_seconds": 9.125e-06
+        },
+        {
+          "file": "src/lbsim/metrics.py",
+          "line": 18,
+          "function": "<genexpr>",
+          "calls": 101,
+          "primitive_calls": 101,
+          "self_seconds": 7.125e-06,
+          "cumulative_seconds": 7.125e-06
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<function Random.seed at 0x10593da80>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 5.916000000000001e-06,
+          "cumulative_seconds": 5.916000000000001e-06
+        },
+        {
+          "file": "/opt/homebrew/Caskroom/miniconda/base/lib/python3.12/random.py",
+          "line": 135,
+          "function": "seed",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 4.084e-06,
+          "cumulative_seconds": 1.0333000000000001e-05
+        },
+        {
+          "file": "/opt/homebrew/Caskroom/miniconda/base/lib/python3.12/random.py",
+          "line": 126,
+          "function": "__init__",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 2.167e-06,
+          "cumulative_seconds": 1.25e-05
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.isinstance>",
+          "calls": 2,
+          "primitive_calls": 2,
+          "self_seconds": 3.3300000000000003e-07,
+          "cumulative_seconds": 3.3300000000000003e-07
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method math.ceil>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 3.3300000000000003e-07,
+          "cumulative_seconds": 3.3300000000000003e-07
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'items' of 'dict' objects>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 2.92e-07,
+          "cumulative_seconds": 2.92e-07
+        }
+      ],
+      "functions_by_cumulative": [
+        {
+          "file": "src/lbsim/simulation.py",
+          "line": 8,
+          "function": "run_simulation",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.005041834,
+          "cumulative_seconds": 1.0285309580000002
+        },
+        {
+          "file": "src/lbsim/utils/generate_seed.py",
+          "line": 5,
+          "function": "route",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.22563422500000002,
+          "cumulative_seconds": 0.9226683330000001
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 86,
+          "function": "submit",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.128927933,
+          "cumulative_seconds": 0.273525788
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 106,
+          "function": "complete",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.065931328,
+          "cumulative_seconds": 0.14528876100000002
+        },
+        {
+          "file": "src/lbsim/metrics.py",
+          "line": 9,
+          "function": "summarize",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.051444084,
+          "cumulative_seconds": 0.10081166600000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'sort' of 'list' objects>",
+          "calls": 200000,
+          "primitive_calls": 200000,
+          "self_seconds": 0.090442801,
+          "cumulative_seconds": 0.090442801
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 300001,
+          "primitive_calls": 300001,
+          "self_seconds": 0.048893848000000004,
+          "cumulative_seconds": 0.077034633
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 80,
+          "function": "_execution",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.026285777000000003,
+          "cumulative_seconds": 0.058948464000000006
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 68,
+          "function": "running",
+          "calls": 200000,
+          "primitive_calls": 200000,
+          "self_seconds": 0.032925568,
+          "cumulative_seconds": 0.044116028
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'append' of 'list' objects>",
+          "calls": 600000,
+          "primitive_calls": 600000,
+          "self_seconds": 0.033719861000000004,
+          "cumulative_seconds": 0.033719861000000004
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method math.isfinite>",
+          "calls": 800005,
+          "primitive_calls": 800005,
+          "self_seconds": 0.030879777,
+          "cumulative_seconds": 0.030879777
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 15,
+          "function": "__post_init__",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.020859815,
+          "cumulative_seconds": 0.030827429000000003
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 76,
+          "function": "_check_time",
+          "calls": 200000,
+          "primitive_calls": 200000,
+          "self_seconds": 0.019683184000000003,
+          "cumulative_seconds": 0.02841772
+        },
+        {
+          "file": "<string>",
+          "line": 2,
+          "function": "__init__",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.028290276000000003,
+          "cumulative_seconds": 0.028290276000000003
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'values' of 'dict' objects>",
+          "calls": 400001,
+          "primitive_calls": 400001,
+          "self_seconds": 0.024333027,
+          "cumulative_seconds": 0.024333027
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.len>",
+          "calls": 500007,
+          "primitive_calls": 500007,
+          "self_seconds": 0.022831171,
+          "cumulative_seconds": 0.022831171
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 72,
+          "function": "waiting",
+          "calls": 200000,
+          "primitive_calls": 200000,
+          "self_seconds": 0.018037973000000002,
+          "cumulative_seconds": 0.018037973000000002
+        },
+        {
+          "file": "/opt/homebrew/Caskroom/miniconda/base/lib/python3.12/random.py",
+          "line": 494,
+          "function": "uniform",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.009852227,
+          "cumulative_seconds": 0.015705687
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 113,
+          "function": "<genexpr>",
+          "calls": 200000,
+          "primitive_calls": 200000,
+          "self_seconds": 0.014433644,
+          "cumulative_seconds": 0.014433644
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.max>",
+          "calls": 200000,
+          "primitive_calls": 200000,
+          "self_seconds": 0.013649900000000001,
+          "cumulative_seconds": 0.013649900000000001
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 90,
+          "function": "<genexpr>",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.008608287000000001,
+          "cumulative_seconds": 0.008608287000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'pop' of 'list' objects>",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.007962796000000001,
+          "cumulative_seconds": 0.007962796000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'get' of 'dict' objects>",
+          "calls": 100009,
+          "primitive_calls": 100009,
+          "self_seconds": 0.007792214,
+          "cumulative_seconds": 0.007792214
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.min>",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.007390595000000001,
+          "cumulative_seconds": 0.007390595000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'popleft' of 'collections.deque' objects>",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.007208478000000001,
+          "cumulative_seconds": 0.007208478000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'random' of '_random.Random' objects>",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.00585346,
+          "cumulative_seconds": 0.00585346
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'append' of 'collections.deque' objects>",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.005204182,
+          "cumulative_seconds": 0.005204182
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 92,
+          "function": "<genexpr>",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.005091729000000001,
+          "cumulative_seconds": 0.005091729000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method math.fsum>",
+          "calls": 101,
+          "primitive_calls": 101,
+          "self_seconds": 0.001278573,
+          "cumulative_seconds": 0.001278573
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 48,
+          "function": "__init__",
+          "calls": 100,
+          "primitive_calls": 100,
+          "self_seconds": 8.6921e-05,
+          "cumulative_seconds": 8.6921e-05
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'disable' of '_lsprof.Profiler' objects>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 2.5750000000000002e-05,
+          "cumulative_seconds": 2.5750000000000002e-05
+        },
+        {
+          "file": "/opt/homebrew/Caskroom/miniconda/base/lib/python3.12/random.py",
+          "line": 126,
+          "function": "__init__",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 2.167e-06,
+          "cumulative_seconds": 1.25e-05
+        },
+        {
+          "file": "/opt/homebrew/Caskroom/miniconda/base/lib/python3.12/random.py",
+          "line": 135,
+          "function": "seed",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 4.084e-06,
+          "cumulative_seconds": 1.0333000000000001e-05
+        },
+        {
+          "file": "src/lbsim/settings.py",
+          "line": 8,
+          "function": "validate_config",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 7.418000000000001e-06,
+          "cumulative_seconds": 9.125e-06
+        },
+        {
+          "file": "src/lbsim/metrics.py",
+          "line": 18,
+          "function": "<genexpr>",
+          "calls": 101,
+          "primitive_calls": 101,
+          "self_seconds": 7.125e-06,
+          "cumulative_seconds": 7.125e-06
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<function Random.seed at 0x10593da80>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 5.916000000000001e-06,
+          "cumulative_seconds": 5.916000000000001e-06
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.isinstance>",
+          "calls": 2,
+          "primitive_calls": 2,
+          "self_seconds": 3.3300000000000003e-07,
+          "cumulative_seconds": 3.3300000000000003e-07
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method math.ceil>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 3.3300000000000003e-07,
+          "cumulative_seconds": 3.3300000000000003e-07
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'items' of 'dict' objects>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 2.92e-07,
+          "cumulative_seconds": 2.92e-07
+        }
+      ]
+    },
+    {
+      "config": {
+        "concurrency": 1,
+        "queue_limit": 10,
+        "policy": "round_robin",
+        "arrival_rate": 100.0,
+        "duration": 1000.0,
+        "service_min": 0.1,
+        "service_max": 1.0,
+        "seed": 42,
+        "server_count": 1000
+      },
+      "elapsed_seconds": 1.0355368339996858,
+      "summary_sha256": "d627ab86d225105059d5c85a5ffb40cc9519d731f320bd9c9b23ee4cbe2b0fbc",
+      "event_count": 200000,
+      "completed_count": 100000,
+      "rejected_count": 0,
+      "profile_file": "100000-requests-1000-servers.prof",
+      "samples_seconds": [
+        0.38457800000014686,
+        0.38072100000044884,
+        0.3896280419994582
+      ],
+      "median_unprofiled_seconds": 0.38457800000014686,
+      "functions_by_self": [
+        {
+          "file": "src/lbsim/utils/generate_seed.py",
+          "line": 5,
+          "function": "route",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.22563252600000003,
+          "cumulative_seconds": 0.9205276670000001
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 86,
+          "function": "submit",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.11865392000000001,
+          "cumulative_seconds": 0.26176710200000003
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'sort' of 'list' objects>",
+          "calls": 200000,
+          "primitive_calls": 200000,
+          "self_seconds": 0.090717776,
+          "cumulative_seconds": 0.090717776
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 106,
+          "function": "complete",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.076128684,
+          "cumulative_seconds": 0.15472961200000002
+        },
+        {
+          "file": "src/lbsim/metrics.py",
+          "line": 9,
+          "function": "summarize",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.055749769000000005,
+          "cumulative_seconds": 0.106270792
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 300001,
+          "primitive_calls": 300001,
+          "self_seconds": 0.048111156,
+          "cumulative_seconds": 0.07557664600000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'append' of 'list' objects>",
+          "calls": 600000,
+          "primitive_calls": 600000,
+          "self_seconds": 0.033979468,
+          "cumulative_seconds": 0.033979468
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 68,
+          "function": "running",
+          "calls": 200000,
+          "primitive_calls": 200000,
+          "self_seconds": 0.032498119,
+          "cumulative_seconds": 0.044088029
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method math.isfinite>",
+          "calls": 800005,
+          "primitive_calls": 800005,
+          "self_seconds": 0.030970539000000002,
+          "cumulative_seconds": 0.030970539000000002
+        },
+        {
+          "file": "<string>",
+          "line": 2,
+          "function": "__init__",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.027135593000000003,
+          "cumulative_seconds": 0.027135593000000003
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 80,
+          "function": "_execution",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.027096259,
+          "cumulative_seconds": 0.05851693300000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'values' of 'dict' objects>",
+          "calls": 400001,
+          "primitive_calls": 400001,
+          "self_seconds": 0.024639797,
+          "cumulative_seconds": 0.024639797
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.len>",
+          "calls": 500007,
+          "primitive_calls": 500007,
+          "self_seconds": 0.02295047,
+          "cumulative_seconds": 0.02295047
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 15,
+          "function": "__post_init__",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.020657271,
+          "cumulative_seconds": 0.030616484000000003
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 76,
+          "function": "_check_time",
+          "calls": 200000,
+          "primitive_calls": 200000,
+          "self_seconds": 0.020521280000000003,
+          "cumulative_seconds": 0.029084314000000003
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 72,
+          "function": "waiting",
+          "calls": 200000,
+          "primitive_calls": 200000,
+          "self_seconds": 0.01775654,
+          "cumulative_seconds": 0.01775654
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 113,
+          "function": "<genexpr>",
+          "calls": 200000,
+          "primitive_calls": 200000,
+          "self_seconds": 0.014025737000000002,
+          "cumulative_seconds": 0.014025737000000002
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.max>",
+          "calls": 200000,
+          "primitive_calls": 200000,
+          "self_seconds": 0.013770349000000001,
+          "cumulative_seconds": 0.013770349000000001
+        },
+        {
+          "file": "/opt/homebrew/Caskroom/miniconda/base/lib/python3.12/random.py",
+          "line": 494,
+          "function": "uniform",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.009589822000000001,
+          "cumulative_seconds": 0.015544017
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 90,
+          "function": "<genexpr>",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.00837745,
+          "cumulative_seconds": 0.00837745
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'pop' of 'list' objects>",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.008088506,
+          "cumulative_seconds": 0.008088506
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'get' of 'dict' objects>",
+          "calls": 100009,
+          "primitive_calls": 100009,
+          "self_seconds": 0.007884998,
+          "cumulative_seconds": 0.007884998
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.min>",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.0076159290000000004,
+          "cumulative_seconds": 0.0076159290000000004
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'popleft' of 'collections.deque' objects>",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.007072987,
+          "cumulative_seconds": 0.007072987
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'random' of '_random.Random' objects>",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.005954195000000001,
+          "cumulative_seconds": 0.005954195000000001
+        },
+        {
+          "file": "src/lbsim/simulation.py",
+          "line": 8,
+          "function": "run_simulation",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.005474125000000001,
+          "cumulative_seconds": 1.0322800840000002
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'append' of 'collections.deque' objects>",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.005249486,
+          "cumulative_seconds": 0.005249486
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 92,
+          "function": "<genexpr>",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.005010843,
+          "cumulative_seconds": 0.005010843
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method math.fsum>",
+          "calls": 1001,
+          "primitive_calls": 1001,
+          "self_seconds": 0.001313202,
+          "cumulative_seconds": 0.001313202
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 48,
+          "function": "__init__",
+          "calls": 1000,
+          "primitive_calls": 1000,
+          "self_seconds": 0.000397107,
+          "cumulative_seconds": 0.000397107
+        },
+        {
+          "file": "src/lbsim/metrics.py",
+          "line": 18,
+          "function": "<genexpr>",
+          "calls": 1001,
+          "primitive_calls": 1001,
+          "self_seconds": 5.1460000000000005e-05,
+          "cumulative_seconds": 5.1460000000000005e-05
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'disable' of '_lsprof.Profiler' objects>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 1.7084e-05,
+          "cumulative_seconds": 1.7084e-05
+        },
+        {
+          "file": "src/lbsim/settings.py",
+          "line": 8,
+          "function": "validate_config",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 6.042000000000001e-06,
+          "cumulative_seconds": 7.5e-06
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<function Random.seed at 0x105b29a80>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 5.3330000000000004e-06,
+          "cumulative_seconds": 5.3330000000000004e-06
+        },
+        {
+          "file": "/opt/homebrew/Caskroom/miniconda/base/lib/python3.12/random.py",
+          "line": 135,
+          "function": "seed",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 3.1670000000000003e-06,
+          "cumulative_seconds": 8.833e-06
+        },
+        {
+          "file": "/opt/homebrew/Caskroom/miniconda/base/lib/python3.12/random.py",
+          "line": 126,
+          "function": "__init__",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 1.917e-06,
+          "cumulative_seconds": 1.075e-05
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method math.ceil>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 4.16e-07,
+          "cumulative_seconds": 4.16e-07
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.isinstance>",
+          "calls": 2,
+          "primitive_calls": 2,
+          "self_seconds": 3.3300000000000003e-07,
+          "cumulative_seconds": 3.3300000000000003e-07
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'items' of 'dict' objects>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 2.08e-07,
+          "cumulative_seconds": 2.08e-07
+        }
+      ],
+      "functions_by_cumulative": [
+        {
+          "file": "src/lbsim/simulation.py",
+          "line": 8,
+          "function": "run_simulation",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.005474125000000001,
+          "cumulative_seconds": 1.0322800840000002
+        },
+        {
+          "file": "src/lbsim/utils/generate_seed.py",
+          "line": 5,
+          "function": "route",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.22563252600000003,
+          "cumulative_seconds": 0.9205276670000001
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 86,
+          "function": "submit",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.11865392000000001,
+          "cumulative_seconds": 0.26176710200000003
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 106,
+          "function": "complete",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.076128684,
+          "cumulative_seconds": 0.15472961200000002
+        },
+        {
+          "file": "src/lbsim/metrics.py",
+          "line": 9,
+          "function": "summarize",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.055749769000000005,
+          "cumulative_seconds": 0.106270792
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'sort' of 'list' objects>",
+          "calls": 200000,
+          "primitive_calls": 200000,
+          "self_seconds": 0.090717776,
+          "cumulative_seconds": 0.090717776
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 300001,
+          "primitive_calls": 300001,
+          "self_seconds": 0.048111156,
+          "cumulative_seconds": 0.07557664600000001
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 80,
+          "function": "_execution",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.027096259,
+          "cumulative_seconds": 0.05851693300000001
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 68,
+          "function": "running",
+          "calls": 200000,
+          "primitive_calls": 200000,
+          "self_seconds": 0.032498119,
+          "cumulative_seconds": 0.044088029
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'append' of 'list' objects>",
+          "calls": 600000,
+          "primitive_calls": 600000,
+          "self_seconds": 0.033979468,
+          "cumulative_seconds": 0.033979468
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method math.isfinite>",
+          "calls": 800005,
+          "primitive_calls": 800005,
+          "self_seconds": 0.030970539000000002,
+          "cumulative_seconds": 0.030970539000000002
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 15,
+          "function": "__post_init__",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.020657271,
+          "cumulative_seconds": 0.030616484000000003
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 76,
+          "function": "_check_time",
+          "calls": 200000,
+          "primitive_calls": 200000,
+          "self_seconds": 0.020521280000000003,
+          "cumulative_seconds": 0.029084314000000003
+        },
+        {
+          "file": "<string>",
+          "line": 2,
+          "function": "__init__",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.027135593000000003,
+          "cumulative_seconds": 0.027135593000000003
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'values' of 'dict' objects>",
+          "calls": 400001,
+          "primitive_calls": 400001,
+          "self_seconds": 0.024639797,
+          "cumulative_seconds": 0.024639797
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.len>",
+          "calls": 500007,
+          "primitive_calls": 500007,
+          "self_seconds": 0.02295047,
+          "cumulative_seconds": 0.02295047
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 72,
+          "function": "waiting",
+          "calls": 200000,
+          "primitive_calls": 200000,
+          "self_seconds": 0.01775654,
+          "cumulative_seconds": 0.01775654
+        },
+        {
+          "file": "/opt/homebrew/Caskroom/miniconda/base/lib/python3.12/random.py",
+          "line": 494,
+          "function": "uniform",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.009589822000000001,
+          "cumulative_seconds": 0.015544017
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 113,
+          "function": "<genexpr>",
+          "calls": 200000,
+          "primitive_calls": 200000,
+          "self_seconds": 0.014025737000000002,
+          "cumulative_seconds": 0.014025737000000002
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.max>",
+          "calls": 200000,
+          "primitive_calls": 200000,
+          "self_seconds": 0.013770349000000001,
+          "cumulative_seconds": 0.013770349000000001
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 90,
+          "function": "<genexpr>",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.00837745,
+          "cumulative_seconds": 0.00837745
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'pop' of 'list' objects>",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.008088506,
+          "cumulative_seconds": 0.008088506
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'get' of 'dict' objects>",
+          "calls": 100009,
+          "primitive_calls": 100009,
+          "self_seconds": 0.007884998,
+          "cumulative_seconds": 0.007884998
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.min>",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.0076159290000000004,
+          "cumulative_seconds": 0.0076159290000000004
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'popleft' of 'collections.deque' objects>",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.007072987,
+          "cumulative_seconds": 0.007072987
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'random' of '_random.Random' objects>",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.005954195000000001,
+          "cumulative_seconds": 0.005954195000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'append' of 'collections.deque' objects>",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.005249486,
+          "cumulative_seconds": 0.005249486
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 92,
+          "function": "<genexpr>",
+          "calls": 100000,
+          "primitive_calls": 100000,
+          "self_seconds": 0.005010843,
+          "cumulative_seconds": 0.005010843
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method math.fsum>",
+          "calls": 1001,
+          "primitive_calls": 1001,
+          "self_seconds": 0.001313202,
+          "cumulative_seconds": 0.001313202
+        },
+        {
+          "file": "src/lbsim/server.py",
+          "line": 48,
+          "function": "__init__",
+          "calls": 1000,
+          "primitive_calls": 1000,
+          "self_seconds": 0.000397107,
+          "cumulative_seconds": 0.000397107
+        },
+        {
+          "file": "src/lbsim/metrics.py",
+          "line": 18,
+          "function": "<genexpr>",
+          "calls": 1001,
+          "primitive_calls": 1001,
+          "self_seconds": 5.1460000000000005e-05,
+          "cumulative_seconds": 5.1460000000000005e-05
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'disable' of '_lsprof.Profiler' objects>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 1.7084e-05,
+          "cumulative_seconds": 1.7084e-05
+        },
+        {
+          "file": "/opt/homebrew/Caskroom/miniconda/base/lib/python3.12/random.py",
+          "line": 126,
+          "function": "__init__",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 1.917e-06,
+          "cumulative_seconds": 1.075e-05
+        },
+        {
+          "file": "/opt/homebrew/Caskroom/miniconda/base/lib/python3.12/random.py",
+          "line": 135,
+          "function": "seed",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 3.1670000000000003e-06,
+          "cumulative_seconds": 8.833e-06
+        },
+        {
+          "file": "src/lbsim/settings.py",
+          "line": 8,
+          "function": "validate_config",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 6.042000000000001e-06,
+          "cumulative_seconds": 7.5e-06
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<function Random.seed at 0x105b29a80>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 5.3330000000000004e-06,
+          "cumulative_seconds": 5.3330000000000004e-06
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method math.ceil>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 4.16e-07,
+          "cumulative_seconds": 4.16e-07
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.isinstance>",
+          "calls": 2,
+          "primitive_calls": 2,
+          "self_seconds": 3.3300000000000003e-07,
+          "cumulative_seconds": 3.3300000000000003e-07
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'items' of 'dict' objects>",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 2.08e-07,
+          "cumulative_seconds": 2.08e-07
+        }
+      ]
+    }
+  ]
+}

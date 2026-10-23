@@ -1,4 +1,5 @@
 import random
+from collections import deque
 from lbsim.server import Request, Server
 
 def route(server_count: int, concurrency: int, queue_limit: int, policy: str, arrival_rate: float, duration: float, service_min: float, service_max: float, seed: int, events: list | None = None):
@@ -10,7 +11,7 @@ def route(server_count: int, concurrency: int, queue_limit: int, policy: str, ar
         server_map[i] = Server(i, concurrency, queue_limit, None, None)
 
     # Pre-store all requests
-    requests = []
+    requests = deque()
     total_requests = int(arrival_rate * duration)
     for request_id in range(total_requests):
         # Increment arrival time by a fixed amount
@@ -55,7 +56,7 @@ def route(server_count: int, concurrency: int, queue_limit: int, policy: str, ar
         else:
             # If the next arrival happens before the next completion, process that
             now = next_arrival
-            req = requests.pop(0)
+            req = requests.popleft()
             
             # Routing policy logic
             if policy == "round_robin":
