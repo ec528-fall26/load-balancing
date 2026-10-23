@@ -1,9 +1,15 @@
-# Design Document
+# Demo 3 design document: load balancing simulator
 
-## Load balancing simulator: implemented design
+This document covers the implemented D3-01 through D3-07 feature set: two routing
+policies, paired policy experiments, saved-run export/replay/comparison, and the
+profiled deque improvement. It completes the D3-08 design-document scope using
+recorded evidence rather than assumed future outcomes. The submitted Demo 2
+snapshot remains on `demo-2`; it does not contain the full Demo 3 feature set.
 
-Development update for Demo 3: least-active-requests is now available on `dev`.
-The submitted Demo 2 version is preserved on the `demo-2` branch.
+The implemented source and policy-study artifacts used for this document are
+available at revision `9af5b0c8ba7db6f01da4a4a38d05f789e198d78c`.
+Earlier captures identify their own source hashes and environments. Publication
+or review status on the board is separate from the implementation described here.
 
 ## 1. Architecture
 
@@ -25,6 +31,12 @@ flowchart TD
     Summary --> App
     App --> Results[results.py: metrics and charts]
     Results --> Replay[datacenter.py and playback.py: recorded-event display]
+    App --> Export[exports.py: versioned JSON and CSV]
+    Upload[Uploaded configuration JSON] --> Saved[saved_runs.py: validate and verify]
+    Saved --> Simulation
+    Saved --> App
+    CSV[Two uploaded results CSVs] --> Compare[comparison.py: validated saved metrics]
+    Compare --> App
 ```
 
 | Module | Responsibility |
@@ -37,7 +49,17 @@ flowchart TD
 | `metrics.py` | Outcome counts, mean/p95 latency and per-server utilization. |
 | `results.py` | Overview charts, metric cards and server details. |
 | `datacenter.py`, `playback.py` | Server panels and recorded playback with time controls. |
+| `exports.py` | Deterministic version-one configuration JSON, results CSV and shared metrics fingerprint. |
+| `saved_runs.py` | Parse/validate saved files and verify regenerated metrics before accepting replay. |
+| `comparison.py` | Read-only panels for two result sets, configuration differences and per-server values. |
 | `experiments/scale_benchmark.py` | Fresh-process runtime/memory measurements, workload verification and saved evidence. |
+| `experiments/compare_policies.py` | Paired low/near/overload/+20% workloads over three seeds, with recorded traces and validation. |
+| `experiments/profile_engine.py`, `compare_profiles.py` | Fresh-process profiling and matched before/after timing/output checks. |
+
+The configuration-upload path runs only after the user explicitly requests a
+replay. CSV comparison reads already-computed results and never invokes the
+simulation. In-session event playback simply advances through an existing log;
+configuration replay regenerates a simulation and a new event log.
 
 ### Configuration and lifecycle
 
@@ -66,6 +88,14 @@ A free slot starts work. Otherwise the selected server queues it in FIFO order
 if space exists, or rejects it. There is no retry or alternate-server attempt.
 Completion frees a slot and immediately starts the oldest queued request; the
 engine schedules that request's completion.
+
+Least-active-requests instead selects the minimum `(running_count, server_id)`
+before each arrival. Admission and every completion/queue promotion update the
+in-memory state used by the next decision. Queue lengths are deliberately absent
+from the signal. When all one-slot servers are busy, their running counts tie,
+so the lowest-ID server can receive more work despite an already-full queue.
+Neither policy retries a different target after rejection. This is the defined
+basic load-feedback policy, not a general claim of optimal load balancing.
 
 Completions precede arrivals at equal timestamps. Pending completions sort by
 `(completion_time, server_id, request_id)`, breaking completion ties by server ID
@@ -121,9 +151,20 @@ Tests and the benchmark check these properties.
 - **Recorded playback:** replay changes the display clock using saved events;
   it does not re-route requests or change metrics.
 
-No failed design experiment or optimization result is claimed here. The engine
-uses Python lists, front removals and repeated sorting of pending completions.
-The measured baseline is not presented as optimized.
+- **Explicit load signal and ties:** fewest running requests and smallest-ID
+  tie-breaking make policy decisions deterministic. Including queues, rotating
+  ties or skipping full targets would change the policy definition. The measured
+  admission/latency tradeoff is documented in Experiment 6; those alternatives
+  are not silently introduced to improve its results.
+- **Versioned portable files:** configuration/seed and schema version live in
+  JSON; global metrics and all server utilizations live in CSV. A shared content
+  fingerprint links them without relying on a server database. Replay checks
+  exported metrics before changing active results; comparison leaves them intact.
+- **Narrow measured optimization:** pending arrivals use `collections.deque`
+  and `popleft()` rather than a list and `pop(0)`. The entire workload is still
+  generated first; the completion list, policies, admission and event order are
+  unchanged. Profiling suggested the issue, and matched output fingerprints plus
+  unprofiled timings establish the measured improvement (Experiments 3 and 4).
 
 ## 3. Setup
 
@@ -152,15 +193,19 @@ Open a new terminal so uv is on `PATH`. From a parent directory where you want
 the checkout, run these commands (PowerShell or Bash):
 
 ```sh
-git clone --branch demo-2 https://github.com/ec528-fall26/load-balancing.git
+git clone https://github.com/ec528-fall26/load-balancing.git
 cd load-balancing
+git checkout --detach 9af5b0c8ba7db6f01da4a4a38d05f789e198d78c
 uv sync --locked
 uv run python --version
 uv run python -m unittest discover -s tests -v
 uv run streamlit run src/lbsim/app.py
 ```
 
-For an existing checkout of this version, start at `uv sync --locked` in its
+The pinned checkout includes all source and evidence referenced here and avoids
+accidentally launching the older `demo-2` submission. It is a reproducible source
+snapshot, not a requirement to develop on a detached branch. For an existing
+checkout containing this implementation, start at `uv sync --locked` in its
 repository root. Environment activation and `PYTHONPATH` overrides are unnecessary
 because uv installs the package. Open the printed local URL, usually
 `http://localhost:8501`. Stop with Ctrl+C. If the port is occupied, append
@@ -169,8 +214,7 @@ because uv installs the package. Open the printed local URL, usually
 The existing suite contains 53 tests for validation, lifecycle, routing, metrics,
 UI integration, playback, whole-run correctness, exports, verified replay and
 saved-result comparison. Success ends with `Ran 53 tests` and `OK`.
-Allow roughly 10 seconds for the suite after dependencies are installed;
-the repeat verification took about 3 seconds on the tested Windows machine.
+Allow roughly 10 seconds for the suite after dependencies are installed.
 It runs locally and requires no cloud resources or GPU.
 Streamlit AppTest can print `missing ScriptRunContext` warnings during tests;
 the assertions and final status determine success.
@@ -183,8 +227,8 @@ document's verification.
 
 ### Interface
 
-Enter sidebar settings and select **Run simulation**. Routing is fixed to
-**Round robin**. A successful run replaces results; invalid submitted settings
+Enter sidebar settings, choose **Round robin** or **Least active requests**, and
+select **Run simulation**. A successful run replaces results; invalid submitted settings
 show an error and clear prior results. Editing inputs alone does not run the model.
 
 - **Overview:** outcome bars, completed-request latency histogram with p95, and
@@ -244,6 +288,28 @@ JSON and results as CSV. The files describe the last completed run, including
 when form inputs have been edited but not submitted. CSV contains whole-run
 metrics and one utilization row per server. Empty-run latency cells are blank.
 See [the export format](run-exports.md) for every field and the real-run example.
+
+The saved-run contract is schema version `1`:
+
+| File | Required data and interpretation |
+| --- | --- |
+| Configuration JSON | Top-level `schema_version`, 64-character `run_id`, and `config` containing all nine settings, including policy and integer seed. |
+| Results CSV | `schema_version`, `run_id`, all nine configuration values, generated/completed/rejected counts, mean/p95 response times in seconds, `server_id` and `slot_utilization`. Exactly one row per configured server, including idle servers. |
+
+Global counts and latency repeat in CSV rows and must be read once, not summed.
+Only server ID/utilization vary. Utilization is a fraction, not percent; UI panels
+multiply it by 100. No-completion latency is blank in CSV, rather than zero. All
+files are UTF-8; loaders accept an optional BOM and limit each upload to 5 MiB.
+Missing/extra fields, unsupported versions, inconsistent rows, invalid types,
+duplicate server IDs or changed fingerprints produce errors.
+
+The SHA-256 ID covers schema, configuration and exported metrics. It is
+deterministic rather than an execution timestamp, and is not authentication.
+Files omit original events, individual requests, response-time samples and the
+engine/dependency bundle. Replay regenerates those details using the current
+model and verifies the exported metrics; an original file alone cannot prove
+that an omitted event history is identical. Exact field definitions, accepted
+inputs and example files are in [the saved-run contract](run-exports.md).
 
 ### Reloading and comparing saved runs (D3-04/05)
 
@@ -320,23 +386,32 @@ output directory preserves those reference files.
 
 ### Experiment 3: D3-06 engine profiling
 
-Run `PYTHONPATH=src uv run python experiments/profile_engine.py` from the root.
-It profiles the same round-robin baseline at 10,000 requests and a longer
+Run `uv run python experiments/profile_engine.py --output experiments/results/d3-07-rerun`
+from the repository root. It profiles the current deque implementation at
+10,000 requests and a longer
 100,000-request workload, with 10/100/1,000 servers and three unprofiled timings
 per case. Only the arrival window grows for the longer workload. Allow roughly
 30 seconds locally; each fresh worker has a 120-second timeout. No cloud or GPU
-is needed. Output: `experiments/results/d3-06/report.json`, six raw cProfile files,
-and one printed timing per case.
+is needed. Output: a new `report.json`, six raw cProfile files and one printed
+timing per case. The saved historical pre-change capture is separately preserved
+in [D3-06 report.json](../experiments/results/d3-06/report.json); running the
+current implementation does not recreate that older code.
 
 Profiled and unprofiled runs must produce identical complete-summary fingerprints.
 Each run also checks request conservation and idle final servers. Timing excludes
 imports, startup, hashing and output; profiled times include instrumentation
 cost and must not be compared directly with unprofiled runtime. Saved source
-hashes identify the measured code, including this uncommitted experiment script.
+hashes identify the measured code, including files not yet committed at the time
+of the historical captures.
 
 The [analysis and narrow D3-07 plan](../experiments/results/d3-06/analysis.md)
 identify list front removals as a scaling issue. The saved before-change
-capture remains unchanged; the follow-up measurement is described below.
+capture remains unchanged. At 100 servers, its unprofiled median grew from
+0.0389 to 1.0304 seconds for 10,000 versus 100,000 requests (26.5x for 10x more
+requests). Combined list-pop self time accounted for 37-48% of profiled time in
+the 100,000-request cases. cProfile combines arrival and pending-completion pop
+sites, so this is neither an isolated arrival-pop cost nor a predicted speedup.
+See the [raw pre-change captures and function statistics](../experiments/results/d3-06/report.json).
 
 ### Experiment 4: D3-07 deque improvement
 
@@ -344,19 +419,50 @@ Pending arrivals now use `deque.popleft()` instead of `list.pop(0)`. The entire
 seeded trace is still generated before routing. Completion sorting, routing,
 queue admission and event ordering are unchanged.
 
-Rerun Experiment 3 into `experiments/results/d3-07-rerun`, then compare:
+To reproduce the published calculation from the preserved matching captures:
 
 ```sh
-PYTHONPATH=src uv run python experiments/compare_profiles.py experiments/results/d3-06/report.json experiments/results/d3-07-rerun/report.json --output experiments/results/d3-07-rerun/comparison.json
+uv run python -X utf8 experiments/compare_profiles.py experiments/results/d3-06/report.json experiments/results/d3-07/report.json --output experiments/results/d3-07-comparison-rerun.json
 ```
 
 Comparison takes under a second locally, prints six timing ratios and writes
-comparison.json. It rejects different environments/configurations or full-summary
-fingerprints. See the [saved results](../experiments/results/d3-07/analysis.md).
-The 100,000-request cases improved 2.76–4.31× in these sequential local batches;
-all six complete summaries match the before-change results and all 39 tests pass.
-The result is measured local runtime improvement, not a cloud performance claim,
-a memory bound or evidence that one routing policy is universally faster.
+the specified JSON. `-X utf8` also supports the script's Unicode timing arrows
+on Windows terminals with a legacy default encoding. It checks that the two reports have matching Python,
+platform, architecture, Streamlit, configurations, outcome/event counts and full
+summary fingerprints. It compares unprofiled medians, not instrumented timings.
+Source records: [before](../experiments/results/d3-06/report.json),
+[after](../experiments/results/d3-07/report.json),
+[calculated ratios](../experiments/results/d3-07/comparison.json) and
+[interpretation](../experiments/results/d3-07/analysis.md).
+
+| Requests | Servers | Before median (s) | After median (s) | Before / after |
+| ---: | ---: | ---: | ---: | ---: |
+| 10,000 | 10 | 0.0238 | 0.0186 | 1.28x |
+| 10,000 | 100 | 0.0389 | 0.0343 | 1.14x |
+| 10,000 | 1,000 | 0.0394 | 0.0351 | 1.12x |
+| 100,000 | 10 | 0.8649 | 0.2007 | 4.31x |
+| 100,000 | 100 | 1.0304 | 0.3636 | 2.83x |
+| 100,000 | 1,000 | 1.0615 | 0.3846 | 2.76x |
+
+Each median uses three fresh-process unprofiled runs. Original timing captures
+used macOS arm64, Python 3.12.12 and Streamlit 1.65.0 as recorded in those reports.
+These are matched sequential batches on one machine, not the Windows D2 timing
+environment; do not divide D2 timings by these timings to claim optimization.
+All six complete summaries match before/after. The historical optimization
+validation used 39 tests; the integrated suite now has 53.
+
+Experiment 3 can collect a new after-change report on another machine. Comparing
+that report directly with the original macOS capture will correctly fail the
+environment check if environments differ. To measure a new speedup, collect
+both the list-arrival engine and deque engine with this same profiling script,
+configuration and Python/dependencies on the same machine, using separate output
+directories. The saved source hashes identify the original pair. No new before
+capture or unmeasured speedup is assumed by this document.
+
+Removing arrival-list shifts improves these measured cases, especially the
+larger traces. It does not establish overall linear complexity: completion-list
+front removals/sorting, least-active selection, metrics and full-trace storage
+remain. No memory reduction, cloud throughput or policy-superiority claim follows.
 
 ### Experiment 5: saved configuration replay and side-by-side results
 
@@ -372,7 +478,7 @@ to reproduce the panels. A separate output directory preserves saved evidence.
 ### Experiment 6: D3-02 paired policy comparison
 
 ```sh
-PYTHONPATH=src uv run python experiments/compare_policies.py --output experiments/results/d3-02-rerun
+uv run python experiments/compare_policies.py --output experiments/results/d3-02-rerun
 ```
 
 Run from the repository root; allow a few seconds locally, with no GPU or cloud
@@ -388,17 +494,60 @@ and aggregate. Observed requests must equal the reference for each policy;
 validation also checks state-based target selection, capacity, conservation,
 FIFO, draining and exact agreement with the public API replay.
 
-The [saved results](../experiments/results/d3-02/analysis.md) show no rejections
-at low load, but at near capacity least-active rejects 2.91% on average while
-round-robin rejects none. At overload, least-active completes requests with lower
-mean response time but rejects more (22.50% versus 12.21%). Running-only load and
-lowest-ID ties can send more work to an already-full queue. Neither policy retries
-another target, even when other queues have space. Rejections are excluded from
-latency, so lower completed-request latency alone does not establish superiority.
+The nominal capacity reference is `10 / ((0.1 + 1.0) / 2) = 18.1818` requests/s,
+based on expected service time, not a guarantee of zero rejections. Rates are
+9.0909 (low), 16.3636 (near capacity), 21.8182 (overload), and 19.6364 requests/s
+(near capacity increased by 20%). The last case is an independent run at 108% of
+nominal capacity, not a traffic spike during a continuous simulation. Exact
+floating-point rates/configurations are preserved in the report.
 
-The report describes three-seed variation; averaged per-run p95 is not a pooled
-percentile. This is one model/fleet/workload family, not a general policy ranking.
-It does not implement bursty traffic, continuous execution, failures or retries.
+#### Policy results and variation
+
+Sources: [per-run samples](../experiments/results/d3-02/samples.csv),
+[aggregates and configurations](../experiments/results/d3-02/report.json),
+[per-server utilization](../experiments/results/d3-02/server-utilization.csv),
+[trace files](../experiments/results/d3-02/traces/low-seed-42.csv) (all twelve are
+listed by the report), and [analysis](../experiments/results/d3-02/analysis.md).
+Each row below averages the three seed results. Ranges are seed minima/maxima,
+not confidence intervals. SD is the sample deviation of the three seed means.
+The p95 column averages per-run p95s; it is not a pooled request percentile.
+
+| Scenario | Policy | Rejected %, mean [range] | Mean response s, mean +/- SD | Per-run p95 s, mean [range] | Mean utilization % |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Low | Round-robin | 0.00 [0.00-0.00] | 0.546 +/- 0.010 | 0.953 [0.947-0.962] | 49.45 |
+| Low | Least-active | 0.00 [0.00-0.00] | 0.546 +/- 0.010 | 0.953 [0.947-0.962] | 49.45 |
+| Near capacity | Round-robin | 0.00 [0.00-0.00] | 0.952 +/- 0.042 | 2.126 [2.023-2.237] | 88.97 |
+| Near capacity | Least-active | 2.91 [2.69-3.36] | 1.048 +/- 0.015 | 5.235 [5.137-5.291] | 86.23 |
+| Overload | Round-robin | 12.21 [11.55-13.20] | 4.740 +/- 0.141 | 6.912 [6.797-7.084] | 99.50 |
+| Overload | Least-active | 22.50 [21.50-23.89] | 1.135 +/- 0.014 | 6.001 [5.924-6.059] | 92.23 |
+| Near +20% | Round-robin | 3.65 [3.06-4.58] | 3.720 +/- 0.205 | 6.474 [6.385-6.615] | 98.88 |
+| Near +20% | Least-active | 15.44 [14.42-16.40] | 1.124 +/- 0.014 | 5.891 [5.771-5.962] | 90.54 |
+
+At low load both accept every request with zero waiting and matching response
+metrics. Aggregate utilization hides imbalance: the mean across seeds of
+population server-utilization SD is 0.0254 for round-robin and 0.3463 for
+least-active, in fraction units. Idle-server ties favor low IDs, concentrating
+light traffic. Those exact per-seed values are in the utilization/report sources.
+
+Near capacity, round-robin rejects none; least-active rejects 2.91% on average
+and has worse mean/p95 latency. A running-only count ignores queued work. When
+all one-slot servers are busy, every count is one and the lowest-ID tie funnels
+new arrivals toward server 0 even if its queue is full.
+
+Under overload and near +20%, least-active has lower completed-request mean
+latency but rejects substantially more work. Rejected requests have no response
+time in these statistics, so this is an admission/latency tradeoff, not an
+overall win. In the saved dataset every rejection occurs while another queue
+has waiting room, for both policies; `rejected_with_other_queue_space` in the
+per-run samples records the check. Neither policy retries another target.
+
+The experiment therefore supports reporting latency, rejection and utilization
+together. It does not justify changing the agreed policy or claiming a universal
+ranking. Three seeds, one fleet/service distribution and regular arrivals give
+descriptive variation, not statistical significance. No CPU-runtime comparison
+between policies, bursty traffic, continuous execution, failures or retries is
+measured here. Historical study metadata records macOS arm64 and Python 3.12.12;
+deterministic results can be checked separately from machine-dependent timings.
 
 ## 5. Claims and limitations
 
@@ -423,9 +572,34 @@ playback and a reproducible local baseline.
   timing depends on execution and browser load. Short events can fall between
   frames, while replay counts process every event. Racks are display organization,
   not topology.
-- The engine stores the workload/event log in memory and uses list front removals
-  and completion sorting. There is no resource cap for arbitrary configurations;
+- The engine retains the complete workload/event log. Arrivals use a deque,
+  but pending completions still use list front removals and sorting. There is no
+  resource cap for arbitrary configurations;
   large runs can block the synchronous UI or exhaust RAM.
-- The baseline covers one seed/workload and three repetitions on one machine.
-  It establishes local measurements, not cloud performance, production guarantees,
-  optimized complexity or a general scalability bound.
+- The D2 scale baseline and deque timings each use one seed/workload family and
+  three timing repetitions per case on their recorded machines. D3-02 uses three
+  seeds but one fleet/service distribution. Neither dataset establishes cloud
+  performance, production guarantees, optimized complexity or general policy rankings.
+
+## 6. Evidence coverage and verification
+
+| Completed implementation scope | Evidence/reproduction entry |
+| --- | --- |
+| D3-01: state-based policy | [Policy definition](simulation-model.md), [policy tests](../tests/test_policies.py); shared lifecycle and exact events are checked by the suite. |
+| D3-02: paired policy study | Experiment 6, its 24 per-run samples, three-seed aggregates and twelve paired traces. |
+| D3-03: exports | Experiment 2 and the [version-one file contract](run-exports.md). |
+| D3-04/05: replay and comparison | Experiment 5, the [saved verification report](../experiments/results/d3-04-05/verification.json), and [loader/UI tests](../tests/test_saved_runs.py). |
+| D3-06/07: diagnosis and measured change | Experiments 3/4; before/after reports, raw profiles, full-summary fingerprints and all six timing ratios. |
+
+The [combined policy/export/replay/comparison verification](../experiments/results/d3-02/integration-verification.json)
+records all 24 policy summaries matching their evidence, all 24 exported JSON
+configurations replaying to their full original summaries/events, all 24 CSVs
+preserving configuration/metrics, and all twelve matched policy pairs rendering
+eight comparison metrics without errors. This is automated component verification,
+not a claim that a new manual browser check was performed for every policy sample.
+
+The commands above are local and require no cloud service or GPU. New rerun
+directories preserve original captures; environment/timestamp/source metadata
+may differ on rerun. Compare deterministic trace/summary fields directly and
+interpret performance only within matched environments. Demo slides, recording
+and release submission remain separate deliverables, outside D3-08.
