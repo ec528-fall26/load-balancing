@@ -1,0 +1,126 @@
+{
+  "before_source_sha256": {
+    "src/lbsim/simulation.py": "dcb44657777b4bdbc2992f43324156d25cd10979847346d4c3929aa45addd64c",
+    "src/lbsim/utils/generate_seed.py": "cf20ec84771e9646ab3efd231b3069ab8e68be49f1be2e823b5dc21330b500f9",
+    "src/lbsim/server.py": "4263090180b3987cda3fd9c86e559d224ce0c64ec6904c3c4d0d8d00c3ee32ab",
+    "src/lbsim/metrics.py": "776a0696f5337fbfa130d5f41b158f176180fdd5a18db78aa0839f19d16e2bcc",
+    "experiments/profile_engine.py": "f65914b2ce825ae21b7d14fe4cf4e0c8e15c76de3c462d08a3093862929c0ddb"
+  },
+  "after_source_sha256": {
+    "src/lbsim/simulation.py": "dcb44657777b4bdbc2992f43324156d25cd10979847346d4c3929aa45addd64c",
+    "src/lbsim/utils/generate_seed.py": "31f62ef4f28fd58ddeae15e4e262a04019d1b39ed089f58c8144a62508fd40f9",
+    "src/lbsim/server.py": "4263090180b3987cda3fd9c86e559d224ce0c64ec6904c3c4d0d8d00c3ee32ab",
+    "src/lbsim/metrics.py": "776a0696f5337fbfa130d5f41b158f176180fdd5a18db78aa0839f19d16e2bcc",
+    "experiments/profile_engine.py": "f65914b2ce825ae21b7d14fe4cf4e0c8e15c76de3c462d08a3093862929c0ddb"
+  },
+  "cases": [
+    {
+      "config": {
+        "concurrency": 1,
+        "queue_limit": 10,
+        "policy": "round_robin",
+        "arrival_rate": 100.0,
+        "duration": 100.0,
+        "service_min": 0.1,
+        "service_max": 1.0,
+        "seed": 42,
+        "server_count": 10
+      },
+      "summary_sha256": "48c3667f3301f56f4336305cb70fe390cf9ae9452fed2f05ed177ab6f0f6a437",
+      "before_seconds": 0.023791708999851835,
+      "after_seconds": 0.018616499999552616,
+      "speedup": 1.2779904386121768,
+      "runtime_reduction_percent": 21.752153240994364
+    },
+    {
+      "config": {
+        "concurrency": 1,
+        "queue_limit": 10,
+        "policy": "round_robin",
+        "arrival_rate": 100.0,
+        "duration": 100.0,
+        "service_min": 0.1,
+        "service_max": 1.0,
+        "seed": 42,
+        "server_count": 100
+      },
+      "summary_sha256": "eb16a5402cd7c575f6e17a21625dc46fd05809f16b90872ef69e84dc802b19d6",
+      "before_seconds": 0.03891837500032125,
+      "after_seconds": 0.034275582999725884,
+      "speedup": 1.1354547930120544,
+      "runtime_reduction_percent": 11.929562836467456
+    },
+    {
+      "config": {
+        "concurrency": 1,
+        "queue_limit": 10,
+        "policy": "round_robin",
+        "arrival_rate": 100.0,
+        "duration": 100.0,
+        "service_min": 0.1,
+        "service_max": 1.0,
+        "seed": 42,
+        "server_count": 1000
+      },
+      "summary_sha256": "0dc827b4dc9a63eac7e4f89e4b5ae74545119c8251e85e911e700a3a17476eca",
+      "before_seconds": 0.039414750000105414,
+      "after_seconds": 0.035130375000335334,
+      "speedup": 1.1219564265889328,
+      "runtime_reduction_percent": 10.869978877853137
+    },
+    {
+      "config": {
+        "concurrency": 1,
+        "queue_limit": 10,
+        "policy": "round_robin",
+        "arrival_rate": 100.0,
+        "duration": 1000.0,
+        "service_min": 0.1,
+        "service_max": 1.0,
+        "seed": 42,
+        "server_count": 10
+      },
+      "summary_sha256": "4ca07065e12839a2dd52b138e6ece2af8abc4a6461511461a13f29bef98d8a01",
+      "before_seconds": 0.8648731670000416,
+      "after_seconds": 0.20074437499988562,
+      "speedup": 4.30833076643136,
+      "runtime_reduction_percent": 76.78915444952452
+    },
+    {
+      "config": {
+        "concurrency": 1,
+        "queue_limit": 10,
+        "policy": "round_robin",
+        "arrival_rate": 100.0,
+        "duration": 1000.0,
+        "service_min": 0.1,
+        "service_max": 1.0,
+        "seed": 42,
+        "server_count": 100
+      },
+      "summary_sha256": "f069a159efee27345352263a480e0e996c57704716e2545ad46b4d9562b00638",
+      "before_seconds": 1.0303906250001091,
+      "after_seconds": 0.36362354200082336,
+      "speedup": 2.833674132676965,
+      "runtime_reduction_percent": 64.7101270937141
+    },
+    {
+      "config": {
+        "concurrency": 1,
+        "queue_limit": 10,
+        "policy": "round_robin",
+        "arrival_rate": 100.0,
+        "duration": 1000.0,
+        "service_min": 0.1,
+        "service_max": 1.0,
+        "seed": 42,
+        "server_count": 1000
+      },
+      "summary_sha256": "d627ab86d225105059d5c85a5ffb40cc9519d731f320bd9c9b23ee4cbe2b0fbc",
+      "before_seconds": 1.061504166999839,
+      "after_seconds": 0.38457800000014686,
+      "speedup": 2.7601791236093427,
+      "runtime_reduction_percent": 63.77046723357751
+    }
+  ]
+}
