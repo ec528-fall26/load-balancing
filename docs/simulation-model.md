@@ -40,8 +40,11 @@ Generated count is `completed_count + rejected_count` after draining.
 
 Round-robin is implemented inside `route`, using a counter to select server IDs
 `0, 1, ..., server_count - 1` repeatedly. There is no separate `select_server`
-function. Routing does not skip full servers; the selected server handles
-admission or rejection.
+function. Least-active-requests selects the minimum `(running_count, server_id)`
+from current server state at each arrival. Both policies leave admission to the
+selected server: neither skips full servers nor retries. Waiting requests do not
+count toward load, so ties can select a full queue even when another server has
+waiting space.
 
 - Pending completions are sorted by `(completion_time, server_id, request_id)`.
 - Completions are processed before arrivals at the same timestamp.
@@ -59,10 +62,8 @@ separate `started` record.
 
 ## Optional extensions
 
-Least-active-requests remains a later task. Validation recognizes
-`least_active_requests`, but both execution entry points reject it until it is
-implemented. The planned policy counts running work only and breaks ties by
-smallest server ID. A reusable policy interface can be introduced with that work.
+Both `round_robin` and `least_active_requests` are implemented in the engine and
+available in the UI. Policy-comparison experiments remain a separate task.
 
 Exponential interarrival times, hardware types, and reliability/failures are also
 optional. The current engine creates identical servers with `size=None` and
@@ -171,5 +172,7 @@ uv run python -m unittest discover -s tests -v
 ```
 
 `tests/test_server.py` checks the hand-written server trace above.
-The server lifecycle, fixed-interval workload generator, round-robin event loop,
-metrics and UI are connected. Least-active-requests remains a subsequent task.
+The server lifecycle, fixed-interval workload generator, both routing policies,
+metrics and UI are connected. `tests/test_policies.py` checks changing load,
+completion-before-arrival routing, ties, full queues, multiple slots and identical
+seeded workloads between policies. Whole-run invariants cover both policies.

@@ -2,8 +2,8 @@ import random
 from lbsim.server import Request, Server
 
 def route(server_count: int, concurrency: int, queue_limit: int, policy: str, arrival_rate: float, duration: float, service_min: float, service_max: float, seed: int, events: list | None = None):
-    if policy != "round_robin":
-        raise ValueError("Only round-robin routing is implemented yet.")
+    if policy not in ("round_robin", "least_active_requests"):
+        raise ValueError("Select a supported routing policy.")
     rng = random.Random(seed)
     server_map = {}
     for i in range(server_count):
@@ -61,6 +61,11 @@ def route(server_count: int, concurrency: int, queue_limit: int, policy: str, ar
             if policy == "round_robin":
                 target_server = server_map[counter % server_count]
                 counter += 1
+            else:
+                # Read live running counts after all earlier events. Waiting
+                # requests do not count; equal loads favor the lowest ID.
+                target_server = min(server_map.values(),
+                                    key=lambda server: (len(server.running), server.id))
             
             admission = target_server.submit(req, now)
             if events is not None:

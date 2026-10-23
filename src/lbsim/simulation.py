@@ -7,8 +7,6 @@ from lbsim.utils.generate_seed import route
 
 def run_simulation(values: dict) -> dict:
     config = validate_config(values)
-    if config['policy'] != 'round_robin':
-        raise ValueError('Only round-robin routing is implemented yet.')
     events = []
     completed, rejected = route(**config, events=events)
     summary = summarize(

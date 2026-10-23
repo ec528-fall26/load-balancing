@@ -7,6 +7,9 @@ from lbsim.results import display_summary
 
 st.set_page_config(page_title="Load balancing simulator", layout="wide")
 
+POLICY_LABELS = {"round_robin": "Round robin",
+                 "least_active_requests": "Least active requests"}
+
 with st.sidebar:
     st.header("Configure a run")
     with st.form("simulation_settings"):
@@ -16,8 +19,10 @@ with st.sidebar:
                                       help="Requests each server can process at once.")
         queue_limit = st.number_input("Waiting places per server", value=10, step=1,
                                       key="queue_limit", help="Zero rejects requests when all slots are busy.")
-        policy = st.selectbox("Routing policy", ["round_robin"], disabled=True,
-                             format_func=lambda x: "Round robin", key="policy")
+        policy = st.selectbox("Routing policy", list(POLICY_LABELS),
+                             format_func=POLICY_LABELS.get, key="policy",
+                             help="Least active counts running requests only; ties favor the lowest server ID. "
+                                  "Waiting requests do not count and full targets reject without retrying.")
         st.subheader("Traffic")
         arrival_rate = st.number_input("Requests per second", value=1.0, key="arrival_rate")
         duration = st.number_input("Arrival window (seconds)", value=60.0, key="duration")
@@ -56,7 +61,7 @@ if "config" in st.session_state and "summary" in st.session_state:
     config = st.session_state["config"]
     st.caption(f"Last completed run · {config['server_count']} servers · "
                f"{config['arrival_rate']:g} requests/s · {config['duration']:g} s arrival window · "
-               f"seed {config['seed']} · Round robin")
+               f"seed {config['seed']} · {POLICY_LABELS[config['policy']]}")
     display_summary(st.session_state["summary"], config)
     with st.expander("Run configuration"):
         st.json(config)

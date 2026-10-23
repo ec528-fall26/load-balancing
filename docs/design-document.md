@@ -2,6 +2,9 @@
 
 ## Load balancing simulator: implemented design
 
+Development update for Demo 3: least-active-requests is now available on `dev`.
+The submitted Demo 2 version is preserved on the `demo-2` branch.
+
 ## 1. Architecture
 
 The product is a local Streamlit app backed by an importable Python simulation
@@ -29,7 +32,7 @@ flowchart TD
 | `app.py` | Collect settings, run the model and retain the last successful config/summary in session state. |
 | `settings.py` | Shared input validation for the form and simulation API. |
 | `simulation.py` | Public `run_simulation(config) -> dict`: validate, route, summarize, attach response times and events. |
-| `utils/generate_seed.py` | Generate the complete seeded workload, assign round-robin targets, process events and drain accepted work. |
+| `utils/generate_seed.py` | Generate the complete seeded workload, select round-robin or least-active targets, process events and drain accepted work. |
 | `server.py` | Request/execution records, bounded FIFO admission, concurrent slots and completion with immediate queue promotion. |
 | `metrics.py` | Outcome counts, mean/p95 latency and per-server utilization. |
 | `results.py` | Overview charts, metric cards and server details. |
@@ -50,7 +53,7 @@ one execution slot for its full service time.
 | `duration` | Positive finite arrival-window duration; also the utilization window. |
 | `service_min`, `service_max` | Positive finite service bounds, minimum no greater than maximum. Equal bounds produce fixed service times. |
 | `seed` | Integer; negative values are valid. |
-| `policy` | Use `round_robin`. Validation recognizes `least_active_requests`, but the simulation rejects it because it is not implemented. |
+| `policy` | Use `round_robin` or `least_active_requests`. Least-active selects the fewest running requests, breaking ties by lowest server ID; queues do not count and full targets are not skipped. |
 
 The engine generates `N = int(arrival_rate * duration)` requests, IDs `0..N-1`.
 Request `i` arrives at `i / arrival_rate`; service time is sampled with a local
@@ -163,9 +166,9 @@ because uv installs the package. Open the printed local URL, usually
 `http://localhost:8501`. Stop with Ctrl+C. If the port is occupied, append
 `--server.port 8502` to the run command.
 
-The existing suite contains 33 tests for validation, lifecycle, routing, metrics,
+The existing suite contains 39 tests for validation, lifecycle, routing, metrics,
 UI integration, playback and whole-run correctness. Success ends with
-`Ran 33 tests` and `OK`.
+`Ran 39 tests` and `OK`.
 Allow roughly 10 seconds for the suite after dependencies are installed;
 the repeat verification took about 3 seconds on the tested Windows machine.
 It runs locally and requires no cloud resources or GPU.
@@ -284,10 +287,12 @@ cost of server count or prove 1,000 servers faster than 100.
 ## 5. Claims and limitations
 
 The prototype provides configurable identical servers, fixed-interval seeded
-traffic, round-robin routing, bounded FIFO queues, draining, charts, recorded
+traffic, round-robin and least-active-requests routing, bounded FIFO queues, draining, charts, recorded
 playback and a reproducible local baseline.
 
-- Only round-robin runs; there is no working policy comparison.
+- Both policies run, but the saved benchmark is round-robin only. Policy-comparison
+  experiments remain D3-02. Least-active counts running requests only; lowest-ID
+  ties can favor a full queue, and idle ties concentrate light traffic on server 0.
 - Arrivals are evenly spaced; bursty/exponential traffic is not modeled.
   Request count truncates to `int(arrival_rate * duration)`.
 - Concurrency defines capacity. Hardware speeds, CPU/memory pressure,
