@@ -1,5 +1,20 @@
 # Experiments
 
+## D3-03: export a real run
+
+From the repository root after installing dependencies:
+
+```sh
+uv run python experiments/export_run.py --output experiments/results/d3-03-rerun
+```
+
+This executes a fixed overload simulation and exports `config.json` and
+`results.csv` in seconds. Expect two completions, two rejections, mean/p95
+response time 1.375/1.75 seconds and server utilization 1.0. The command
+overwrites those filenames in the selected directory; the rerun directory
+preserves the reference [JSON](results/d3-03/config.json) and
+[CSV](results/d3-03/results.csv). See [the schema documentation](../docs/run-exports.md).
+
 One script per claim. Each script should be runnable from the repository root,
 print what it is measuring, and finish in a bounded amount of time.
 
