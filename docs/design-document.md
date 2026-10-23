@@ -166,9 +166,9 @@ because uv installs the package. Open the printed local URL, usually
 `http://localhost:8501`. Stop with Ctrl+C. If the port is occupied, append
 `--server.port 8502` to the run command.
 
-The existing suite contains 43 tests for validation, lifecycle, routing, metrics,
-UI integration, playback, whole-run correctness and run exports. Success ends with
-`Ran 43 tests` and `OK`.
+The existing suite contains 53 tests for validation, lifecycle, routing, metrics,
+UI integration, playback, whole-run correctness, exports, verified replay and
+saved-result comparison. Success ends with `Ran 53 tests` and `OK`.
 Allow roughly 10 seconds for the suite after dependencies are installed;
 the repeat verification took about 3 seconds on the tested Windows machine.
 It runs locally and requires no cloud resources or GPU.
@@ -244,6 +244,22 @@ JSON and results as CSV. The files describe the last completed run, including
 when form inputs have been edited but not submitted. CSV contains whole-run
 metrics and one utilization row per server. Empty-run latency cells are blank.
 See [the export format](run-exports.md) for every field and the real-run example.
+
+### Reloading and comparing saved runs (D3-04/05)
+
+In the sidebar, **Replay a saved run** accepts version-one configuration JSON.
+Inspect its settings and click **Replay saved configuration** to regenerate the
+simulation. Results replace the active run only after their export fingerprint
+matches the saved ID. Playback then resets to paused at time zero. Invalid files
+or mismatches display errors and preserve current results; the settings form is
+independent of loaded settings.
+
+**Compare saved results** accepts two original CSV exports without an active run.
+It shows policies, configuration differences, latency, rejection rates, mean
+server utilization and per-server tables. Different workload/capacity settings
+are flagged. It reads saved metrics without simulating or changing active results.
+Both formats are checked for schema, types, consistency and fingerprints, with a
+5 MiB per-file limit. See [the saved-run guide](run-exports.md) for exact rules.
 
 ## 4. Running the experiments
 
@@ -342,6 +358,17 @@ all six complete summaries match the before-change results and all 39 tests pass
 The result is measured local runtime improvement, not a cloud performance claim,
 a memory bound or evidence that one routing policy is universally faster.
 
+### Experiment 5: saved configuration replay and side-by-side results
+
+Run `uv run python experiments/replay_compare.py --output experiments/results/d3-04-05-rerun`
+from the repository root. In seconds it writes two exported JSON/CSV pairs and
+`verification.json`, checking complete original/replayed summaries and reading
+back both CSVs. Both runs have 16 arrivals with the same seed and workload;
+round-robin completes/rejects 9/7 requests, least-active-requests 7/9. This checks
+the save/replay/compare workflow, not a general policy-performance claim.
+Use the [reference files and UI instructions](run-exports.md#reproduce-replay-and-comparison-evidence)
+to reproduce the panels. A separate output directory preserves saved evidence.
+
 ## 5. Claims and limitations
 
 The prototype provides configurable identical servers, fixed-interval seeded
@@ -355,9 +382,11 @@ playback and a reproducible local baseline.
   Request count truncates to `int(arrival_rate * duration)`.
 - Concurrency defines capacity. Hardware speeds, CPU/memory pressure,
   failures/reliability, regions, network delay, retries and preemption are not modeled.
-- Configuration/results live in Streamlit session state and can be downloaded
-  as JSON/CSV. The UI does not import, persist on the server, or compare saved runs.
-  Downloads contain summary metrics, not request traces or playback events.
+- Configuration/results live in Streamlit session state and can be downloaded,
+  reloaded for verified simulation, or compared from CSV. There is no server-side
+  run library or schema migration. Downloads contain summary metrics, not original
+  request traces or playback events. Replay regenerates events; its fingerprint
+  verifies only the exported configuration/metrics and is not authentication.
 - While playing, playback requests updates every 0.2 seconds; actual refresh
   timing depends on execution and browser load. Short events can fall between
   frames, while replay counts process every event. Racks are display organization,

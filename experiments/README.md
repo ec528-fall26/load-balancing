@@ -1,5 +1,20 @@
 # Experiments
 
+## D3-04/05: reproduce saved runs and compare results
+
+```sh
+uv run python experiments/replay_compare.py --output experiments/results/d3-04-05-rerun
+```
+
+From the repository root after installing dependencies, this takes seconds and
+exports two policies on the same 16-request workload, verifies complete replayed
+summaries/events, reads both CSVs and saves `verification.json`. Expect 9 completed
+and 7 rejected for round-robin, versus 7 and 9 for least-active-requests. The
+command overwrites its files in the chosen directory; use the rerun path to keep
+[reference evidence](results/d3-04-05/verification.json). The [saved-run guide](../docs/run-exports.md)
+explains loading the generated JSON and CSV files into the UI. This is a workflow
+example, not the D3-02 policy study.
+
 ## D3-03: export a real run
 
 From the repository root after installing dependencies:

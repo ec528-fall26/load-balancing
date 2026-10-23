@@ -93,7 +93,15 @@ After running a simulation, open **Download run** to save the last completed
 configuration (JSON, including seed and schema version) and results (CSV, with
 summary metrics and per-server utilization). Downloads retain the completed
 run's settings even if you edit the form. See [the file format and real-run
-example](docs/run-exports.md). Import and side-by-side comparison are separate tasks.
+example](docs/run-exports.md).
+
+To reproduce a saved run, open **Replay a saved run** in the sidebar, upload its
+configuration JSON, then select **Replay saved configuration**. The app verifies
+the regenerated metrics against the saved fingerprint before replacing results.
+To compare runs, open **Compare saved results** and upload two results CSVs.
+Policies, all settings, latency, rejection and utilization appear side by side;
+workload/capacity differences are flagged. See [saved-run instructions and
+validation rules](docs/run-exports.md) for D3-04/05 and real examples.
 
 ## Submission checklist
 
