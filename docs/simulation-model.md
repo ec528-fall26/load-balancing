@@ -71,6 +71,41 @@ optional. The current engine creates identical servers with `size=None` and
 traffic generator must create the complete seeded trace before routing so policy
 comparisons use identical requests.
 
+## Server processing rates (A-01)
+
+Each server can have an optional processing-rate multiplier. A request's
+`service_time` is the work it needs on a rate-1.0 server, a server with rate `r`
+runs it for `service_time / r` seconds. Rate 2.0 finishes the same request in
+half the time. Rate 0.5 takes twice as long
+
+- Set it with `processing_rates`: one positive, finite number per server, in
+  server-ID order. Leaving it out, or giving all 1.0, is the original uniform
+  model and returns the same nine-field config and identical results
+- Rates change only execution time. The seeded trace (arrivals and service
+  times) is identical, uniform and mixed fleets can be compared on the same
+  requests
+- Neither policy reads rates. Least-active-requests counts running requests
+  only. A faster server frees slots sooner it's picked more often, and
+  ties still go to the lowest server ID
+- Utilization is still occupied slot time in the arrival window. A fast server
+  at 100% does more work than a slow one at 100%
+- Not yet in the UI or exports. Exports refuse a run with mixed rates rather
+  than silently dropping them (schema version 1 has nine settings)
+
+Worked example (`tests/test_processing_rates.py`): 2 servers, 1 slot, 1 waiting
+place, 4 requests/s for 1 s (arrivals at 0, 0.25, 0.5, 0.75), service 1.0 s,
+rates `[2.0, 1.0]`
+
+| Policy | Where request 3 goes | Response times (s) | Mean | p95 |
+| --- | --- | --- | ---: | ---: |
+| round_robin, uniform `[1, 1]` | queues on server 1 | 1.0, 1.0, 1.5, 1.5 | 1.25 | 1.5 |
+| round_robin, `[2, 1]` | queues on slow server 1, starts at 1.25 | 0.5, 0.5, 1.0, 1.5 | 0.875 | 1.5 |
+| least_active, `[2, 1]` | tie at 1 running: lowest ID, fast server 0, starts at 1.0 | 0.5, 0.5, 1.0, 0.75 | 0.6875 | 1.0 |
+
+Response times are listed in completion order. On the fast server request 0
+ends at 0.5, exactly when request 2 arrives, completions run first,
+request 2 starts at once instead of queueing.
+
 ## Server API (implemented)
 
 - `submit(request, now)` returns `started`, `queued`, or `rejected`, plus the
