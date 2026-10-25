@@ -14,8 +14,8 @@ def chart(spec: dict, height: int = 240, alt: str = "Simulation results chart"):
         'config': {'view': {'stroke': None}, 'axis': {'labelFontSize': 12, 'titleFontSize': 12}},
         **spec,
     }
-    # Streamlit 1.65 st.vega_lite_chart keeps showing the previous run's data
-    # after a rerun; the same spec drawn through Altair redraws correctly.
+    #Streamlit 1.65 st.vega_lite_chart keeps showing the previous run's data  after a rerun
+    #the same spec drawn through Altair redraws correctly
     kind = altair.LayerChart if 'layer' in spec else altair.Chart
     st.altair_chart(kind.from_dict(spec), width="stretch", alt=alt)
 
