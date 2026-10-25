@@ -1,5 +1,6 @@
 """Display actual run metrics and accessible chart data in Streamlit."""
 
+import altair
 import streamlit as st
 from lbsim.datacenter import display_datacenter
 
@@ -8,11 +9,15 @@ ORANGE = '#B85A27'
 
 
 def chart(spec: dict, height: int = 240, alt: str = "Simulation results chart"):
-    st.vega_lite_chart(spec={
+    spec = {
         'height': height,
         'config': {'view': {'stroke': None}, 'axis': {'labelFontSize': 12, 'titleFontSize': 12}},
         **spec,
-    }, width="stretch", alt=alt)
+    }
+    # Streamlit 1.65 st.vega_lite_chart keeps showing the previous run's data
+    # after a rerun; the same spec drawn through Altair redraws correctly.
+    kind = altair.LayerChart if 'layer' in spec else altair.Chart
+    st.altair_chart(kind.from_dict(spec), width="stretch", alt=alt)
 
 
 def display_summary(summary: dict, config: dict | None = None):
