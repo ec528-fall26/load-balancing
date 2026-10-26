@@ -1,5 +1,19 @@
 # Experiments
 
+## A-02: policies on uniform and mixed-speed servers
+
+From the repository root after installing dependencies:
+
+```sh
+PYTHONPATH=src uv run python experiments/compare_speeds.py --output experiments/results/a-02-rerun
+```
+
+Runs both policies on 9 shared seeded traces (3 loads × 3 seeds) and three fleets with
+the same total processing rate: uniform, fast servers at low IDs, and fast servers at
+high IDs. Takes a few seconds and ends with `Validated 54 runs on 9 shared traces.`
+Reference results and interpretation: [analysis](results/a-02/analysis.md). Requires
+A-01 processing rates
+
 ## D3-04/05: reproduce saved runs and compare results
 
 ```sh
