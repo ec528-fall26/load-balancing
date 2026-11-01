@@ -25,9 +25,10 @@ state. The preview fixture does not change when the settings form is edited.
 ## Python API connection
 
 This connection builds on the frontend in PR #17 and needs the Python API in
-[PR #22](https://github.com/ec528-fall26/load-balancing/pull/22). Until #22 is
-merged, run the backend from a separate `sean-api` checkout. The frontend can
-run from this branch and connect to that backend over localhost.
+[PR #22](https://github.com/ec528-fall26/load-balancing/pull/22). A combined
+checkout such as `sean-dev` can run both services from this repository. If your
+branch does not yet include #22, run the backend from a separate `sean-api`
+checkout and connect to it over localhost.
 
 Start the Python service from the repository root in another terminal:
 
@@ -76,7 +77,9 @@ npm test
 ```
 
 Playwright uses installed Microsoft Edge (`channel: msedge`) and starts/reuses the
-local dev server. The browser tests cover unavailable-backend feedback, recorded-result charts,
+local server. Use `PLAYWRIGHT_CHANNEL=chrome npm test` to select installed Chrome.
+Start the Python API before running the suite; a live Run test checks actual
+Python results through the proxy. The browser tests cover unavailable-backend feedback, recorded-result charts,
 playback/seek/reset, utilization tables, download feedback, and mobile overflow.
 Screenshots are saved under the ignored `test-results/` directory.
 

@@ -136,6 +136,9 @@ function Comparison({ runs }: { runs: [Run, Run] }) {
 }
 export default function Page() {
   const requestPending = useRef(false);
+  const csvFiles = useRef<[string, string]>(["", ""]);
+  const uploadVersions = useRef([0, 0]);
+  const comparisonVersion = useRef(0);
   const [config, setConfig] = useState<Config>(defaults),
     [run, setRun] = useState<Run | null>(null),
     [preview, setPreview] = useState(false),
@@ -146,7 +149,6 @@ export default function Page() {
     [savedName, setSavedName] = useState(""),
     [replayError, setReplayError] = useState(""),
     [comparison, setComparison] = useState<[Run, Run] | null>(null),
-    [csv, setCsv] = useState<[string, string]>(["", ""]),
     [fileNames, setFileNames] = useState<[string, string]>(["", ""]),
     [compareError, setCompareError] = useState("");
   useEffect(() => {
@@ -193,11 +195,25 @@ export default function Page() {
     }
   }
   async function readCsv(file: File, index: number) {
+    const uploadVersion = ++uploadVersions.current[index];
+    ++comparisonVersion.current;
+    csvFiles.current[index] = "";
+    let activeComparison: number | undefined;
+    setComparison(null);
+    setCompareError("");
+    setFileNames((current) => {
+      const names: [string, string] = [...current];
+      names[index] = "";
+      return names;
+    });
     try {
       if (file.size > 200 * 1024 * 1024) throw new Error("File exceeds 200MB.");
-      const next: [string, string] = [...csv];
-      next[index] = await file.text();
-      setCsv(next);
+      const text = await file.text();
+      if (uploadVersion !== uploadVersions.current[index]) return;
+      // File reads may finish together before React rerenders the other handler.
+      const next: [string, string] = [...csvFiles.current];
+      next[index] = text;
+      csvFiles.current = next;
       setFileNames((current) => {
         const names: [string, string] = [...current];
         names[index] = file.name;
@@ -205,12 +221,16 @@ export default function Page() {
       });
       setComparison(null);
       setCompareError("");
-      if (next.every(Boolean))
-        setComparison(
-          await engineRequest<[Run, Run]>("compare", { results: next }),
-        );
+      if (next.every(Boolean)) {
+        const version = ++comparisonVersion.current;
+        activeComparison = version;
+        const result = await engineRequest<[Run, Run]>("compare", { results: next });
+        if (version === comparisonVersion.current) setComparison(result);
+      }
     } catch (error) {
-      setCompareError((error as Error).message);
+      if (uploadVersion === uploadVersions.current[index]
+          && (activeComparison === undefined || activeComparison === comparisonVersion.current))
+        setCompareError((error as Error).message);
     }
   }
   async function download(kind: "configuration" | "results") {

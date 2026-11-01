@@ -4,7 +4,7 @@ export default defineConfig({
   testMatch: "**/*.spec.ts",
   use: {
     baseURL: "http://localhost:3000",
-    channel: "msedge",
+    channel: process.env.PLAYWRIGHT_CHANNEL ?? "msedge",
     viewport: { width: 1440, height: 1000 },
   },
   webServer: {

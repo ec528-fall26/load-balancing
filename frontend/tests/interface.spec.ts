@@ -74,14 +74,25 @@ test("mobile layout stays within the viewport", async ({ page }) => {
   });
 });
 test("API boundary never fabricates engine results", async ({ request }) => {
-  for (const operation of ["run", "replay", "compare", "exports"]) {
+  for (const operation of ["replay", "compare", "exports"]) {
     const response = await request.post(`/api/engine/${operation}`, {
       data: {},
     });
     expect(response.status()).toBe(501);
     expect((await response.json()).code).toBe("ENGINE_NOT_CONNECTED");
   }
+  const invalid = await request.post("/api/engine/run", { data: {} });
+  expect(invalid.status()).toBe(422);
+  expect((await invalid.json()).code).toBe("INVALID_REQUEST");
   expect((await request.post("/api/engine/unknown")).status()).toBe(404);
+});
+test("Run returns the actual Python result through the proxy", async ({ request }) => {
+  const response = await request.post("/api/engine/run", { data: { config: fixture.config } });
+  expect(response.status()).toBe(200);
+  const run = await response.json();
+  expect(run.api_version).toBe("1");
+  expect(run.config).toEqual(fixture.config);
+  expect(run.summary).toEqual(fixture.summary);
 });
 test("future API results retain the completed configuration after form edits", async ({
   page,
@@ -126,18 +137,19 @@ test("replay and comparison send uploaded files to the engine boundary", async (
     .getByRole("button", { name: "Replay saved configuration", exact: true })
     .click();
   await expect(page.getByRole("status")).toContainText("not connected");
-  await page.route("**/api/engine/compare", (route) =>
-    route.fulfill({ json: [fixture, fixture] }),
-  );
+  await page.route("**/api/engine/compare", (route) => {
+    expect(route.request().postDataJSON().results).toEqual(["Run A payload", "Run B payload"]);
+    return route.fulfill({ json: [fixture, fixture] });
+  });
   await page.getByText("Compare saved results", { exact: true }).click();
-  for (const label of ["Run A results (CSV)", "Run B results (CSV)"])
-    await page
+  await Promise.all(["Run A results (CSV)", "Run B results (CSV)"].map((label, index) =>
+    page
       .getByLabel(label, { exact: true })
       .setInputFiles({
         name: "results.csv",
         mimeType: "text/csv",
-        buffer: Buffer.from("placeholder upload for mocked API"),
-      });
+        buffer: Buffer.from(index === 0 ? "Run A payload" : "Run B payload"),
+      })));
   await expect(
     page.getByText("Both files have the same configuration."),
   ).toBeVisible();
