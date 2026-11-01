@@ -18,6 +18,15 @@ Least-active-requests and saved-run comparison are planned for Demo 3.
 
 ## Quick start
 
+### Next.js interface (Python API connection pending)
+
+The replacement frontend is in [`frontend/`](frontend/README.md). Run `npm ci`
+and `npm run dev` from that directory, then open `http://localhost:3000`.
+Use `http://localhost:3000/?preview=1` to review all result screens with a
+recorded example. Engine actions currently use explicit API placeholders.
+
+### Original Streamlit interface
+
 Install [Git](https://git-scm.com/downloads) and
 [uv](https://docs.astral.sh/uv/getting-started/installation/), then run:
 
