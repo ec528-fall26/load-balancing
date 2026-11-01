@@ -34,6 +34,9 @@ def build_exports(config: dict, summary: dict) -> RunExports:
     values become empty cells. Events and individual response times are omitted.
     """
     config = validate_config(config)
+    if "processing_rates" in config:
+        raise ValueError("Exports do not support per-server processing rates yet "
+                         "(schema version 1 has nine settings).")
     metrics = {key: summary[key] for key in (
         "completed_count", "rejected_count", "mean_response_time",
         "p95_response_time", "per_server_utilization",

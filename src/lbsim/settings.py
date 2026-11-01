@@ -23,11 +23,24 @@ def validate_config(values: Mapping) -> dict:
         errors.append("service_min must be less than or equal to service_max")
     if values.get("policy") not in ("round_robin", "least_active_requests"):
         errors.append("policy: select a supported routing policy")
+    rates = values.get("processing_rates")
+    if rates is not None:
+        if type(rates) not in (list, tuple):
+            errors.append("processing_rates: must be a list with one rate per server")
+        else:
+            if type(values.get("server_count")) is int and len(rates) != values["server_count"]:
+                errors.append("processing_rates: must have one rate per server")
+            if any(type(r) not in (int, float) or not isfinite(r) or r <= 0 for r in rates):
+                errors.append("processing_rates: each rate must be finite and greater than zero")
     if errors:
         raise ValueError("; ".join(errors))
     keys = ("server_count", "concurrency", "queue_limit", "arrival_rate", "duration",
             "service_min", "service_max", "seed", "policy")
-    return {key: values[key] for key in keys}
+    config = {key: values[key] for key in keys}
+    # All-1.0 rates are the uniform model, so they keep the original nine-field config.
+    if rates is not None and any(r != 1 for r in rates):
+        config["processing_rates"] = tuple(float(r) for r in rates)
+    return config
 
 
 def build_config(**values) -> dict:

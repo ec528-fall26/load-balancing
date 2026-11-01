@@ -45,7 +45,8 @@ class Completion:
 
 
 class Server:
-    def __init__(self, id: int, concurrency: int, queue_limit: int, size: int | None = None, reliability: float | None = 1.0):
+    def __init__(self, id: int, concurrency: int, queue_limit: int, size: int | None = None, reliability: float | None = 1.0,
+                 processing_rate: float = 1.0):
         if type(id) is not int:
             raise ValueError("server ID must be an integer")
         if type(concurrency) is not int or concurrency <= 0:
@@ -56,11 +57,15 @@ class Server:
             raise ValueError("size must be an integer")
         if reliability is not None and (type(reliability) is not float or reliability <= 0.0 or reliability > 1.0):
             raise ValueError("reliability must be a float between 0 and 1")
+        if type(processing_rate) not in (int, float) or not isfinite(processing_rate) or processing_rate <= 0:
+            raise ValueError("processing rate must be finite and greater than zero")
         self.id = id
         self.concurrency = concurrency
         self.queue_limit = queue_limit
         self.size = size
         self.reliability = reliability
+        # Speed multiplier: 2.0 finishes the same work in half the time
+        self.processing_rate = float(processing_rate)
         self._running: dict[int, Execution] = {}
         self._waiting: deque[Request] = deque()
         self._last_time = 0.0
@@ -78,7 +83,7 @@ class Server:
             raise ValueError("server time must be finite and cannot move backwards")
 
     def _execution(self, request: Request, now: float) -> Execution:
-        end = now + request.service_time
+        end = now + request.service_time / self.processing_rate
         if not isfinite(end) or end <= now:
             raise ValueError("service time must produce a finite later completion")
         return Execution(request, self.id, now, end)

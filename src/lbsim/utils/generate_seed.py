@@ -2,13 +2,18 @@ import random
 from collections import deque
 from lbsim.server import Request, Server
 
-def route(server_count: int, concurrency: int, queue_limit: int, policy: str, arrival_rate: float, duration: float, service_min: float, service_max: float, seed: int, events: list | None = None):
+def route(server_count: int, concurrency: int, queue_limit: int, policy: str, arrival_rate: float, duration: float, service_min: float, service_max: float, seed: int, events: list | None = None,
+          processing_rates: tuple[float, ...] | None = None):
     if policy not in ("round_robin", "least_active_requests"):
         raise ValueError("Select a supported routing policy.")
+    if processing_rates is not None and len(processing_rates) != server_count:
+        raise ValueError("processing_rates needs one value per server")
     rng = random.Random(seed)
     server_map = {}
     for i in range(server_count):
-        server_map[i] = Server(i, concurrency, queue_limit, None, None)
+        # Rates only change execution time; the seeded trace below is identical.
+        rate = 1.0 if processing_rates is None else processing_rates[i]
+        server_map[i] = Server(i, concurrency, queue_limit, None, None, processing_rate=rate)
 
     # Pre-store all requests
     requests = deque()
