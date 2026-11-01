@@ -58,3 +58,19 @@ Closing restores focus to the selected server. Task-pool counts always cover
 all servers, including those outside the current page. Its segmented bar counts
 all generated requests, including those that have not yet arrived. These views
 model neither physical network layout nor actual hardware telemetry.
+
+## Setup library
+
+The root route is a searchable grid of saved configurations and six starter
+templates. Use the same shadcn Card composition for both; saved items precede
+templates and show their update date, while templates show a purpose statement.
+Facts include server count, slots per server, arrival rate, window and policy.
+Three columns on desktop collapse to two and then one on narrow screens.
+Tabs expose All/Saved/Templates panels; search and counts remain visible.
+
+The simulator lives at `/simulator`. Its header offers Save setup via a shadcn
+Dialog; existing saves offer Save changes and Save a copy. The brand links back
+to the library. Delete uses AlertDialog and leaves templates intact. Keep the
+browser-local persistence boundary explicit: saves contain configuration and
+seed, and do not include results or start a run automatically. Preserve unknown
+or malformed stored data and show an Alert rather than silently resetting it.

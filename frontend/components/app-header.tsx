@@ -1,5 +1,6 @@
 "use client";
-import type { RefObject } from "react";
+import Link from "next/link";
+import type { RefObject, ReactNode } from "react";
 import { PanelLeftClose, PanelLeftOpen, Server } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -35,18 +36,20 @@ export function SetupToggle({
 
 export function AppHeader({
   triggerRef,
+  actions,
 }: {
-  triggerRef: RefObject<HTMLButtonElement | null>;
+  triggerRef?: RefObject<HTMLButtonElement | null>;
+  actions?: ReactNode;
 }) {
   return (
     <header className="sticky top-0 z-20 flex h-16 shrink-0 bg-background items-center gap-3 border-b px-4 md:px-6">
-      <SetupToggle buttonRef={triggerRef} compact />
-      <Separator orientation="vertical" className="h-5" />
-      <div className="flex items-center gap-3">
+      {triggerRef && <><SetupToggle buttonRef={triggerRef} compact /><Separator orientation="vertical" className="h-5" /></>}
+      <Link href="/" aria-label="Load balancing lab home" className="flex items-center gap-3">
         <Server className="size-5" />
-        <span className="font-semibold">Load balancing lab</span>
+        <span className="hidden font-semibold sm:inline">Load balancing lab</span>
         <Badge variant="outline">EC528</Badge>
-      </div>
+      </Link>
+      {actions && <div className="ml-auto flex shrink-0 items-center gap-2">{actions}</div>}
     </header>
   );
 }

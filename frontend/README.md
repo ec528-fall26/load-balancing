@@ -129,3 +129,39 @@ recorded state; closing the tray returns focus to its trigger. Displaying 40
 servers with 64 execution slots and 64 queue places renders at most 32 server
 blades and 1,024 capacity cells per page. The browser suite verifies this using
 a real 10,000-request Python result, including queue saturation and pagination.
+
+
+
+## Home and saved setups
+
+`/` is the setup library; `/simulator` is the run workspace. The grid includes
+six built-in templates and configurations saved in this browser. Search and
+All/Saved/Templates filters work without contacting the Python API. Use the
+header's New simulation action for defaults, or open a card to load its settings.
+Existing `/?preview=1` links redirect to the simulator's recorded preview.
+
+The simulator's Save setup dialog stores a name, configuration, seed and update
+time. An existing save can be updated or copied. Home offers confirmed deletion.
+Results and event arrays are not stored; opening a setup does not automatically
+start a run. These local saves are independent of A-07's Python export/replay API.
+
+Persistence lives in `lib/saved-setups.ts`, using the versioned localStorage key
+`lbsim.saved-setups.v1`. It validates stored records and API workload limits,
+limits the library to 100 setups, preserves malformed/unsupported data, and
+reports storage failures without replacing previous saves. Templates do not
+change when a user saves or deletes configurations. Cross-tab storage events
+refresh an open home grid. Clearing browser/site storage removes local saves;
+there is no account sync or server persistence in this feature.
+
+Run `npm run test:library` for storage, validation, copy/update/delete, malformed
+data, and quota-failure tests. The browser library tests cover template opening,
+search, save/update/copy/reopen/delete, mobile overflow, empty states, and corrupt
+storage feedback. The existing simulator suite now navigates to `/simulator`.
+
+The large-scale starter setups include a 1,000-server fleet (four execution
+slots per server) and a 100-server overload case. Both generate 100,000 requests
+at 5,000 requests/s for 20 simulated seconds, matching the current one-shot API
+request cap. Template cards show total generated requests and queue capacity.
+Both presets have been exercised through the Python API with seed 42: the fleet
+completed 100,000 with no rejections; the overload completed 16,365 and rejected
+83,635. These are scenario outcomes, not real-world throughput measurements.
