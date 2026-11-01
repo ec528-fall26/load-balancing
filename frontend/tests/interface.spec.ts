@@ -69,6 +69,15 @@ test("recorded results, playback, tables and downloads", async ({ page }) => {
     path: "test-results/next-datacenter.png",
     fullPage: true,
   });
+  const inspect = page.getByRole("button", {
+    name: "Inspect server 0",
+    exact: true,
+  });
+  await inspect.click();
+  await expect(page.getByRole("dialog")).toContainText("Server 0 details");
+  await expect(page.getByRole("dialog")).toContainText("Processing rate");
+  await page.keyboard.press("Escape");
+  await expect(inspect).toBeFocused();
   await page.getByRole("radio", { name: "Run averages", exact: true }).check();
   await expect(page.getByRole("meter")).toHaveCount(2);
   await page.getByRole("tab", { name: "Server details", exact: true }).click();
@@ -273,6 +282,77 @@ test("setup uses a mobile sheet and preserves settings when reopened", async ({
   });
   await page.screenshot({
     path: "test-results/next-mobile-setup.png",
+    fullPage: true,
+  });
+});
+
+test("large rack view bounds cells, paginates, and shows queue saturation", async ({
+  page,
+  request,
+}) => {
+  const config = {
+    ...fixture.config,
+    server_count: 40,
+    concurrency: 64,
+    queue_limit: 64,
+    arrival_rate: 10000,
+    duration: 1,
+    service_min: 2,
+    service_max: 2,
+  };
+  const response = await request.post("/api/engine/run", { data: { config } });
+  expect(response.status()).toBe(200);
+  const run = await response.json();
+  await page.route("**/api/engine/run", (route) =>
+    route.fulfill({ json: run }),
+  );
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Run simulation", exact: true })
+    .click();
+  await page.getByRole("tab", { name: "Datacenter", exact: true }).click();
+  await expect(page.getByRole("article")).toHaveCount(32);
+  await expect(page.locator(".dc-capacity-cell")).toHaveCount(1024);
+  const seek = page.getByRole("slider");
+  await seek.press("Home");
+  await seek.press("PageUp");
+  await seek.press("PageUp");
+  const server0 = page.getByRole("article", {
+    name: "Server 0 visualization",
+    exact: true,
+  });
+  await expect(server0).toContainText("Queue full");
+  await expect(
+    server0.getByRole("img", {
+      name: "64 of 64 execution slots occupied",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(
+    server0.getByRole("img", {
+      name: "64 of 64 waiting places occupied",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page.screenshot({
+    path: "test-results/next-datacenter-loaded.png",
+    fullPage: true,
+  });
+  await page
+    .getByLabel("Servers to display", { exact: true })
+    .selectOption("1");
+  await expect(page.getByRole("article")).toHaveCount(8);
+  await expect(
+    page.getByRole("button", { name: "Inspect server 32", exact: true }),
+  ).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBeTruthy();
+  await page.screenshot({
+    path: "test-results/next-datacenter-mobile.png",
     fullPage: true,
   });
 });
