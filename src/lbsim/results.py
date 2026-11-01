@@ -8,6 +8,22 @@ TEAL = '#147D92'
 ORANGE = '#B85A27'
 
 
+def response_histogram(times: list[float], bins: int = 20) -> list[dict]:
+    """Aggregate all responses before chart validation and browser transfer."""
+    if not times:
+        return []
+    low, high = min(times), max(times)
+    if low == high:
+        return [{'Start': low, 'End': low + max(0.001, low * 0.05), 'Requests': len(times)}]
+    width = (high - low) / bins
+    counts = [0] * bins
+    for value in times:
+        counts[min(bins - 1, int((value - low) / width))] += 1
+    return [{'Start': low + i * width,
+             'End': high if i == bins - 1 else low + (i + 1) * width,
+             'Requests': count} for i, count in enumerate(counts)]
+
+
 def chart(spec: dict, height: int = 240, alt: str = "Simulation results chart"):
     spec = {
         'height': height,
@@ -58,14 +74,16 @@ def display_summary(summary: dict, config: dict | None = None):
             st.subheader('Response time distribution')
             times = summary.get('response_times', [])
             if times:
-                chart({'data': {'values': [{'Seconds': t} for t in times]}, 'layer': [
+                chart({'data': {'values': response_histogram(times)}, 'layer': [
                     {'mark': {'type': 'bar', 'color': TEAL}, 'encoding': {
-                        'x': {'field': 'Seconds', 'type': 'quantitative', 'bin': {'maxbins': 20},
+                        'x': {'field': 'Start', 'type': 'quantitative', 'bin': 'binned',
                               'title': 'Response time (s)'},
-                        'y': {'aggregate': 'count', 'type': 'quantitative', 'title': 'Completed requests',
+                        'x2': {'field': 'End'},
+                        'y': {'field': 'Requests', 'type': 'quantitative', 'title': 'Completed requests',
                               'axis': {'tickMinStep': 1}},
-                        'tooltip': [{'field': 'Seconds', 'bin': {'maxbins': 20}, 'type': 'quantitative', 'title': 'Seconds'},
-                                    {'aggregate': 'count', 'type': 'quantitative', 'title': 'Requests'}],
+                        'tooltip': [{'field': 'Start', 'type': 'quantitative', 'title': 'From (s)', 'format': '.3f'},
+                                    {'field': 'End', 'type': 'quantitative', 'title': 'To (s)', 'format': '.3f'},
+                                    {'field': 'Requests', 'type': 'quantitative'}],
                     }},
                     {'data': {'values': [{'p95': summary['p95_response_time']}]},
                      'mark': {'type': 'rule', 'color': ORANGE, 'strokeDash': [5, 4]},

@@ -1,8 +1,24 @@
 import unittest
 from streamlit.testing.v1 import AppTest
+from lbsim.results import response_histogram
 
 
 class ResultsTests(unittest.TestCase):
+    def test_histogram_preserves_every_response_with_bounded_chart_data(self):
+        for count in (100000, 500000):
+            with self.subTest(responses=count):
+                times = [i / 1000 for i in range(count)]
+                rows = response_histogram(times)
+                self.assertEqual(len(rows), 20)
+                self.assertEqual(sum(row['Requests'] for row in rows), count)
+                self.assertEqual(rows[0]['Start'], min(times))
+                self.assertEqual(rows[-1]['End'], max(times))
+                self.assertTrue(all(row['Requests'] == count // 20 for row in rows))
+        self.assertEqual(response_histogram([]), [])
+        equal = response_histogram([0.5] * 100)
+        self.assertEqual(equal[0]['Requests'], 100)
+        self.assertLess(equal[0]['Start'], equal[0]['End'])
+
     def render(self, summary):
         app = AppTest.from_string(
             'import streamlit as st\n'

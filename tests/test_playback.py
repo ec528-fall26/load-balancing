@@ -9,6 +9,37 @@ CONFIG = dict(server_count=1, concurrency=1, queue_limit=1, arrival_rate=4.0,
 
 
 class PlaybackTests(unittest.TestCase):
+    def test_hidden_controls_restore_actual_speed_and_position(self):
+        app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / 'src/lbsim/app.py')).run()
+        next(b for b in app.button if b.label == 'Run simulation').click().run()
+        app.slider(key='playback_seek').set_value(10.0).run()
+        app.selectbox(key='playback_speed').set_value(10.0).run()
+        app.radio[0].set_value('Run averages').run()
+        app.radio[0].set_value('Playback').run()
+        self.assertFalse(app.exception)
+        self.assertEqual(app.selectbox(key='playback_speed').value, 10.0)
+        self.assertEqual(app.session_state['playback_rate'], 10.0)
+        self.assertEqual(app.slider(key='playback_seek').value, 10.0)
+        self.assertEqual(app.session_state['playback_time'], 10.0)
+
+    def test_speed_callback_recovers_missing_clock_state(self):
+        app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / 'src/lbsim/app.py')).run()
+        next(b for b in app.button if b.label == 'Run simulation').click().run()
+        # A retained widget callback can run before the page restores cleared state.
+        for key in ('playback_time', 'playback_playing', 'playback_anchor', 'playback_rate'):
+            del app.session_state[key]
+        app.selectbox(key='playback_speed').set_value(2.0).run()
+        self.assertFalse(app.exception)
+        self.assertEqual(app.session_state['playback_time'], 0.0)
+        self.assertEqual(app.session_state['playback_rate'], 2.0)
+        next(b for b in app.button if b.label == 'Play').click().run()
+        app.selectbox(key='playback_speed').set_value(5.0).run()
+        self.assertFalse(app.exception)
+        self.assertTrue(app.session_state['playback_playing'])
+        self.assertEqual(app.session_state['playback_rate'], 5.0)
+        next(b for b in app.button if b.label == 'Pause').click().run()
+        self.assertFalse(app.exception)
+
     def test_overload_queue_drain_and_backward_seek(self):
         summary = run_simulation(CONFIG)
         replay = Playback(summary['events'], 1)
