@@ -1,118 +1,102 @@
 "use client";
-import { useState } from "react";
-import { Chart } from "./chart";
+import { useMemo } from "react";
+import {
+  OutcomeChart,
+  ResponseChart,
+  UtilizationChart,
+  histogram,
+} from "./chart";
 import { Datacenter } from "./datacenter";
 import { Run, policies } from "@/lib/engine";
-const TEAL = "#147D92",
-  ORANGE = "#B85A27";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Notice } from "./surface";
 export const seconds = (v: number | null) =>
   v === null ? "N/A" : `${v.toFixed(3)} s`;
 export function Results({ run }: { run: Run }) {
-  const [tab, setTab] = useState("Overview");
   const { config: c, summary: s } = run;
-  const rows = Object.entries(s.per_server_utilization)
-    .sort((a, b) => Number(a[0]) - Number(b[0]))
-    .map(([id, u]) => ({
-      "Server ID": Number(id),
-      "Slot utilization (%)": Math.round(u * 10000) / 100,
-    }));
+  const bins = useMemo(() => histogram(s.response_times), [s.response_times]);
+  const rows = useMemo(
+    () =>
+      Object.entries(s.per_server_utilization)
+        .sort((a, b) => Number(a[0]) - Number(b[0]))
+        .map(([id, u]) => ({
+          id: Number(id),
+          utilization: Math.round(u * 10000) / 100,
+        })),
+    [s.per_server_utilization],
+  );
   const total = s.completed_count + s.rejected_count;
   return (
-    <>
-      <p className="caption">
-        Last completed run · {c.server_count} servers · {c.arrival_rate}{" "}
-        requests/s · {c.duration} s arrival window · seed {c.seed} ·{" "}
-        {policies[c.policy]}
-      </p>
-      <div className="metrics">
+    <div className="flex min-w-0 flex-col gap-6">
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge variant="secondary">Last completed run</Badge>
+        <p className="caption">
+          {c.server_count} servers · {c.arrival_rate} requests/s · {c.duration}{" "}
+          s arrival window · seed {c.seed} · {policies[c.policy]}
+        </p>
+      </div>
+      <dl className="grid grid-cols-2 gap-6 border-y py-5 xl:grid-cols-4">
         {[
-          ["Completed requests", s.completed_count],
-          ["Rejected requests", s.rejected_count],
+          ["Completed requests", s.completed_count.toLocaleString()],
+          ["Rejected requests", s.rejected_count.toLocaleString()],
           ["Average response time", seconds(s.mean_response_time)],
           ["p95 response time", seconds(s.p95_response_time)],
         ].map(([label, value]) => (
           <div key={label}>
-            <div className="metric-label">{label}</div>
-            <div className="metric-value">{value}</div>
+            <dt className="text-sm text-muted-foreground">{label}</dt>
+            <dd className="mt-1 text-2xl font-semibold tabular-nums">
+              {value}
+            </dd>
           </div>
         ))}
-      </div>
+      </dl>
       {s.completed_count === 0 && (
-        <div className="notice">
-          No completed requests. Response times are unavailable.
-        </div>
+        <Notice>No completed requests. Response times are unavailable.</Notice>
       )}
       <p className="caption">
         Response times include queue waiting and service, in simulated seconds.
       </p>
-      <div className="tabs" role="tablist">
-        {["Overview", "Datacenter", "Server details"].map((t) => (
-          <button
-            id={`tab-${t.replace(" ", "-")}`}
-            role="tab"
-            aria-selected={tab === t}
-            aria-controls="results-panel"
-            key={t}
-            onClick={() => setTab(t)}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
-      <div
-        id="results-panel"
-        role="tabpanel"
-        aria-labelledby={`tab-${tab.replace(" ", "-")}`}
-      >
-        {tab === "Overview" && (
-          <>
-            <div className="columns">
-              <section>
-                <h2>Request outcomes</h2>
+      <Tabs defaultValue="Overview" className="min-w-0">
+        <TabsList>
+          {["Overview", "Datacenter", "Server details"].map((t) => (
+            <TabsTrigger key={t} value={t}>
+              {t}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        <TabsContent value="Overview" className="mt-4 flex flex-col gap-5">
+          <div className="grid min-w-0 gap-5 xl:grid-cols-2">
+            <Card className="min-w-0">
+              <CardHeader>
+                <CardTitle>Request outcomes</CardTitle>
+                <CardDescription>
+                  Did the available capacity keep up?
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
                 {total ? (
                   <>
-                    <Chart
-                      label="Completed and rejected request counts"
-                      spec={{
-                        data: {
-                          values: [
-                            {
-                              Outcome: "Completed",
-                              Requests: s.completed_count,
-                            },
-                            { Outcome: "Rejected", Requests: s.rejected_count },
-                          ],
-                        },
-                        mark: { type: "bar", cornerRadiusEnd: 3 },
-                        encoding: {
-                          y: {
-                            field: "Outcome",
-                            type: "nominal",
-                            title: null,
-                            sort: ["Completed", "Rejected"],
-                          },
-                          x: {
-                            field: "Requests",
-                            type: "quantitative",
-                            axis: { tickMinStep: 1 },
-                          },
-                          color: {
-                            field: "Outcome",
-                            type: "nominal",
-                            legend: null,
-                            scale: {
-                              domain: ["Completed", "Rejected"],
-                              range: [TEAL, ORANGE],
-                            },
-                          },
-                          tooltip: [
-                            { field: "Outcome" },
-                            { field: "Requests" },
-                          ],
-                        },
-                      }}
+                    <OutcomeChart
+                      completed={s.completed_count}
+                      rejected={s.rejected_count}
                     />
-                    <p className="caption">
+                    <p className="caption mt-3">
                       {((s.rejected_count / total) * 100).toFixed(1)}% rejected
                       out of {total.toLocaleString()} requests.
                     </p>
@@ -123,70 +107,20 @@ export function Results({ run }: { run: Run }) {
                     window.
                   </p>
                 )}
-              </section>
-              <section>
-                <h2>Response time distribution</h2>
-                {s.response_times.length ? (
+              </CardContent>
+            </Card>
+            <Card className="min-w-0">
+              <CardHeader>
+                <CardTitle>Response time distribution</CardTitle>
+                <CardDescription>
+                  Completed requests, in simulated seconds.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {bins.length ? (
                   <>
-                    <Chart
-                      label="Histogram of completed-request response times with a p95 reference line"
-                      spec={{
-                        data: {
-                          values: s.response_times.map((t) => ({ Seconds: t })),
-                        },
-                        layer: [
-                          {
-                            mark: { type: "bar", color: TEAL },
-                            encoding: {
-                              x: {
-                                field: "Seconds",
-                                type: "quantitative",
-                                bin: { maxbins: 20 },
-                                title: "Response time (s)",
-                              },
-                              y: {
-                                aggregate: "count",
-                                type: "quantitative",
-                                title: "Completed requests",
-                                axis: { tickMinStep: 1 },
-                              },
-                              tooltip: [
-                                {
-                                  field: "Seconds",
-                                  bin: { maxbins: 20 },
-                                  type: "quantitative",
-                                  title: "Seconds",
-                                },
-                                {
-                                  aggregate: "count",
-                                  type: "quantitative",
-                                  title: "Requests",
-                                },
-                              ],
-                            },
-                          },
-                          {
-                            data: { values: [{ p95: s.p95_response_time }] },
-                            mark: {
-                              type: "rule",
-                              color: ORANGE,
-                              strokeDash: [5, 4],
-                            },
-                            encoding: {
-                              x: { field: "p95", type: "quantitative" },
-                              tooltip: [
-                                {
-                                  field: "p95",
-                                  type: "quantitative",
-                                  format: ".3f",
-                                },
-                              ],
-                            },
-                          },
-                        ],
-                      }}
-                    />
-                    <p className="caption">
+                    <ResponseChart bins={bins} p95={s.p95_response_time} />
+                    <p className="caption mt-3">
                       Each bar groups similar response times. The dashed line
                       marks p95.
                     </p>
@@ -197,71 +131,52 @@ export function Results({ run }: { run: Run }) {
                     distribution.
                   </p>
                 )}
-              </section>
-            </div>
-            <h2>Per-server utilization</h2>
-            {rows.length ? (
-              <Chart
-                height={200}
-                label="Occupied slot percentage for each server during the arrival window"
-                spec={{
-                  data: { values: rows },
-                  mark: {
-                    type: rows.length <= 40 ? "bar" : "line",
-                    color: TEAL,
-                  },
-                  encoding: {
-                    x: {
-                      field: "Server ID",
-                      type: rows.length <= 40 ? "ordinal" : "quantitative",
-                      axis: { labelAngle: 0, tickCount: 10, tickMinStep: 1 },
-                    },
-                    y: {
-                      field: "Slot utilization (%)",
-                      type: "quantitative",
-                      scale: { domain: [0, 100] },
-                    },
-                    tooltip: [
-                      { field: "Server ID" },
-                      { field: "Slot utilization (%)", format: ".2f" },
-                    ],
-                  },
-                }}
-              />
-            ) : (
-              <div className="notice">
-                No server utilization data available.
-              </div>
-            )}
-            <p className="caption">
-              Occupied slots during the arrival window. Draining time is
-              excluded; this is modeled utilization.
-            </p>
-          </>
-        )}
-        {tab === "Datacenter" && <Datacenter run={run} />}
-        {tab === "Server details" && (
-          <>
-            <p className="caption">Values behind the utilization chart.</p>
-            <table>
-              <thead>
-                <tr>
-                  <th>Server ID</th>
-                  <th>Slot utilization (%)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => (
-                  <tr key={row["Server ID"]}>
-                    <td>{row["Server ID"]}</td>
-                    <td>{row["Slot utilization (%)"]}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </>
-        )}
-      </div>
-    </>
+              </CardContent>
+            </Card>
+          </div>
+          <Card className="min-w-0">
+            <CardHeader>
+              <CardTitle>Per-server utilization</CardTitle>
+              <CardDescription>
+                How evenly was work distributed?
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {rows.length ? (
+                <UtilizationChart rows={rows} />
+              ) : (
+                <Notice>No server utilization data available.</Notice>
+              )}
+              <p className="caption mt-3">
+                Occupied slots during the arrival window. Draining time is
+                excluded; this is modeled utilization.
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="Datacenter" className="mt-4">
+          <Datacenter run={run} />
+        </TabsContent>
+        <TabsContent value="Server details" className="mt-4">
+          <p className="caption mb-3">Values behind the utilization chart.</p>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Server ID</TableHead>
+                <TableHead>Slot utilization (%)</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((r) => (
+                <TableRow key={r.id}>
+                  <TableCell>{r.id}</TableCell>
+                  <TableCell>{r.utilization.toFixed(2)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }

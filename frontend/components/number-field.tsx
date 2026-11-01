@@ -1,5 +1,13 @@
 "use client";
-import { useState } from "react";
+import { useId, useState } from "react";
+import { Minus, Plus } from "lucide-react";
+import { Field, FieldLabel, FieldDescription } from "@/components/ui/field";
+import {
+  InputGroup,
+  InputGroupInput,
+  InputGroupAddon,
+  InputGroupButton,
+} from "@/components/ui/input-group";
 export function NumberField({
   label,
   value,
@@ -13,26 +21,23 @@ export function NumberField({
   help?: string;
   onChange: (value: number) => void;
 }) {
+  const id = useId();
   const [editing, setEditing] = useState(false),
     [draft, setDraft] = useState("");
   const digits = step === 1 ? 0 : step === 0.001 ? 3 : 2;
   return (
-    <label>
-      {label}
-      {help && (
-        <span className="help" title={help} aria-label={help}>
-          ?
-        </span>
-      )}
-      <span className="number">
-        <input
+    <Field>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <InputGroup>
+        <InputGroupInput
+          id={id}
           aria-label={label}
           type="number"
           step={step}
-          value={editing ? draft : value.toFixed(digits)}
           required
-          onFocus={() => {
-            setDraft(String(value));
+          value={editing ? draft : value.toFixed(digits)}
+          onFocus={(event) => {
+            setDraft(event.currentTarget.value);
             setEditing(true);
           }}
           onChange={(e) => {
@@ -45,21 +50,26 @@ export function NumberField({
           }}
           onBlur={() => setEditing(false)}
         />
-        <button
-          type="button"
-          aria-label={`Decrease ${label}`}
-          onClick={() => onChange(Number((value - step).toFixed(digits)))}
-        >
-          −
-        </button>
-        <button
-          type="button"
-          aria-label={`Increase ${label}`}
-          onClick={() => onChange(Number((value + step).toFixed(digits)))}
-        >
-          +
-        </button>
-      </span>
-    </label>
+        <InputGroupAddon align="inline-end">
+          <InputGroupButton
+            type="button"
+            size="icon-xs"
+            aria-label={`Decrease ${label}`}
+            onClick={() => onChange(Number((value - step).toFixed(digits)))}
+          >
+            <Minus />
+          </InputGroupButton>
+          <InputGroupButton
+            type="button"
+            size="icon-xs"
+            aria-label={`Increase ${label}`}
+            onClick={() => onChange(Number((value + step).toFixed(digits)))}
+          >
+            <Plus />
+          </InputGroupButton>
+        </InputGroupAddon>
+      </InputGroup>
+      {help && <FieldDescription id={`${id}-help`}>{help}</FieldDescription>}
+    </Field>
   );
 }
