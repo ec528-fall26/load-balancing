@@ -4,3 +4,5 @@ out/
 *.tsbuildinfo
 test-results/
 playwright-report/
+.api-tests/
+.env.local

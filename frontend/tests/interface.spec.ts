@@ -1,6 +1,9 @@
 import { test, expect } from "@playwright/test";
 import fixture from "../lib/preview-run.json";
-test("initial UI and engine placeholder", async ({ page }) => {
+test("initial UI and unavailable backend feedback", async ({ page }) => {
+  await page.route("**/api/engine/run", route => route.fulfill({ status: 503,
+    contentType: "application/json", body: JSON.stringify({ code: "BACKEND_UNAVAILABLE",
+      message: "Cannot reach the Python API. Start the backend and retry." }) }));
   await page.goto("/");
   await expect(
     page.getByRole("heading", { name: "Load balancing simulator" }),
@@ -12,7 +15,7 @@ test("initial UI and engine placeholder", async ({ page }) => {
     .getByRole("button", { name: "Run simulation", exact: true })
     .click();
   await expect(page.getByRole("status")).toContainText(
-    "Python engine API is not connected yet",
+    "Cannot reach the Python API",
   );
   await expect(page.getByRole("tab")).toHaveCount(0);
 });
