@@ -20,6 +20,8 @@
     "lib/engine.ts",
     "tests/api-proxy.test.ts",
     "lib/saved-setups.ts",
-    "tests/saved-setups.test.ts"
+    "tests/saved-setups.test.ts",
+    "lib/comparison.ts",
+    "tests/comparison.test.ts"
   ]
 }

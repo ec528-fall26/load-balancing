@@ -1,4 +1,7 @@
 "use client";
+import { useRouter } from "next/navigation";
+import { OpenSetupOnLoad } from "@/components/open-setup-on-load";
+import { COMPARE_DRAFT_KEY } from "@/lib/comparison";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Config, defaults, engineRequest, policies, Run } from "@/lib/engine";
 import { Results, seconds } from "@/components/results";
@@ -37,6 +40,7 @@ import { SaveSetupDialog } from "@/components/save-setup-dialog";
 import {
   readSetups,
   templates,
+  validConfig,
   type SavedSetup,
 } from "@/lib/saved-setups";
 import { AppHeader, SetupToggle } from "@/components/app-header";
@@ -171,6 +175,8 @@ function Comparison({ runs }: { runs: [Run, Run] }) {
   );
 }
 export default function Page() {
+  const router = useRouter();
+  const [sourceReady, setSourceReady] = useState(false);
   const [currentSave, setCurrentSave] = useState<SavedSetup | null>(null);
   const [setupName, setSetupName] = useState("New simulation");
   const setupTrigger = useRef<HTMLButtonElement>(null);
@@ -192,7 +198,19 @@ export default function Page() {
   useEffect(() => {
     const query = new URLSearchParams(location.search);
     try {
-      if (query.has("save")) {
+      if (query.has("compareDraft")) {
+        const raw = sessionStorage.getItem(COMPARE_DRAFT_KEY);
+        if (!raw || raw.length > 65536)
+          throw new Error(
+            "The comparison's lab setup is unavailable in this tab.",
+          );
+        const draft = JSON.parse(raw);
+        if (draft.version !== 1 || !validConfig(draft.config))
+          throw new Error("The comparison's lab setup could not be loaded.");
+        setConfig(draft.config);
+        setSetupName(typeof draft.name === "string" ? draft.name : "Lab setup");
+        setSourceReady(true);
+      } else if (query.has("save")) {
         const item = readSetups().find((item) => item.id === query.get("save"));
         if (!item)
           throw new Error(
@@ -201,6 +219,7 @@ export default function Page() {
         setConfig(item.config);
         setCurrentSave(item);
         setSetupName(item.name);
+        setSourceReady(true);
       } else if (query.has("template")) {
         const item = templates.find(
           (item) => item.id === query.get("template"),
@@ -211,6 +230,7 @@ export default function Page() {
           );
         setConfig(item.config);
         setSetupName(item.name);
+        setSourceReady(true);
       }
     } catch (error) {
       setFeedback(
@@ -346,7 +366,12 @@ export default function Page() {
       className="flex-col bg-background"
       style={{ "--sidebar-width": "20rem" } as CSSProperties}
     >
+      <OpenSetupOnLoad
+        ready={sourceReady}
+        completedRun={preview ? null : run}
+      />
       <AppHeader
+        section="lab"
         triggerRef={setupTrigger}
         actions={
           <SaveSetupDialog
@@ -388,6 +413,13 @@ export default function Page() {
             </div>
           </SidebarHeader>
           <SidebarContent className="gap-0 p-5">
+            {feedback && (
+              <div className="mb-4 md:hidden">
+                <Notice error role="status">
+                  {feedback}
+                </Notice>
+              </div>
+            )}
             <form
               className="flex flex-col gap-6"
               onSubmit={(e) => {
@@ -530,7 +562,26 @@ export default function Page() {
               Load balancing simulator
             </h1>
             <p className="mt-1 text-sm font-medium">{setupName}</p>
-
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-3"
+              onClick={() => {
+                try {
+                  sessionStorage.setItem(
+                    COMPARE_DRAFT_KEY,
+                    JSON.stringify({ version: 1, name: setupName, config }),
+                  );
+                  router.push("/compare?draft=1");
+                } catch {
+                  setFeedback(
+                    "Could not transfer this setup to Compare. Browser session storage may be unavailable.",
+                  );
+                }
+              }}
+            >
+              Compare current setup
+            </Button>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
               Explore how traffic and server capacity affect waiting, latency,
               and rejected requests.

@@ -165,3 +165,41 @@ request cap. Template cards show total generated requests and queue capacity.
 Both presets have been exercised through the Python API with seed 42: the fleet
 completed 100,000 with no rejections; the overload completed 16,365 and rejected
 83,635. These are scenario outcomes, not real-world throughput measurements.
+
+
+## Navigation and live comparisons
+
+The shared header offers Library, Lab, and Compare navigation. On narrow
+screens, a shadcn NativeSelect carries the same destinations. The sidebar trigger
+has no vertical divider. Opening a template or save automatically opens lab
+settings; successful mobile runs close the Sheet to reveal results. Failures
+keep settings available with feedback in the Sheet.
+
+Use **Compare current setup** in Lab to carry its unsaved configuration into
+`/compare`, or choose a template/save directly as the comparison baseline. The
+transfer uses a versioned per-tab sessionStorage draft; returning to Lab from
+that comparison restores the original draft. This does not save a configuration
+to the home library.
+
+Compare supports a baseline and up to three variants. The initial variant flips
+the routing policy; additional variants start as baseline copies and must be
+edited before running. Changed settings are listed by value, including optional
+processing-rate arrays. Baseline controls and variant controls support capacity,
+traffic, service times, seed, policy, and per-server processing rates.
+
+Run comparison executes each case sequentially through the existing Python
+`POST /v1/run` path, respecting its one-active-run admission limit. Each case
+retains the per-run workload bounds. Results include metrics, raw deltas to the
+baseline, outcome/latency charts, and exact compared configurations. Percentage
+rate deltas use percentage points; undefined metrics remain N/A. Inputs other
+than policy are called out, and one seeded comparison is not a statistical
+performance conclusion. Editing inputs does not rewrite the last completed
+comparison; a failed rerun preserves the previous complete result set.
+
+Comparison results are in-memory only, with no event or response-time arrays
+retained after extracting summary metrics. The full HTTP responses still use
+the existing API payload contract. This feature orchestrates live runs; it does
+not implement the separate CSV-comparison, replay, or export endpoints in A-07.
+Run `npm run test:comparison` for change detection, undefined metrics and compact
+result tests. Browser coverage includes a live baseline/two-variant comparison,
+correct deltas, failure recovery, unchanged-variant rejection and mobile flow.

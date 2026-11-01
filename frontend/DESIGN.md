@@ -74,3 +74,21 @@ to the library. Delete uses AlertDialog and leaves templates intact. Keep the
 browser-local persistence boundary explicit: saves contain configuration and
 seed, and do not include results or start a run automatically. Preserve unknown
 or malformed stored data and show an Alert rather than silently resetting it.
+
+
+## Lab navigation and comparison
+
+Header navigation names Library, Lab, and Compare. Use text links on desktop and
+NativeSelect on mobile; keep the sidebar opener at the far left without a
+separator. Opening templates/saves opens settings once; users can then close
+them normally. Successful runs reveal results on mobile; errors appear in the
+settings Sheet while it is open.
+
+The comparison route separates a named baseline from up to three editable
+variants. The same NumberField and shadcn fields/controls carry all settings.
+Show changed fields explicitly and preserve the seed by default. Results always
+use their own frozen configurations and labels, with signed deltas, percentage
+points for rates, and N/A for undefined metrics. Outcome and latency charts have
+legends. Changing workload/capacity is visibly distinguished from comparing
+routing policies under otherwise identical inputs. Keep previous complete
+results visible if a later case fails; never present a partial set as complete.
