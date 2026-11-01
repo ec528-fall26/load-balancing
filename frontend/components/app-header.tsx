@@ -1,5 +1,4 @@
 "use client";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { RefObject, ReactNode } from "react";
 import {
@@ -10,7 +9,13 @@ import {
   Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import { useSidebar } from "@/components/ui/sidebar";
 export function SetupToggle({
   buttonRef,
@@ -56,7 +61,6 @@ export function AppHeader({
   section?: PageSection;
   labHref?: string;
 }) {
-  const router=useRouter();
   return (
     <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-3 md:gap-4 md:px-6">
       {triggerRef && <SetupToggle buttonRef={triggerRef} compact />}
@@ -90,7 +94,31 @@ export function AppHeader({
           </Button>
         ))}
       </nav>
-      <div className="md:hidden"><NativeSelect aria-label="Page navigation" value={section} onChange={e=>{const page=pages.find(p=>p.id===e.target.value);if(page)router.push(page.id==='lab'?labHref:page.href);}}>{pages.map(page=><NativeSelectOption key={page.id} value={page.id}>{page.label}</NativeSelectOption>)}</NativeSelect></div>
+      <div className="md:hidden">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" aria-label="Page navigation">
+              {pages.find((page) => page.id === section)?.label}
+              <ChevronDown data-icon="inline-end" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            <DropdownMenuGroup>
+              {pages.map((page) => (
+                <DropdownMenuItem key={page.id} asChild>
+                  <Link
+                    href={page.id === "lab" ? labHref : page.href}
+                    aria-current={section === page.id ? "page" : undefined}
+                  >
+                    {page.label}
+                    {section === page.id && <Check className="ml-auto" />}
+                  </Link>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
       {actions && (
         <div className="ml-auto flex shrink-0 items-center gap-2">
           {actions}

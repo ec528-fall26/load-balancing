@@ -21,7 +21,7 @@ test("home lists templates, filters them, and opens the configured simulator", a
   await expect(
     page.getByRole("spinbutton", { name: "Server count", exact: true }),
   ).toHaveValue("6");
-  await expect(page.getByLabel("Routing policy", { exact: true })).toHaveValue("least_active_requests");
+  await expect(page.getByLabel("Routing policy", { exact: true })).toContainText("Least active requests");
   await page
     .getByRole("link", { name: "Load balancing lab home", exact: true })
     .click();

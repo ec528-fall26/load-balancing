@@ -22,12 +22,15 @@ test("lab draft comparison runs baseline and two variants, retaining results on 
   ).toBeVisible();
   await expect(
     page.getByLabel("Load baseline from", { exact: true }),
-  ).toHaveValue("draft");
+  ).toContainText("Current lab setup");
   await page.getByLabel("Load baseline from", { exact: true }).click();
   await page
     .getByRole("option", { name: "Light traffic", exact: true })
     .click();
-  await page.getByLabel("Load baseline from", {exact:true}).selectOption("draft");
+  await page.getByLabel("Load baseline from", { exact: true }).click();
+  await page
+    .getByRole("option", { name: "Current lab setup", exact: true })
+    .click();
 
   const a = page.getByRole("region", {
     name: "Variant A configuration",
@@ -119,14 +122,17 @@ test("mobile template opens setup automatically and closes it after a successful
     page.getByRole("tab", { name: "Overview", exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("combobox", { name: "Page navigation", exact: true }),
-  ).toHaveValue("lab");
+    page.getByRole("button", { name: "Page navigation", exact: true }),
+  ).toContainText("Lab");
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBeTruthy();
-  await page.getByRole("combobox", {name:"Page navigation",exact:true}).selectOption("compare");
+  await page
+    .getByRole("button", { name: "Page navigation", exact: true })
+    .click();
+  await page.getByRole("menuitem", { name: "Compare", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Compare configurations" }),
   ).toBeVisible();
@@ -154,7 +160,8 @@ test("comparison rejects unchanged variants before requesting work", async ({
     name: "Variant A configuration",
     exact: true,
   });
-  await variant.getByLabel("Routing policy", {exact:true}).selectOption("round_robin");
+  await variant.getByLabel("Routing policy", { exact: true }).click();
+  await page.getByRole("option", { name: "Round robin", exact: true }).click();
   await page
     .getByRole("button", { name: "Run comparison", exact: true })
     .click();

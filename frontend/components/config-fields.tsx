@@ -8,7 +8,14 @@ import {
   FieldDescription,
   FieldGroup,
 } from "@/components/ui/field";
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Panel } from "@/components/surface";
 import { useId, useState } from "react";
@@ -45,7 +52,26 @@ export function ConfigFields({
       </FieldGroup>
       <Field>
         <FieldLabel htmlFor={id}>Routing policy</FieldLabel>
-        <NativeSelect id={id} disabled={disabled} value={config.policy} onChange={e=>onChange({...config,policy:e.target.value as Config['policy']})}>{Object.entries(policies).map(([key,label])=><NativeSelectOption key={key} value={key}>{label}</NativeSelectOption>)}</NativeSelect>
+        <Select
+          value={config.policy}
+          disabled={disabled}
+          onValueChange={(value) =>
+            onChange({ ...config, policy: value as Config["policy"] })
+          }
+        >
+          <SelectTrigger id={id} className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              {Object.entries(policies).map(([key, label]) => (
+                <SelectItem key={key} value={key}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
       </Field>
       <Panel title="Service times, seed and server speeds">
         <FieldGroup>

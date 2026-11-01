@@ -14,7 +14,15 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { Field, FieldLabel } from "@/components/ui/field";
-import { NativeSelect,NativeSelectOption,NativeSelectOptGroup } from "@/components/ui/native-select";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Notice, Panel } from "@/components/surface";
 import { defaults, engineRequest, type Config, type Run } from "@/lib/engine";
 import {
@@ -193,7 +201,41 @@ export default function ComparePage() {
                 <FieldLabel htmlFor="comparison-baseline">
                   Load baseline from
                 </FieldLabel>
-                <NativeSelect id="comparison-baseline" value={source} disabled={busy} onChange={e=>chooseSource(e.target.value)}><NativeSelectOption value="default">Default setup</NativeSelectOption>{draftBaseline&&<NativeSelectOption value="draft">Current lab setup</NativeSelectOption>}<NativeSelectOptGroup label="Templates">{templates.map(t=><NativeSelectOption key={t.id} value={`template:${t.id}`}>{t.name}</NativeSelectOption>)}</NativeSelectOptGroup>{saves.length>0&&<NativeSelectOptGroup label="Saved setups">{saves.map(s=><NativeSelectOption key={s.id} value={`save:${s.id}`}>{s.name}</NativeSelectOption>)}</NativeSelectOptGroup>}</NativeSelect>
+                <Select
+                  value={source}
+                  onValueChange={chooseSource}
+                  disabled={busy}
+                >
+                  <SelectTrigger id="comparison-baseline" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value="default">Default setup</SelectItem>
+                      {draftBaseline && (
+                        <SelectItem value="draft">Current lab setup</SelectItem>
+                      )}
+                    </SelectGroup>
+                    <SelectGroup>
+                      <SelectLabel>Templates</SelectLabel>
+                      {templates.map((t) => (
+                        <SelectItem key={t.id} value={`template:${t.id}`}>
+                          {t.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                    {saves.length > 0 && (
+                      <SelectGroup>
+                        <SelectLabel>Saved setups</SelectLabel>
+                        {saves.map((s) => (
+                          <SelectItem key={s.id} value={`save:${s.id}`}>
+                            {s.name}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    )}
+                  </SelectContent>
+                </Select>
               </Field>
               <Panel title="Baseline settings">
                 <ConfigFields

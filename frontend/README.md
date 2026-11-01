@@ -130,8 +130,6 @@ servers with 64 execution slots and 64 queue places renders at most 32 server
 blades and 1,024 capacity cells per page. The browser suite verifies this using
 a real 10,000-request Python result, including queue saturation and pagination.
 
-
-
 ## Home and saved setups
 
 `/` is the setup library; `/simulator` is the run workspace. The grid includes
@@ -166,11 +164,10 @@ Both presets have been exercised through the Python API with seed 42: the fleet
 completed 100,000 with no rejections; the overload completed 16,365 and rejected
 83,635. These are scenario outcomes, not real-world throughput measurements.
 
-
 ## Navigation and live comparisons
 
 The shared header offers Library, Lab, and Compare navigation. On narrow
-screens, a shadcn NativeSelect carries the same destinations. The sidebar trigger
+screens, a shadcn DropdownMenu carries the same destinations. The sidebar trigger
 has no vertical divider. Opening a template or save automatically opens lab
 settings; successful mobile runs close the Sheet to reveal results. Failures
 keep settings available with feedback in the Sheet.

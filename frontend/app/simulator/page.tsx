@@ -18,7 +18,14 @@ import {
   FieldSet,
   FieldLegend,
 } from "@/components/ui/field";
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -451,22 +458,28 @@ export default function Page() {
                     <FieldLabel htmlFor="routing-policy">
                       Routing policy
                     </FieldLabel>
-                    <NativeSelect
-                      id="routing-policy"
+                    <Select
                       value={config.policy}
-                      onChange={(e) =>
+                      onValueChange={(value) =>
                         setConfig((current) => ({
                           ...current,
-                          policy: e.target.value as Config["policy"],
+                          policy: value as Config["policy"],
                         }))
                       }
                     >
-                      {Object.entries(policies).map(([value, label]) => (
-                        <NativeSelectOption key={value} value={value}>
-                          {label}
-                        </NativeSelectOption>
-                      ))}
-                    </NativeSelect>
+                      <SelectTrigger id="routing-policy" className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          {Object.entries(policies).map(([value, label]) => (
+                            <SelectItem key={value} value={value}>
+                              {label}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
                     <FieldDescription>
                       Least active counts running requests. Full targets reject
                       without retrying.

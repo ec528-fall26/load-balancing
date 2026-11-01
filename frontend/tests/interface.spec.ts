@@ -313,6 +313,11 @@ test("large rack view bounds cells, paginates, and shows queue saturation", asyn
   await page.getByRole("tab", { name: "Datacenter", exact: true }).click();
   await expect(page.getByRole("article")).toHaveCount(32);
   await expect(page.locator(".dc-capacity-cell")).toHaveCount(1024);
+  await page.getByLabel("Playback speed", { exact: true }).click();
+  await page.getByRole("option", { name: "2×", exact: true }).click();
+  await expect(
+    page.getByLabel("Playback speed", { exact: true }),
+  ).toContainText("2×");
   const seek = page.getByRole("slider");
   await seek.press("Home");
   await seek.press("PageUp");
@@ -338,9 +343,10 @@ test("large rack view bounds cells, paginates, and shows queue saturation", asyn
     path: "test-results/next-datacenter-loaded.png",
     fullPage: true,
   });
+  await page.getByLabel("Servers to display", { exact: true }).click();
   await page
-    .getByLabel("Servers to display", { exact: true })
-    .selectOption("1");
+    .getByRole("option", { name: "Servers 32–39", exact: true })
+    .click();
   await expect(page.getByRole("article")).toHaveCount(8);
   await expect(
     page.getByRole("button", { name: "Inspect server 32", exact: true }),

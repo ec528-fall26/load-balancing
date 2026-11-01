@@ -33,6 +33,7 @@ export function NumberField({
           id={id}
           aria-label={label}
           type="number"
+          className="[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
           step={step}
           required
           value={editing ? draft : value.toFixed(digits)}

@@ -14,8 +14,7 @@ controls consistent across setup, results, saved-run workflows, and playback.
 - Setup stays in a 320px desktop column. Hide/show setup works on every size;
   narrow screens use the Sidebar's mobile Sheet, with focus containment, Escape dismissal, and an overlay. SidebarProvider owns panel state and responsive behavior; keep configuration state in the page so closing the panel preserves settings.
 - Forms use Field, FieldGroup, FieldSet, and FieldLegend. Numeric controls use
-  InputGroup with named increment/decrement buttons. NativeSelect is the shadcn
-  native select, preserving browser keyboard behavior.
+  InputGroup with named increment/decrement buttons. Select uses the shared Radix popup with keyboard navigation.
 - Results use shadcn Tabs and Table. Accordion sections contain repeatability,
   saved-run workflows, configuration, exports, and comparison. Errors use Alert;
   the initial state uses Empty. Keep preview visibly labeled as recorded data.
@@ -24,7 +23,7 @@ controls consistent across setup, results, saved-run workflows, and playback.
   independently of color. Disable chart entrance animations so results are
   immediately visible. Histogram work is linear in sample count, with at most
   20 rendered bins. Preserve engine p95 and completed-request-only semantics.
-- Playback uses Button, RadioGroup, NativeSelect, Slider, Progress, and Badge.
+- Playback uses Button, RadioGroup, Select, Slider, Progress, and Badge.
   Execution and waiting remain separate; the task pool covers every server.
   Rack cards paginate at 32 servers. No container implies a physical region.
 - API errors retain the previous successful run. Edited settings never rewrite
@@ -75,11 +74,10 @@ browser-local persistence boundary explicit: saves contain configuration and
 seed, and do not include results or start a run automatically. Preserve unknown
 or malformed stored data and show an Alert rather than silently resetting it.
 
-
 ## Lab navigation and comparison
 
 Header navigation names Library, Lab, and Compare. Use text links on desktop and
-NativeSelect on mobile; keep the sidebar opener at the far left without a
+DropdownMenu on mobile; keep the sidebar opener at the far left without a
 separator. Opening templates/saves opens settings once; users can then close
 them normally. Successful runs reveal results on mobile; errors appear in the
 settings Sheet while it is open.
@@ -92,3 +90,14 @@ points for rates, and N/A for undefined metrics. Outcome and latency charts have
 legends. Changing workload/capacity is visibly distinguished from comparing
 routing policies under otherwise identical inputs. Keep previous complete
 results visible if a later case fails; never present a partial set as complete.
+
+## Control consistency
+
+Use shadcn Select with SelectTrigger, SelectValue, SelectContent, SelectGroup and
+SelectItem for lab policy, comparison policy/baseline, playback speed and server
+pagination. Group baseline choices with SelectLabel. Header page navigation
+uses DropdownMenu. Keep browser-specific dropdown presentation out of app
+controls. NumberField composes InputGroupInput and InputGroupButton; suppress
+native number spinners so there is one consistent pair of stepper controls.
+Playback controls use full Card composition. Native semantic page structure and
+the bounded data-visualization graphics remain separate from control primitives.

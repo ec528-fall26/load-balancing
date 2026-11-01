@@ -1,6 +1,13 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Run } from "@/lib/engine";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -10,9 +17,13 @@ import {
   FieldLegend,
 } from "@/components/ui/field";
 import {
-  NativeSelect,
-  NativeSelectOption,
-} from "@/components/ui/native-select";
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Slider } from "@/components/ui/slider";
 import { Play, Pause, RotateCcw } from "lucide-react";
@@ -93,17 +104,27 @@ export function Datacenter({ run }: { run: Run }) {
       {servers.length > 32 && (
         <Field className="max-w-xs">
           <FieldLabel htmlFor="server-page">Servers to display</FieldLabel>
-          <NativeSelect
-            id="server-page"
-            value={page}
-            onChange={(e) => setPage(Number(e.target.value))}
+          <Select
+            value={String(page)}
+            onValueChange={(value) => setPage(Number(value))}
           >
-            {Array.from({ length: Math.ceil(servers.length / 32) }, (_, i) => (
-              <NativeSelectOption key={i} value={i}>
-                Servers {i * 32}–{Math.min((i + 1) * 32, servers.length) - 1}
-              </NativeSelectOption>
-            ))}
-          </NativeSelect>
+            <SelectTrigger id="server-page" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {Array.from(
+                  { length: Math.ceil(servers.length / 32) },
+                  (_, i) => (
+                    <SelectItem key={i} value={String(i)}>
+                      Servers {i * 32}–
+                      {Math.min((i + 1) * 32, servers.length) - 1}
+                    </SelectItem>
+                  ),
+                )}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </Field>
       )}
       <FieldSet>
@@ -122,75 +143,91 @@ export function Datacenter({ run }: { run: Run }) {
         </RadioGroup>
       </FieldSet>
       {mode === "Playback" && (
-        <div className="flex flex-col gap-4 rounded-lg border p-4">
-          <div className="flex flex-wrap items-end gap-3">
-            <Button
-              onClick={() => {
-                if (now >= end) setNow(0);
-                setPlaying(!playing);
-              }}
-            >
-              {playing ? (
-                <Pause data-icon="inline-start" />
-              ) : (
-                <Play data-icon="inline-start" />
-              )}
-              {playing ? "Pause" : "Play"}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setNow(0);
-                setPlaying(false);
-              }}
-            >
-              <RotateCcw data-icon="inline-start" />
-              Restart
-            </Button>
-            <Field className="w-40">
-              <FieldLabel htmlFor="playback-speed">Playback speed</FieldLabel>
-              <NativeSelect
-                id="playback-speed"
-                value={speed}
-                onChange={(e) => setSpeed(Number(e.target.value))}
+        <Card>
+          <CardHeader>
+            <CardTitle>Playback controls</CardTitle>
+            <CardDescription>
+              Explore the recorded run, including queue draining.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <div className="flex flex-wrap items-end gap-3">
+              <Button
+                onClick={() => {
+                  if (now >= end) setNow(0);
+                  setPlaying(!playing);
+                }}
               >
-                {[0.25, 0.5, 1, 2, 5, 10].map((v) => (
-                  <NativeSelectOption key={v} value={v}>
-                    {v}×
-                  </NativeSelectOption>
-                ))}
-              </NativeSelect>
+                {playing ? (
+                  <Pause data-icon="inline-start" />
+                ) : (
+                  <Play data-icon="inline-start" />
+                )}
+                {playing ? "Pause" : "Play"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setNow(0);
+                  setPlaying(false);
+                }}
+              >
+                <RotateCcw data-icon="inline-start" />
+                Restart
+              </Button>
+              <Field className="w-40">
+                <FieldLabel htmlFor="playback-speed">Playback speed</FieldLabel>
+                <Select
+                  value={String(speed)}
+                  onValueChange={(value) => setSpeed(Number(value))}
+                >
+                  <SelectTrigger id="playback-speed" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {[0.25, 0.5, 1, 2, 5, 10].map((v) => (
+                        <SelectItem key={v} value={String(v)}>
+                          {v}×
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </Field>
+            </div>
+            <Field>
+              <FieldLabel>Jump to time (seconds)</FieldLabel>
+              <Slider
+                aria-label="Jump to time (seconds)"
+                min={0}
+                max={Math.max(end, 0.001)}
+                step={end > 0 ? Math.min(0.1, end / 100) : 0.001}
+                value={[now]}
+                onValueChange={(v) => setNow(v[0])}
+              />
             </Field>
-          </div>
-          <Field>
-            <FieldLabel>Jump to time (seconds)</FieldLabel>
-            <Slider
-              aria-label="Jump to time (seconds)"
-              min={0}
-              max={Math.max(end, 0.001)}
-              step={end > 0 ? Math.min(0.1, end / 100) : 0.001}
-              value={[now]}
-              onValueChange={(v) => setNow(v[0])}
-            />
-          </Field>
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <strong className="text-sm tabular-nums">
-              {now >= end ? "Finished" : playing ? "Playing" : "Paused"} ·{" "}
-              {now.toFixed(1)} / {end.toFixed(1)} s
-            </strong>
-            <p className="caption">1× = one simulated second per real second</p>
-          </div>
-          {latest && (
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <strong className="text-sm tabular-nums">
+                {now >= end ? "Finished" : playing ? "Playing" : "Paused"} ·{" "}
+                {now.toFixed(1)} / {end.toFixed(1)} s
+              </strong>
+              <p className="caption">
+                1× = one simulated second per real second
+              </p>
+            </div>
+            {latest && (
+              <p className="caption">
+                Latest event · {latest[0].toFixed(3)} s · Request {latest[5]}{" "}
+                {latest[4]} on server {latest[1]}
+              </p>
+            )}
             <p className="caption">
-              Latest event · {latest[0].toFixed(3)} s · Request {latest[5]}{" "}
-              {latest[4]} on server {latest[1]}
+              Playback follows the recorded run, including queue draining.
+              Labels show current slot and queue counts.
             </p>
-          )}
-          <p className="caption">
-            Playback follows the recorded run, including queue draining. Labels
-            show current slot and queue counts.
-          </p>
-        </div>
+          </CardContent>
+        </Card>
       )}
       {mode === "Playback" && (
         <div className="flex flex-wrap items-center justify-between gap-3 border-y py-3">
