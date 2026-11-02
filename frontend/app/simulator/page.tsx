@@ -1,4 +1,15 @@
 "use client";
+import {
+  RegionalSettings,
+  initialRegions,
+} from "@/components/regional-settings";
+import { RegionalTelemetry } from "@/components/regional-telemetry";
+import {
+  regionalRequest,
+  type RegionalConfig,
+  type RegionalRun,
+  type RegionalTopology,
+} from "@/lib/regions";
 import { useLiveSession } from "@/hooks/use-live-session";
 import { LiveSessionPanel } from "@/components/live-session-panel";
 import { useRouter } from "next/navigation";
@@ -185,11 +196,19 @@ function Comparison({ runs }: { runs: [Run, Run] }) {
 }
 export default function Page() {
   const router = useRouter();
+  const [topology, setTopology] = useState("single_pool");
+  const [regional, setRegional] = useState<RegionalTopology>(initialRegions);
+  const [regionalPolicy, setRegionalPolicy] = useState("least_loaded");
+  const [regionalRun, setRegionalRun] = useState<RegionalRun | null>(null);
   const [execution, setExecution] = useState("one_shot");
   const live = useLiveSession(execution === "continuous");
   useEffect(() => {
     if (live.id) setExecution("continuous");
-  }, [live.id]);
+    if (live.id && live.snapshot)
+      setTopology(
+        live.snapshot.topology === "regions" ? "regions" : "single_pool",
+      );
+  }, [live.id, live.snapshot?.session_id]);
   const [sourceReady, setSourceReady] = useState(false);
   const restoredDraft = useRef<string | null>(null);
   const [currentSave, setCurrentSave] = useState<SavedSetup | null>(null);
@@ -220,7 +239,17 @@ export default function Page() {
     )
       return;
     restoredDraft.current = s.session_id;
-    setConfig({ ...s.config, duration: defaults.duration });
+    if (s.topology === "regions") {
+      setRegional(s.config);
+      setRegionalPolicy(s.config.policy);
+      setConfig({
+        ...defaults,
+        arrival_rate: s.config.arrival_rate,
+        service_min: s.config.service_min,
+        service_max: s.config.service_max,
+        seed: s.config.seed,
+      });
+    } else setConfig({ ...s.config, duration: defaults.duration });
     setSetupName("Reconnected session");
   }, [live.id, live.restoredId, live.snapshot?.session_id, sourceReady]);
   useEffect(() => {
@@ -271,6 +300,33 @@ export default function Page() {
       setRun(previewRun as unknown as Run);
     }
   }, []);
+  const regionalConfig: RegionalConfig = {
+    ...regional,
+    topology: "regions",
+    policy: regionalPolicy as RegionalConfig["policy"],
+    arrival_rate: config.arrival_rate,
+    service_min: config.service_min,
+    service_max: config.service_max,
+    seed: config.seed,
+    duration: config.duration,
+  };
+  const draftConfig = topology === "regions" ? regionalConfig : config;
+  async function runRegional() {
+    if (requestPending.current) return;
+    requestPending.current = true;
+    setBusy(true);
+    setFeedback("");
+    try {
+      setRegionalRun(
+        await regionalRequest<RegionalRun>("run", { config: regionalConfig }),
+      );
+    } catch (e) {
+      setFeedback((e as Error).message);
+    } finally {
+      requestPending.current = false;
+      setBusy(false);
+    }
+  }
   async function request(operation: "run" | "replay") {
     if (requestPending.current) return;
     requestPending.current = true;
@@ -397,27 +453,31 @@ export default function Page() {
     >
       <OpenSetupOnLoad
         ready={sourceReady}
-        completedRun={preview ? null : run}
+        completedRun={
+          topology === "regions" ? regionalRun : preview ? null : run
+        }
         liveSessionId={live.startedId}
       />
       <AppHeader
         section="lab"
         triggerRef={setupTrigger}
         actions={
-          <SaveSetupDialog
-            suggestedName={setupName}
-            config={config}
-            current={currentSave}
-            onSaved={(item) => {
-              setCurrentSave(item);
-              setSetupName(item.name);
-              history.replaceState(
-                null,
-                "",
-                `/simulator?save=${encodeURIComponent(item.id)}`,
-              );
-            }}
-          />
+          topology === "single_pool" ? (
+            <SaveSetupDialog
+              suggestedName={setupName}
+              config={config}
+              current={currentSave}
+              onSaved={(item) => {
+                setCurrentSave(item);
+                setSetupName(item.name);
+                history.replaceState(
+                  null,
+                  "",
+                  `/simulator?save=${encodeURIComponent(item.id)}`,
+                );
+              }}
+            />
+          ) : undefined
         }
       />
       <div className="flex flex-1">
@@ -458,7 +518,15 @@ export default function Page() {
             <FieldGroup className="mb-6">
               <Field>
                 <FieldLabel htmlFor="topology-mode">Topology</FieldLabel>
-                <Select value="single_pool">
+                <Select
+                  value={topology}
+                  disabled={busy || live.busy}
+                  onValueChange={async (value) => {
+                    if (live.id && !(await live.stop())) return;
+                    setTopology(value);
+                    setFeedback("");
+                  }}
+                >
                   <SelectTrigger id="topology-mode" className="w-full">
                     <SelectValue />
                   </SelectTrigger>
@@ -467,9 +535,7 @@ export default function Page() {
                       <SelectItem value="single_pool">
                         Single server pool
                       </SelectItem>
-                      <SelectItem value="regions" disabled>
-                        Regions — coming soon
-                      </SelectItem>
+                      <SelectItem value="regions">Regions</SelectItem>
                     </SelectGroup>
                   </SelectContent>
                 </Select>
@@ -478,7 +544,7 @@ export default function Page() {
                 <FieldLabel htmlFor="execution-mode">Execution</FieldLabel>
                 <Select
                   value={execution}
-                  disabled={live.busy}
+                  disabled={busy || live.busy}
                   onValueChange={async (value) => {
                     if (value === "one_shot" && live.id && !(await live.stop()))
                       return;
@@ -520,57 +586,67 @@ export default function Page() {
                   );
                   return;
                 }
-                if (execution === "continuous") void live.create(config);
+                if (execution === "continuous") void live.create(draftConfig);
+                else if (topology === "regions") void runRegional();
                 else request("run");
               }}
             >
-              <FieldSet>
-                <FieldLegend>Servers</FieldLegend>
-                <FieldGroup>
-                  {number("server_count", "Server count")}
-                  {number(
-                    "concurrency",
-                    "Slots per server",
-                    "Requests each server can process at once.",
-                  )}
-                  {number(
-                    "queue_limit",
-                    "Waiting places per server",
-                    "Zero rejects requests when all slots are busy.",
-                  )}
-                  <Field>
-                    <FieldLabel htmlFor="routing-policy">
-                      Routing policy
-                    </FieldLabel>
-                    <Select
-                      value={config.policy}
-                      onValueChange={(value) =>
-                        setConfig((current) => ({
-                          ...current,
-                          policy: value as Config["policy"],
-                        }))
-                      }
-                    >
-                      <SelectTrigger id="routing-policy" className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          {Object.entries(policies).map(([value, label]) => (
-                            <SelectItem key={value} value={value}>
-                              {label}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                    <FieldDescription>
-                      Least active counts running requests. Full targets reject
-                      without retrying.
-                    </FieldDescription>
-                  </Field>
-                </FieldGroup>
-              </FieldSet>
+              {topology === "regions" ? (
+                <RegionalSettings
+                  value={regional}
+                  onChange={setRegional}
+                  policy={regionalPolicy}
+                  onPolicyChange={setRegionalPolicy}
+                />
+              ) : (
+                <FieldSet>
+                  <FieldLegend>Servers</FieldLegend>
+                  <FieldGroup>
+                    {number("server_count", "Server count")}
+                    {number(
+                      "concurrency",
+                      "Slots per server",
+                      "Requests each server can process at once.",
+                    )}
+                    {number(
+                      "queue_limit",
+                      "Waiting places per server",
+                      "Zero rejects requests when all slots are busy.",
+                    )}
+                    <Field>
+                      <FieldLabel htmlFor="routing-policy">
+                        Routing policy
+                      </FieldLabel>
+                      <Select
+                        value={config.policy}
+                        onValueChange={(value) =>
+                          setConfig((current) => ({
+                            ...current,
+                            policy: value as Config["policy"],
+                          }))
+                        }
+                      >
+                        <SelectTrigger id="routing-policy" className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            {Object.entries(policies).map(([value, label]) => (
+                              <SelectItem key={value} value={value}>
+                                {label}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                      <FieldDescription>
+                        Least active counts running requests. Full targets
+                        reject without retrying.
+                      </FieldDescription>
+                    </Field>
+                  </FieldGroup>
+                </FieldSet>
+              )}
               <Separator />
               <FieldSet>
                 <FieldLegend>Traffic</FieldLegend>
@@ -632,42 +708,51 @@ export default function Page() {
             </form>
             <p className="caption mt-4">
               Evenly spaced arrivals, sampled service times, and identical
-              servers.
+              servers within each single pool. Regional capacity is pooled by
+              region.
             </p>
-            <Panel title="Replay a saved run">
-              <FieldGroup>
-                <Upload
-                  label="Configuration export (JSON)"
-                  accept=".json"
-                  onFile={readConfig}
-                />
-                {replayError && <Notice error>{replayError}</Notice>}
-                {saved !== null && (
-                  <>
-                    <p className="caption">{savedName}</p>
-                    <pre>
-                      {JSON.stringify(
-                        (saved as { config: Config }).config,
-                        null,
-                        2,
-                      )}
-                    </pre>
-                    <p className="caption">
-                      Replay uses these saved settings and seed, independently
-                      of the settings form above. It verifies the saved metrics
-                      before replacing the current results.
-                    </p>
-                    <Button
-                      variant="outline"
-                      disabled={busy}
-                      onClick={() => request("replay")}
-                    >
-                      Replay saved configuration
-                    </Button>
-                  </>
-                )}
-              </FieldGroup>
-            </Panel>
+            {topology === "single_pool" && (
+              <Panel title="Replay a saved run">
+                <FieldGroup>
+                  <Upload
+                    label="Configuration export (JSON)"
+                    accept=".json"
+                    onFile={readConfig}
+                  />
+                  {replayError && <Notice error>{replayError}</Notice>}
+                  {saved !== null && (
+                    <>
+                      <p className="caption">{savedName}</p>
+                      <pre>
+                        {JSON.stringify(
+                          (saved as { config: Config }).config,
+                          null,
+                          2,
+                        )}
+                      </pre>
+                      <p className="caption">
+                        Replay uses these saved settings and seed, independently
+                        of the settings form above. It verifies the saved
+                        metrics before replacing the current results.
+                      </p>
+                      <Button
+                        variant="outline"
+                        disabled={busy}
+                        onClick={() => request("replay")}
+                      >
+                        Replay saved configuration
+                      </Button>
+                    </>
+                  )}
+                </FieldGroup>
+              </Panel>
+            )}
+            {topology === "regions" && (
+              <p className="caption">
+                Regional saves, exports and comparisons require a separate
+                schema and are not available here yet.
+              </p>
+            )}
           </SidebarContent>
         </Sidebar>
         <SidebarInset className="flex min-w-0 flex-col gap-6 p-5 md:p-8 lg:p-10">
@@ -680,6 +765,7 @@ export default function Page() {
               variant="outline"
               size="sm"
               className="mt-3"
+              disabled={topology === "regions"}
               onClick={() => {
                 try {
                   sessionStorage.setItem(
@@ -706,29 +792,40 @@ export default function Page() {
               {feedback}
             </Notice>
           )}
-          {execution === "one_shot" && preview && (
-            <Notice>
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <span>
-                  <Badge variant="secondary">UI preview</Badge> Recorded example
-                  run. Run simulation to get new Python results.
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setRun(null);
-                    setPreview(false);
-                    history.replaceState(null, "", location.pathname);
-                  }}
-                >
-                  Close preview
-                </Button>
-              </div>
-            </Notice>
-          )}
+          {execution === "one_shot" &&
+            topology === "single_pool" &&
+            preview && (
+              <Notice>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <span>
+                    <Badge variant="secondary">UI preview</Badge> Recorded
+                    example run. Run simulation to get new Python results.
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setRun(null);
+                      setPreview(false);
+                      history.replaceState(null, "", location.pathname);
+                    }}
+                  >
+                    Close preview
+                  </Button>
+                </div>
+              </Notice>
+            )}
           {execution === "continuous" ? (
-            <LiveSessionPanel live={live} config={config} />
+            <LiveSessionPanel live={live} config={draftConfig} />
+          ) : topology === "regions" ? (
+            regionalRun ? (
+              <RegionalTelemetry summary={regionalRun.summary} oneShot />
+            ) : (
+              <Notice>
+                Configure regional capacity and traffic, then select Run
+                simulation.
+              </Notice>
+            )
           ) : run ? (
             <>
               <Results key={JSON.stringify(run.config)} run={run} />
@@ -769,37 +866,39 @@ export default function Page() {
               </EmptyHeader>
             </Empty>
           )}
-          <Panel title="Compare saved results">
-            <FieldGroup>
-              <FieldDescription>
-                Upload two original results CSV exports. Comparison reads their
-                saved metrics and does not run a simulation or change the active
-                run.
-              </FieldDescription>
-              <FieldGroup className="grid gap-6 md:grid-cols-2">
-                {[0, 1].map((i) => (
-                  <div className="min-w-0" key={i}>
-                    <Upload
-                      label={`Run ${i ? "B" : "A"} results (CSV)`}
-                      accept=".csv"
-                      onFile={(file) => readCsv(file, i)}
-                    />
-                    {fileNames[i] && (
-                      <p className="caption mt-2">{fileNames[i]}</p>
-                    )}
-                  </div>
-                ))}
+          {topology === "single_pool" && (
+            <Panel title="Compare saved results">
+              <FieldGroup>
+                <FieldDescription>
+                  Upload two original results CSV exports. Comparison reads
+                  their saved metrics and does not run a simulation or change
+                  the active run.
+                </FieldDescription>
+                <FieldGroup className="grid gap-6 md:grid-cols-2">
+                  {[0, 1].map((i) => (
+                    <div className="min-w-0" key={i}>
+                      <Upload
+                        label={`Run ${i ? "B" : "A"} results (CSV)`}
+                        accept=".csv"
+                        onFile={(file) => readCsv(file, i)}
+                      />
+                      {fileNames[i] && (
+                        <p className="caption mt-2">{fileNames[i]}</p>
+                      )}
+                    </div>
+                  ))}
+                </FieldGroup>
+                {compareError && <Notice error>{compareError}</Notice>}
+                {comparison ? (
+                  <Comparison runs={comparison} />
+                ) : (
+                  <p className="caption">
+                    Choose two valid results CSV files to compare.
+                  </p>
+                )}
               </FieldGroup>
-              {compareError && <Notice error>{compareError}</Notice>}
-              {comparison ? (
-                <Comparison runs={comparison} />
-              ) : (
-                <p className="caption">
-                  Choose two valid results CSV files to compare.
-                </p>
-              )}
-            </FieldGroup>
-          </Panel>
+            </Panel>
+          )}
         </SidebarInset>
       </div>
     </SidebarProvider>

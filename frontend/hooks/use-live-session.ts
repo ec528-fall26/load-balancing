@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { RegionalConfig } from "@/lib/regions";
 import type { Config } from "@/lib/engine";
 import {
   ACTIVE_SESSION_KEY,
@@ -139,7 +140,7 @@ export function useLiveSession(enabled: boolean) {
       if (mounted.current) setBusy(false);
     }
   }
-  async function create(config: Config) {
+  async function create(config: Config | RegionalConfig) {
     return operation(async () => {
       if (idRef.current)
         throw new Error("Stop the existing session before starting another.");
@@ -171,7 +172,7 @@ export function useLiveSession(enabled: boolean) {
         body: { action, ...(value === undefined ? {} : { value }) },
       })) as LiveSnapshot;
       adopt(data);
-      if (offset !== 0) {
+      if (data.topology !== "regions" && offset !== 0) {
         try {
           const page = (await sessionRequest(
             `/${sid}/snapshot?server_offset=${offset}&server_limit=32&history_limit=120`,

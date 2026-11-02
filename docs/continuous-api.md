@@ -4,7 +4,7 @@ The Python service owns each session's clock and mutable engine in a separate
 spawned process. Polling reads state; it does not step the simulation. This
 first slice supports individual servers in one pool, using the existing
 round-robin and least-active-request admission semantics. Regional contracts
-are A-09 and Next.js live controls are A-10. The Next.js lab now connects single-pool live sessions as documented in [live-frontend.md](live-frontend.md). One-shot execution remains separate.
+are A-09 and Next.js live controls are A-10. The Next.js lab now connects single-pool and regional live sessions as documented in [live-frontend.md](live-frontend.md). One-shot execution remains separate.
 
 Run one API process locally:
 
@@ -173,3 +173,6 @@ conservation, bounded pending work/windows/history/histograms, event-budget
 continuation, no-poll clock progression, pause/resume/drain, command ordering,
 admission, TTL/lifetime expiry, restart loss, validation, pagination, worker
 crash/timeout recovery, tombstone retention and shutdown reaping.
+
+
+The original A-08 exclusions above describe its single-pool slice. The A-09 extension adds aggregate regional pools and client RTT travel through the same lifecycle; see [regional-api.md](regional-api.md).

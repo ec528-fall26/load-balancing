@@ -1,3 +1,4 @@
+import { regionalFixture } from "./fixtures/regional-snapshot";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { proxySession } from "../lib/server/session-proxy";
@@ -165,4 +166,29 @@ test("browser session client validates identity and identifies terminal errors",
   } finally {
     globalThis.fetch = original;
   }
+});
+
+test("regional snapshots validate travel accounting, bounded telemetry and regional identity", () => {
+  assert.ok(acceptSnapshot(regionalFixture));
+  assert.equal(acceptSnapshot(regionalFixture, "c".repeat(32)), false);
+  for (const change of [
+    { totals: { ...regionalFixture.totals, in_transit: 100 } },
+    { regions: [null] },
+    { history: Array(241).fill(regionalFixture.history[0]) },
+    { config: { ...regionalFixture.config, regions: [null] } },
+    { config: { ...regionalFixture.config, policy: "least_active" } },
+    { config: { ...regionalFixture.config, client_latency_ms: [] } },
+    { config: { ...regionalFixture.config, latency_ms: [] } },
+    {
+      histogram: {
+        ...regionalFixture.histogram,
+        bins: Array(21).fill(regionalFixture.histogram.bins[0]),
+      },
+    },
+  ])
+    assert.equal(acceptSnapshot({ ...regionalFixture, ...change }), false);
+  assert.equal(
+    "duration" in continuousConfig({ ...regionalFixture.config, duration: 10 }),
+    false,
+  );
 });

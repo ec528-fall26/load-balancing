@@ -1,6 +1,13 @@
 import { EngineError, type Config } from "./engine";
 export type LiveConfig = Omit<Config, "duration">;
-export type LiveSnapshot = {
+import {
+  acceptRegionalSummary,
+  type RegionalSnapshot,
+  type RegionalConfig,
+} from "./regions";
+export type LiveSnapshot = SinglePoolSnapshot | RegionalSnapshot;
+export type SinglePoolSnapshot = {
+  topology?: "single_pool";
   api_version: "1";
   session_id: string;
   revision: number;
@@ -55,7 +62,14 @@ export type LiveSnapshot = {
 };
 export const ACTIVE_SESSION_KEY = "lbsim.active-session.v1";
 export const SESSION_ID = /^[a-f0-9]{32}$/;
-export function continuousConfig(config: Config): LiveConfig {
+export function continuousConfig(config: Config): LiveConfig;
+export function continuousConfig(config: RegionalConfig): RegionalConfig;
+export function continuousConfig(
+  config: Config | RegionalConfig,
+): LiveConfig | RegionalConfig;
+export function continuousConfig(
+  config: Config | RegionalConfig,
+): LiveConfig | RegionalConfig {
   const { duration, ...rest } = config;
   return rest;
 }
@@ -64,13 +78,32 @@ export function acceptSnapshot(
   id?: string,
 ): value is LiveSnapshot {
   if (!value || typeof value !== "object") return false;
-  const s = value as LiveSnapshot;
+  if ((value as { topology?: string }).topology === "regions") {
+    const r = value as RegionalSnapshot;
+    return (
+      acceptRegionalSummary(r) &&
+      r.api_version === "1" &&
+      SESSION_ID.test(r.session_id) &&
+      (!id || r.session_id === id) &&
+      Number.isSafeInteger(r.revision) &&
+      r.revision >= 0 &&
+      ["running", "paused"].includes(r.status) &&
+      Number.isFinite(r.speed) &&
+      r.speed >= 0.25 &&
+      r.speed <= 10 &&
+      Number.isFinite(r.target_simulation_time) &&
+      r.target_simulation_time >= 0 &&
+      Number.isFinite(r.lag_simulation_seconds) &&
+      r.lag_simulation_seconds >= 0
+    );
+  }
+  const s = value as SinglePoolSnapshot;
   const nonnegative = (n: unknown): n is number =>
     typeof n === "number" && Number.isFinite(n) && n >= 0;
   const count = (n: unknown): n is number =>
     nonnegative(n) && Number.isSafeInteger(n);
   const latency = (n: unknown) => n === null || nonnegative(n);
-  const totals = (t: LiveSnapshot["totals"]) =>
+  const totals = (t: SinglePoolSnapshot["totals"]) =>
     !!t &&
     ["offered", "completed", "rejected", "running", "waiting"].every((key) =>
       count(t[key as keyof typeof t]),
