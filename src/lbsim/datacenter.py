@@ -78,7 +78,17 @@ def rack_view(servers: list[tuple[int, float]], first_rack: int = 1,
 </style><div class="dc-floor">''' + ''.join(racks) + '</div>'
 
 
+def initialize_playback_clock():
+    # Widget callbacks run before the page body, including after state resets.
+    defaults = {'playback_time': 0.0, 'playback_playing': False,
+                'playback_anchor': monotonic(), 'playback_rate': 1.0}
+    for key, value in defaults.items():
+        if key not in st.session_state:
+            st.session_state[key] = value
+
+
 def playback_time(end):
+    initialize_playback_clock()
     now = st.session_state.playback_time
     if st.session_state.playback_playing:
         now += (monotonic() - st.session_state.playback_anchor) * st.session_state.playback_rate
@@ -106,8 +116,11 @@ def display_datacenter(utilization: dict, config: dict | None = None, events: li
         return
 
     end = max(config['duration'], events[-1][0] if events else 0)
-    defaults = {'playback_time': 0.0, 'playback_playing': False, 'playback_anchor': monotonic(),
-                'playback_speed': 1.0, 'playback_rate': 1.0, 'playback_engine': Playback(events or [], config['server_count'])}
+    initialize_playback_clock()
+    # Streamlit removes widget keys when Run averages hides the controls.
+    # Restore the speed label from the persistent clock rather than resetting it.
+    defaults = {'playback_speed': st.session_state.playback_rate,
+                'playback_engine': Playback(events or [], config['server_count'])}
     for key, value in defaults.items():
         if key not in st.session_state:
             st.session_state[key] = value
@@ -139,6 +152,8 @@ def display_datacenter(utilization: dict, config: dict | None = None, events: li
         st.session_state.playback_time = st.session_state.playback_seek
         st.session_state.playback_anchor = monotonic()
 
+    if 'playback_seek' not in st.session_state:
+        st.session_state.playback_seek = st.session_state.playback_time
     st.slider('Jump to time (seconds)', 0.0, float(end), step=min(0.1, end / 100),
               key='playback_seek', on_change=seek)
     st.caption('1× plays one simulated second per real second. Playback follows the recorded run, including queue draining. '
