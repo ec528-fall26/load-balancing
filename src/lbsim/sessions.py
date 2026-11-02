@@ -9,6 +9,7 @@ from time import monotonic
 from uuid import uuid4
 
 from lbsim.continuous import ContinuousSimulation
+from lbsim.regional import RegionalSimulation
 
 
 @dataclass(frozen=True)
@@ -88,7 +89,8 @@ class SessionError(Exception):
 def session_worker(connection, config, limits, speed, paused):
     """Own the engine and clock; queries never advance simulated time."""
     try:
-        engine = ContinuousSimulation(
+        engine_type = RegionalSimulation if config.get("topology") == "regions" else ContinuousSimulation
+        engine = engine_type(
             config,
             response_window=limits.response_window,
             history_points=limits.history_points,
