@@ -19,7 +19,7 @@ test("initial UI and unavailable backend feedback", async ({ page }) => {
       }),
     }),
   );
-  await page.goto("/");
+  await page.goto("/simulator");
   await expect(
     page.getByRole("heading", { name: "Load balancing simulator" }),
   ).toBeVisible();
@@ -37,7 +37,7 @@ test("initial UI and unavailable backend feedback", async ({ page }) => {
 test("recorded results, playback, tables and downloads", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto("/?preview=1");
+  await page.goto("/simulator?preview=1");
   await expect(
     page.getByRole("tab", { name: "Overview", exact: true }),
   ).toBeVisible();
@@ -91,7 +91,7 @@ test("recorded results, playback, tables and downloads", async ({ page }) => {
 });
 test("mobile layout stays within the viewport", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/?preview=1");
+  await page.goto("/simulator?preview=1");
   await expect(
     page.getByRole("tab", { name: "Overview", exact: true }),
   ).toBeVisible();
@@ -141,7 +141,7 @@ test("future API results retain the completed configuration after form edits", a
   await page.route("**/api/engine/run", (route) =>
     route.fulfill({ json: fixture }),
   );
-  await page.goto("/");
+  await page.goto("/simulator");
   await page
     .getByRole("button", { name: "Run simulation", exact: true })
     .click();
@@ -163,7 +163,7 @@ test("future API results retain the completed configuration after form edits", a
 test("replay and comparison send uploaded files to the engine boundary", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/simulator");
   await page.getByText("Replay a saved run", { exact: true }).click();
   await page
     .getByLabel("Configuration export (JSON)", { exact: true })
@@ -210,7 +210,7 @@ test("replay and comparison send uploaded files to the engine boundary", async (
 test("real Run updates the UI and preserves results after validation failure", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/simulator");
   for (const [name, value] of [
     ["Server count", "1"],
     ["Slots per server", "1"],
@@ -249,7 +249,7 @@ test("setup uses a mobile sheet and preserves settings when reopened", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/");
+  await page.goto("/simulator");
   await page.getByRole("button", { name: "Show setup", exact: true }).click();
   const sheet = page.getByRole("dialog");
   await expect(sheet).toBeVisible();
@@ -306,13 +306,18 @@ test("large rack view bounds cells, paginates, and shows queue saturation", asyn
   await page.route("**/api/engine/run", (route) =>
     route.fulfill({ json: run }),
   );
-  await page.goto("/");
+  await page.goto("/simulator");
   await page
     .getByRole("button", { name: "Run simulation", exact: true })
     .click();
   await page.getByRole("tab", { name: "Datacenter", exact: true }).click();
   await expect(page.getByRole("article")).toHaveCount(32);
   await expect(page.locator(".dc-capacity-cell")).toHaveCount(1024);
+  await page.getByLabel("Playback speed", { exact: true }).click();
+  await page.getByRole("option", { name: "2×", exact: true }).click();
+  await expect(
+    page.getByLabel("Playback speed", { exact: true }),
+  ).toContainText("2×");
   const seek = page.getByRole("slider");
   await seek.press("Home");
   await seek.press("PageUp");
@@ -338,9 +343,10 @@ test("large rack view bounds cells, paginates, and shows queue saturation", asyn
     path: "test-results/next-datacenter-loaded.png",
     fullPage: true,
   });
+  await page.getByLabel("Servers to display", { exact: true }).click();
   await page
-    .getByLabel("Servers to display", { exact: true })
-    .selectOption("1");
+    .getByRole("option", { name: "Servers 32–39", exact: true })
+    .click();
   await expect(page.getByRole("article")).toHaveCount(8);
   await expect(
     page.getByRole("button", { name: "Inspect server 32", exact: true }),
