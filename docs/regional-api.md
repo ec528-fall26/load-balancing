@@ -52,8 +52,13 @@ Snapshots include total offered/completed/rejected/running/waiting/in-transit co
 
 The lifetime mean uses all completions. Global and regional p95 use their respective latest 2,000 completions. Global histogram bins are at most 20; history retains at most 240 samples. Continuous queries default to 120 history samples. No full request trace is retained or transferred. One-shot history is also a bounded tail, not a complete replay.
 
-Regional configurations are supported through the API independently of frontend integration. Regional saves, replay and CSV exports await a separate versioned schema. Failure injection, delayed telemetry, retries and deployment remain outside this contract.
+In the Lab choose **Topology → Regions**, load a preset, edit capacities/compute and source/client/matrix RTTs, then independently select **Execution → One-shot / Continuous**. Regional cards show current capacity separately from task outcomes. Continuous controls, non-overlapping polling, stale-revision rejection and reconnect reuse A-10. Sidebar edits affect the next start; live controls affect the active session. Switching topology or returning to one-shot stops an active session first; stop failure preserves the active view.
 
-## Verification
+Regional browser saves, replay, CSV exports and comparison transfers remain unavailable pending a versioned regional export schema. No database persistence, failure injection, retries or cloud deployment is added here. Broad scale measurements remain A-11.
 
-98 Python tests pass, including 12 regional engine/API tests. These verify presets, strict validation, seeded local/API parity, both directions of travel, compute speed, cutoff/draining, conservation, session-owned progress, shared admission limits and bounded telemetry. Broad scale benchmarks remain separate.
+Launch the two processes using [live-frontend.md](live-frontend.md). Existing Streamlit code and the original uncommitted local prototypes are preserved.
+
+
+## Local verification — November 2
+
+The production frontend build and TypeScript pass; 98 Python tests and 12 Node API/client tests pass. All 23 browser tests cover the existing single-pool/library/comparison flows plus regional one-shot, regional continuous reconnect/control/drain/restart and desktop/mobile behavior. The three regional tests were repeated after the final editor-height adjustment, including an expanded-content visibility assertion. Original prototype tests were ported to the new regional engine; API tests exercise normalization, malformed inputs, seeded parity, travel, capacity, conservation, shared session admission and progress without browser reads. Broad scale benchmarks are not claimed.

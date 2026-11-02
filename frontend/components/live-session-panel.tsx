@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { Line, LineChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import type { RegionalConfig } from "@/lib/regions";
+import { RegionalTelemetry } from "@/components/regional-telemetry";
 import type { Config } from "@/lib/engine";
 import type { LiveSessionController } from "@/hooks/use-live-session";
 import { Button } from "@/components/ui/button";
@@ -48,7 +50,7 @@ export function LiveSessionPanel({
   config,
 }: {
   live: LiveSessionController;
-  config: Config;
+  config: Config | RegionalConfig;
 }) {
   const s = live.snapshot;
   const [rate, setRate] = useState(config.arrival_rate),
@@ -58,17 +60,20 @@ export function LiveSessionPanel({
     if (s) setRate(s.arrival_rate);
   }, [s?.session_id, s?.arrival_rate]);
   const servers: ServerSnapshot[] =
-    s?.servers.items.map((server) => ({
-      id: String(server.id),
-      active: server.running,
-      queued: server.waiting,
-      slots: server.slots,
-      queueLimit: server.queue_limit,
-      utilization: server.mean_slot_utilization,
-      processingRate: server.processing_rate,
-    })) ?? [];
+    (s?.topology === "regions" ? undefined : s?.servers.items)?.map(
+      (server) => ({
+        id: String(server.id),
+        active: server.running,
+        queued: server.waiting,
+        slots: server.slots,
+        queueLimit: server.queue_limit,
+        utilization: server.mean_slot_utilization,
+        processingRate: server.processing_rate,
+      }),
+    ) ?? [];
   const active = !!live.id;
-  const pageReady = s?.servers.offset === live.offset;
+  const pageReady =
+    s?.topology !== "regions" && s?.servers.offset === live.offset;
   const bins =
     s?.histogram.bins.map((bin) => ({
       ...bin,
@@ -216,207 +221,225 @@ export function LiveSessionPanel({
           <EmptyHeader>
             <EmptyTitle>Ready for a continuous run</EmptyTitle>
             <EmptyDescription>
-              Configure the single pool and select Start continuous simulation.
+              Configure the topology and select Start continuous simulation.
               There is no arrival-window cutoff.
             </EmptyDescription>
           </EmptyHeader>
         </Empty>
       )}
-      {s && (
+      {s?.topology === "regions" ? (
         <>
           <p className="caption">
-            Active pool: {s.config.server_count.toLocaleString()} servers ×{" "}
-            {s.config.concurrency.toLocaleString()} slots;{" "}
-            {s.config.queue_limit.toLocaleString()} queue places per server.
+            Simulated time: {s.simulation_time.toFixed(2)} s · {s.speed}× target
+            speed · revision {s.revision}
+            {s.lag_simulation_seconds > 0.25
+              ? ` · Catching up: ${s.lag_simulation_seconds.toFixed(2)} simulated seconds behind`
+              : ""}
+            {!active ? " · Last retained snapshot; no longer live." : ""}
           </p>
-          <div role="status" className="flex flex-wrap items-center gap-3">
-            <strong className="tabular-nums">
-              Simulated time: {s.simulation_time.toFixed(2)} s
-            </strong>
-            <span className="caption">
-              {s.speed}× target speed · revision {s.revision}
-            </span>
-            {s.lag_simulation_seconds > 0.25 && (
-              <Badge variant="waiting">
-                Catching up: {s.lag_simulation_seconds.toFixed(2)} simulated
-                seconds behind
-              </Badge>
-            )}
-            {!active && (
+          <RegionalTelemetry summary={s} />
+        </>
+      ) : (
+        s && (
+          <>
+            <p className="caption">
+              Active pool: {s.config.server_count.toLocaleString()} servers ×{" "}
+              {s.config.concurrency.toLocaleString()} slots;{" "}
+              {s.config.queue_limit.toLocaleString()} queue places per server.
+            </p>
+            <div role="status" className="flex flex-wrap items-center gap-3">
+              <strong className="tabular-nums">
+                Simulated time: {s.simulation_time.toFixed(2)} s
+              </strong>
               <span className="caption">
-                Last retained snapshot; no longer live.
+                {s.speed}× target speed · revision {s.revision}
               </span>
-            )}
-          </div>
-          <dl className="grid grid-cols-2 gap-5 border-y py-4 lg:grid-cols-4">
-            {[
-              ["Offered", s.totals.offered.toLocaleString()],
-              ["Completed", s.totals.completed.toLocaleString()],
-              ["Rejected", s.totals.rejected.toLocaleString()],
-              ["Recent p95", seconds(s.metrics.recent_p95_response_time)],
-            ].map(([label, value]) => (
-              <div key={label}>
-                <dt className="text-sm text-muted-foreground">{label}</dt>
-                <dd className="mt-1 text-2xl font-semibold tabular-nums">
-                  {value}
-                </dd>
-              </div>
-            ))}
-          </dl>
-          <p className="caption">
-            Mean response: {seconds(s.metrics.mean_response_time)} since start.
-            Recent p95 and histogram cover the latest{" "}
-            {s.metrics.response_window_count.toLocaleString()} completed
-            responses, up to {s.metrics.response_window_limit.toLocaleString()}.
-            Session-average slot utilization:{" "}
-            {(100 * s.metrics.mean_slot_utilization).toFixed(1)}%.
-          </p>
-          <div className="grid min-w-0 gap-5 xl:grid-cols-2">
-            <Card className="min-w-0">
-              <CardHeader>
-                <CardTitle>Live load</CardTitle>
-                <CardDescription>
-                  Bounded history of executing and waiting requests.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ChartContainer
-                  config={{
-                    running: { label: "Executing", color: "var(--executing)" },
-                    waiting: { label: "Waiting", color: "var(--waiting)" },
-                  }}
-                  className="h-52 w-full"
-                >
-                  <LineChart accessibilityLayer data={s.history}>
-                    <CartesianGrid vertical={false} />
-                    <XAxis
-                      dataKey="simulation_time"
-                      type="number"
-                      domain={["dataMin", "dataMax"]}
-                      tickFormatter={(n) => `${Number(n).toFixed(1)} s`}
-                    />
-                    <YAxis allowDecimals={false} width={36} />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <ChartLegend content={<ChartLegendContent />} />
-                    <Line
-                      dataKey="running"
-                      stroke="var(--color-running)"
-                      dot={false}
-                      isAnimationActive={false}
-                    />
-                    <Line
-                      dataKey="waiting"
-                      stroke="var(--color-waiting)"
-                      dot={false}
-                      isAnimationActive={false}
-                    />
-                  </LineChart>
-                </ChartContainer>
-              </CardContent>
-            </Card>
-            <Card className="min-w-0">
-              <CardHeader>
-                <CardTitle>Recent response times</CardTitle>
-                <CardDescription>
-                  Up to 20 bins supplied by Python; completed requests only.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {bins.length ? (
-                  <ResponseChart
-                    bins={bins}
-                    p95={s.metrics.recent_p95_response_time}
-                  />
-                ) : (
-                  <p className="caption">Waiting for completed requests.</p>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <h3 className="text-lg font-semibold">Live datacenter</h3>
-              <p className="caption">
-                Racks are display groups. Executing and waiting counts are
-                separate.
-              </p>
-            </div>
-            {s.servers.total > 32 && (
-              <Field className="w-48">
-                <FieldLabel htmlFor="live-server-page">
-                  Live server page
-                </FieldLabel>
-                <Select
-                  value={String(live.offset)}
-                  disabled={!active}
-                  onValueChange={(value) => live.setOffset(Number(value))}
-                >
-                  <SelectTrigger id="live-server-page">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      {Array.from(
-                        { length: Math.ceil(s.servers.total / 32) },
-                        (_, i) => (
-                          <SelectItem key={i} value={String(i * 32)}>
-                            Servers {i * 32}–
-                            {Math.min((i + 1) * 32, s.servers.total) - 1}
-                          </SelectItem>
-                        ),
-                      )}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </Field>
-            )}
-          </div>
-          <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_220px]">
-            <div className="grid min-w-0 items-start gap-5 lg:grid-cols-2">
-              {!pageReady ? (
-                <Skeleton className="h-64" />
-              ) : (
-                Array.from(
-                  { length: Math.ceil(servers.length / 8) },
-                  (_, i) => (
-                    <RackView
-                      key={i}
-                      number={Math.floor(s.servers.offset / 8) + i + 1}
-                      servers={servers.slice(i * 8, i * 8 + 8)}
-                      averages={false}
-                      onInspect={(id) => {
-                        trigger.current =
-                          document.activeElement instanceof HTMLElement
-                            ? document.activeElement
-                            : null;
-                        setSelected(id);
-                      }}
-                    />
-                  ),
-                )
+              {s.lag_simulation_seconds > 0.25 && (
+                <Badge variant="waiting">
+                  Catching up: {s.lag_simulation_seconds.toFixed(2)} simulated
+                  seconds behind
+                </Badge>
+              )}
+              {!active && (
+                <span className="caption">
+                  Last retained snapshot; no longer live.
+                </span>
               )}
             </div>
-            <TaskPool
-              continuous
-              total={s.totals.offered}
-              running={s.totals.running}
-              waiting={s.totals.waiting}
-              completed={s.totals.completed}
-              rejected={s.totals.rejected}
+            <dl className="grid grid-cols-2 gap-5 border-y py-4 lg:grid-cols-4">
+              {[
+                ["Offered", s.totals.offered.toLocaleString()],
+                ["Completed", s.totals.completed.toLocaleString()],
+                ["Rejected", s.totals.rejected.toLocaleString()],
+                ["Recent p95", seconds(s.metrics.recent_p95_response_time)],
+              ].map(([label, value]) => (
+                <div key={label}>
+                  <dt className="text-sm text-muted-foreground">{label}</dt>
+                  <dd className="mt-1 text-2xl font-semibold tabular-nums">
+                    {value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+            <p className="caption">
+              Mean response: {seconds(s.metrics.mean_response_time)} since
+              start. Recent p95 and histogram cover the latest{" "}
+              {s.metrics.response_window_count.toLocaleString()} completed
+              responses, up to{" "}
+              {s.metrics.response_window_limit.toLocaleString()}.
+              Session-average slot utilization:{" "}
+              {(100 * s.metrics.mean_slot_utilization).toFixed(1)}%.
+            </p>
+            <div className="grid min-w-0 gap-5 xl:grid-cols-2">
+              <Card className="min-w-0">
+                <CardHeader>
+                  <CardTitle>Live load</CardTitle>
+                  <CardDescription>
+                    Bounded history of executing and waiting requests.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ChartContainer
+                    config={{
+                      running: {
+                        label: "Executing",
+                        color: "var(--executing)",
+                      },
+                      waiting: { label: "Waiting", color: "var(--waiting)" },
+                    }}
+                    className="h-52 w-full"
+                  >
+                    <LineChart accessibilityLayer data={s.history}>
+                      <CartesianGrid vertical={false} />
+                      <XAxis
+                        dataKey="simulation_time"
+                        type="number"
+                        domain={["dataMin", "dataMax"]}
+                        tickFormatter={(n) => `${Number(n).toFixed(1)} s`}
+                      />
+                      <YAxis allowDecimals={false} width={36} />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <ChartLegend content={<ChartLegendContent />} />
+                      <Line
+                        dataKey="running"
+                        stroke="var(--color-running)"
+                        dot={false}
+                        isAnimationActive={false}
+                      />
+                      <Line
+                        dataKey="waiting"
+                        stroke="var(--color-waiting)"
+                        dot={false}
+                        isAnimationActive={false}
+                      />
+                    </LineChart>
+                  </ChartContainer>
+                </CardContent>
+              </Card>
+              <Card className="min-w-0">
+                <CardHeader>
+                  <CardTitle>Recent response times</CardTitle>
+                  <CardDescription>
+                    Up to 20 bins supplied by Python; completed requests only.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {bins.length ? (
+                    <ResponseChart
+                      bins={bins}
+                      p95={s.metrics.recent_p95_response_time}
+                    />
+                  ) : (
+                    <p className="caption">Waiting for completed requests.</p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-semibold">Live datacenter</h3>
+                <p className="caption">
+                  Racks are display groups. Executing and waiting counts are
+                  separate.
+                </p>
+              </div>
+              {s.servers.total > 32 && (
+                <Field className="w-48">
+                  <FieldLabel htmlFor="live-server-page">
+                    Live server page
+                  </FieldLabel>
+                  <Select
+                    value={String(live.offset)}
+                    disabled={!active}
+                    onValueChange={(value) => live.setOffset(Number(value))}
+                  >
+                    <SelectTrigger id="live-server-page">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {Array.from(
+                          { length: Math.ceil(s.servers.total / 32) },
+                          (_, i) => (
+                            <SelectItem key={i} value={String(i * 32)}>
+                              Servers {i * 32}–
+                              {Math.min((i + 1) * 32, s.servers.total) - 1}
+                            </SelectItem>
+                          ),
+                        )}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </Field>
+              )}
+            </div>
+            <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_220px]">
+              <div className="grid min-w-0 items-start gap-5 lg:grid-cols-2">
+                {!pageReady ? (
+                  <Skeleton className="h-64" />
+                ) : (
+                  Array.from(
+                    { length: Math.ceil(servers.length / 8) },
+                    (_, i) => (
+                      <RackView
+                        key={i}
+                        number={Math.floor(s.servers.offset / 8) + i + 1}
+                        servers={servers.slice(i * 8, i * 8 + 8)}
+                        averages={false}
+                        onInspect={(id) => {
+                          trigger.current =
+                            document.activeElement instanceof HTMLElement
+                              ? document.activeElement
+                              : null;
+                          setSelected(id);
+                        }}
+                      />
+                    ),
+                  )
+                )}
+              </div>
+              <TaskPool
+                continuous
+                total={s.totals.offered}
+                running={s.totals.running}
+                waiting={s.totals.waiting}
+                completed={s.totals.completed}
+                rejected={s.totals.rejected}
+              />
+            </div>
+            <ServerInspector
+              live
+              server={servers.find((server) => server.id === selected)}
+              now={s.simulation_time}
+              averages={false}
+              onClose={() => setSelected(null)}
+              onRestoreFocus={() => trigger.current?.focus()}
             />
-          </div>
-          <ServerInspector
-            live
-            server={servers.find((server) => server.id === selected)}
-            now={s.simulation_time}
-            averages={false}
-            onClose={() => setSelected(null)}
-            onRestoreFocus={() => trigger.current?.focus()}
-          />
-          <Panel title="Active continuous configuration">
-            <pre>{JSON.stringify(s.config, null, 2)}</pre>
-          </Panel>
-        </>
+            <Panel title="Active continuous configuration">
+              <pre>{JSON.stringify(s.config, null, 2)}</pre>
+            </Panel>
+          </>
+        )
       )}
     </section>
   );

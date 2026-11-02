@@ -104,8 +104,11 @@ the bounded data-visualization graphics remain separate from control primitives.
 
 ## Continuous sessions
 
-Topology and Execution are separate Select controls. The initial live connection
-is single-pool only; keep Regions unavailable until supported by Python. Hide
+Topology and Execution are separate Select controls. Single pool and Regions each
+support one-shot and continuous execution. Keep regional pool policies distinct
+from individual-server policies; label pooled capacity, immediate load reports
+and illustrative client RTTs. Regional cards show executing, queued and transit
+work separately. Hide
 the arrival window in continuous mode. Live controls affect the active session,
 while sidebar edits are a draft for the next start. Show the active pool size
 and configuration separately. Label recent p95/windowed histograms and lifetime

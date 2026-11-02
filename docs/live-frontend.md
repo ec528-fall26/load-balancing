@@ -1,4 +1,4 @@
-# Live sessions in the Next.js lab — A-10, single-pool slice
+# Live sessions in the Next.js lab — A-10
 
 The lab connects to the A-08 continuous API through same-origin Next.js routes.
 The Python worker owns the simulation clock; browser polling only reads bounded
@@ -10,8 +10,9 @@ Next.js from `frontend/`. `LBSIM_API_URL` remains server-only and defaults to
 
 ## Controls
 
-- Topology and Execution are separate shadcn Select controls. This slice exposes
-  one server pool; Regions is unavailable until the A-09 contract is integrated.
+- Topology and Execution are separate shadcn Select controls. Single pool and
+  Regions each support One-shot and Continuous execution. Regional presets,
+  capacity/compute and source/client/matrix RTT editors use the A-09 contract.
 - Choose Continuous. Its setup omits the one-shot arrival-window field. Start
   continuous simulation sends the current configuration without `duration`.
 - Pause/Resume affect the worker clock. Simulation speed uses the API's 0.25–10×
@@ -20,7 +21,7 @@ Next.js from `frontend/`. `LBSIM_API_URL` remains server-only and defaults to
   drains while running, whereas Pause freezes processing.
 - Stop deletes the session. Restart with current settings stops it first, then
   starts a new session with the editable sidebar configuration.
-- Switching to One-shot stops an active session before changing the view. A
+- Switching topology or returning to One-shot stops an active session before changing the view. A
   failed stop leaves the continuous view available rather than hiding the worker.
 
 Editable settings are distinct from the active configuration shown below the
@@ -86,6 +87,13 @@ restored settings, speed/traffic changes, complete draining, pagination and
 stop; delayed polling and stale responses; expiry with polling cancellation;
 and mobile start/mode switching. Test-created sessions are deleted afterward.
 
-Regional presets, compute/RTT editing, all four topology/execution combinations,
-and fault injection are not implemented here. A-10 stays In progress for those
-regional requirements; A-11 retains broader frontend/payload scale benchmarks.
+Regional browser tests also cover preset selection, source/RTT/compute edits,
+fully drained one-shot results, validation errors preserving prior results,
+continuous reconnect, active versus draft settings, restart, topology cleanup
+and mobile overflow. A-11 retains broader frontend/payload scale benchmarks;
+fault injection remains separate.
+
+
+## Regional extension
+
+Regional one-shot and continuous execution now share the Lab topology/execution controls. See [regional-api.md](regional-api.md) for regional policies, preset/RTT settings, pooled-capacity assumptions, bounds and scope. Regional saves, comparisons and exports remain unavailable pending a versioned schema.

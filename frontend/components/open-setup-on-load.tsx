@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useRef } from "react";
-import type { Run } from "@/lib/engine";
 import { useSidebar } from "@/components/ui/sidebar";
 export function OpenSetupOnLoad({
   ready,
@@ -9,7 +8,7 @@ export function OpenSetupOnLoad({
 }: {
   liveSessionId?: string | null;
   ready: boolean;
-  completedRun: Run | null;
+  completedRun: object | null;
 }) {
   const handled = useRef(false);
   const { setOpen, setOpenMobile } = useSidebar();
