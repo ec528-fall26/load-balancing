@@ -101,3 +101,16 @@ controls. NumberField composes InputGroupInput and InputGroupButton; suppress
 native number spinners so there is one consistent pair of stepper controls.
 Playback controls use full Card composition. Native semantic page structure and
 the bounded data-visualization graphics remain separate from control primitives.
+
+## Continuous sessions
+
+Topology and Execution are separate Select controls. The initial live connection
+is single-pool only; keep Regions unavailable until supported by Python. Hide
+the arrival window in continuous mode. Live controls affect the active session,
+while sidebar edits are a draft for the next start. Show the active pool size
+and configuration separately. Label recent p95/windowed histograms and lifetime
+means distinctly. Reuse rack/server inspection graphics, with live timestamps
+and session utilization labels; continuous task pools have no finite future
+request total. Show lag, connection/expiry state and retained-snapshot status.
+Use bounded sequential polling, cancellation and revision checks. Preserve
+user-editing state across updates and provide feedback inside mobile settings.

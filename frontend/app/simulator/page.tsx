@@ -1,4 +1,6 @@
 "use client";
+import { useLiveSession } from "@/hooks/use-live-session";
+import { LiveSessionPanel } from "@/components/live-session-panel";
 import { useRouter } from "next/navigation";
 import { OpenSetupOnLoad } from "@/components/open-setup-on-load";
 import { COMPARE_DRAFT_KEY } from "@/lib/comparison";
@@ -183,7 +185,13 @@ function Comparison({ runs }: { runs: [Run, Run] }) {
 }
 export default function Page() {
   const router = useRouter();
+  const [execution, setExecution] = useState("one_shot");
+  const live = useLiveSession(execution === "continuous");
+  useEffect(() => {
+    if (live.id) setExecution("continuous");
+  }, [live.id]);
   const [sourceReady, setSourceReady] = useState(false);
+  const restoredDraft = useRef<string | null>(null);
   const [currentSave, setCurrentSave] = useState<SavedSetup | null>(null);
   const [setupName, setSetupName] = useState("New simulation");
   const setupTrigger = useRef<HTMLButtonElement>(null);
@@ -203,7 +211,21 @@ export default function Page() {
     [fileNames, setFileNames] = useState<[string, string]>(["", ""]),
     [compareError, setCompareError] = useState("");
   useEffect(() => {
+    const s = live.snapshot;
+    if (
+      !s ||
+      live.id !== live.restoredId ||
+      restoredDraft.current === s.session_id ||
+      sourceReady
+    )
+      return;
+    restoredDraft.current = s.session_id;
+    setConfig({ ...s.config, duration: defaults.duration });
+    setSetupName("Reconnected session");
+  }, [live.id, live.restoredId, live.snapshot?.session_id, sourceReady]);
+  useEffect(() => {
     const query = new URLSearchParams(location.search);
+    if (query.get("mode") === "continuous") setExecution("continuous");
     try {
       if (query.has("compareDraft")) {
         const raw = sessionStorage.getItem(COMPARE_DRAFT_KEY);
@@ -376,6 +398,7 @@ export default function Page() {
       <OpenSetupOnLoad
         ready={sourceReady}
         completedRun={preview ? null : run}
+        liveSessionId={live.startedId}
       />
       <AppHeader
         section="lab"
@@ -427,6 +450,66 @@ export default function Page() {
                 </Notice>
               </div>
             )}
+            {live.error && execution === "continuous" && (
+              <div className="mb-4 md:hidden">
+                <Notice error>{live.error}</Notice>
+              </div>
+            )}
+            <FieldGroup className="mb-6">
+              <Field>
+                <FieldLabel htmlFor="topology-mode">Topology</FieldLabel>
+                <Select value="single_pool">
+                  <SelectTrigger id="topology-mode" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value="single_pool">
+                        Single server pool
+                      </SelectItem>
+                      <SelectItem value="regions" disabled>
+                        Regions — coming soon
+                      </SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="execution-mode">Execution</FieldLabel>
+                <Select
+                  value={execution}
+                  disabled={live.busy}
+                  onValueChange={async (value) => {
+                    if (value === "one_shot" && live.id && !(await live.stop()))
+                      return;
+                    setExecution(value);
+                    const query = new URLSearchParams(location.search);
+                    if (value === "continuous") query.set("mode", "continuous");
+                    else query.delete("mode");
+                    history.replaceState(
+                      null,
+                      "",
+                      location.pathname +
+                        (query.size ? "?" + query.toString() : ""),
+                    );
+                  }}
+                >
+                  <SelectTrigger id="execution-mode" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value="one_shot">One-shot</SelectItem>
+                      <SelectItem value="continuous">Continuous</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+                <FieldDescription>
+                  Topology and execution are separate. Switching to one-shot
+                  stops an active session.
+                </FieldDescription>
+              </Field>
+            </FieldGroup>
             <form
               className="flex flex-col gap-6"
               onSubmit={(e) => {
@@ -437,7 +520,8 @@ export default function Page() {
                   );
                   return;
                 }
-                request("run");
+                if (execution === "continuous") void live.create(config);
+                else request("run");
               }}
             >
               <FieldSet>
@@ -497,12 +581,13 @@ export default function Page() {
                     undefined,
                     0.01,
                   )}
-                  {number(
-                    "duration",
-                    "Arrival window (seconds)",
-                    undefined,
-                    0.01,
-                  )}
+                  {execution === "one_shot" &&
+                    number(
+                      "duration",
+                      "Arrival window (seconds)",
+                      undefined,
+                      0.01,
+                    )}
                   <FieldGroup className="grid grid-cols-2 gap-3">
                     {number("service_min", "Min service (s)", undefined, 0.001)}
                     {number("service_max", "Max service (s)", undefined, 0.001)}
@@ -517,7 +602,15 @@ export default function Page() {
                   </FieldDescription>
                 </FieldGroup>
               </Panel>
-              <Button type="submit" disabled={busy}>
+              <Button
+                type="submit"
+                disabled={
+                  busy ||
+                  live.busy ||
+                  !live.ready ||
+                  (execution === "continuous" && !!live.id)
+                }
+              >
                 {busy ? (
                   <LoaderCircle
                     data-icon="inline-start"
@@ -526,7 +619,15 @@ export default function Page() {
                 ) : (
                   <Play data-icon="inline-start" />
                 )}
-                {busy ? "Running simulation..." : "Run simulation"}
+                {execution === "continuous"
+                  ? live.busy
+                    ? "Starting session…"
+                    : live.id
+                      ? "Session active"
+                      : "Start continuous simulation"
+                  : busy
+                    ? "Running simulation..."
+                    : "Run simulation"}
               </Button>
             </form>
             <p className="caption mt-4">
@@ -605,7 +706,7 @@ export default function Page() {
               {feedback}
             </Notice>
           )}
-          {preview && (
+          {execution === "one_shot" && preview && (
             <Notice>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <span>
@@ -626,7 +727,9 @@ export default function Page() {
               </div>
             </Notice>
           )}
-          {run ? (
+          {execution === "continuous" ? (
+            <LiveSessionPanel live={live} config={config} />
+          ) : run ? (
             <>
               <Results key={JSON.stringify(run.config)} run={run} />
               <Panel title="Run configuration">

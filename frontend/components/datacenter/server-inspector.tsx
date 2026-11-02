@@ -18,7 +18,9 @@ export function ServerInspector({
   averages,
   onClose,
   onRestoreFocus,
+  live = false,
 }: {
+  live?: boolean;
   server: ServerSnapshot | undefined;
   now: number;
   averages: boolean;
@@ -45,7 +47,7 @@ export function ServerInspector({
           <SheetDescription>
             {averages
               ? "Summary of the completed run."
-              : `Recorded state at ${now.toFixed(1)} simulated seconds.`}
+              : `${live ? "Live snapshot" : "Recorded state"} at ${now.toFixed(1)} simulated seconds.`}
           </SheetDescription>
         </SheetHeader>
         {server && (
@@ -79,7 +81,9 @@ export function ServerInspector({
                 ],
                 ["Processing rate", `${server.processingRate}× baseline`],
                 [
-                  "Run-average utilization",
+                  live
+                    ? "Session-average utilization"
+                    : "Run-average utilization",
                   `${(server.utilization * 100).toFixed(2)}%`,
                 ],
               ].map(([label, value]) => (
@@ -95,9 +99,10 @@ export function ServerInspector({
               ))}
             </dl>
             <p className="caption">
-              Run-average utilization covers occupied slots during the arrival
-              window; draining time is excluded. Racks are display groups, not
-              physical locations.
+              {live
+                ? "Session-average utilization covers occupied slots since the session started."
+                : "Run-average utilization covers occupied slots during the arrival window; draining time is excluded."}{" "}
+              Racks are display groups, not physical locations.
             </p>
           </div>
         )}

@@ -5,7 +5,9 @@ import { useSidebar } from "@/components/ui/sidebar";
 export function OpenSetupOnLoad({
   ready,
   completedRun,
+  liveSessionId,
 }: {
+  liveSessionId?: string | null;
   ready: boolean;
   completedRun: Run | null;
 }) {
@@ -18,7 +20,7 @@ export function OpenSetupOnLoad({
     else setOpen(true);
   }, [ready, setOpen, setOpenMobile]);
   useEffect(() => {
-    if (completedRun) setOpenMobile(false);
-  }, [completedRun, setOpenMobile]);
+    if (completedRun || liveSessionId) setOpenMobile(false);
+  }, [completedRun, liveSessionId, setOpenMobile]);
   return null;
 }
