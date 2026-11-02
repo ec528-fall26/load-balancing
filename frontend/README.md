@@ -200,3 +200,12 @@ not implement the separate CSV-comparison, replay, or export endpoints in A-07.
 Run `npm run test:comparison` for change detection, undefined metrics and compact
 result tests. Browser coverage includes a live baseline/two-variant comparison,
 correct deltas, failure recovery, unchanged-variant rejection and mobile flow.
+
+## Continuous execution
+
+The lab's Execution selector switches between one-shot runs and Python-owned
+continuous sessions. Start/pause/resume, traffic, speed, restart and stop controls
+use the same-origin session proxy. Reload reconnects to the per-tab active ID.
+See [the live frontend contract](../docs/live-frontend.md) for lifecycle, bounded
+polling, editable-versus-active setup semantics and testing. Regional sessions
+remain unavailable pending A-09. Use `npm run test:live` for proxy/client tests.

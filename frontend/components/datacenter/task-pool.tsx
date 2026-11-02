@@ -15,7 +15,9 @@ export function TaskPool({
   waiting,
   completed,
   rejected,
+  continuous = false,
 }: {
+  continuous?: boolean;
   total: number;
   running: number;
   waiting: number;
@@ -54,7 +56,7 @@ export function TaskPool({
       color: "bg-destructive",
       variant: "destructive" as const,
     },
-  ];
+  ].filter((row) => !continuous || row.label !== "Not arrived");
   return (
     <Card className="min-w-0 xl:sticky xl:top-24">
       <CardHeader>
@@ -67,7 +69,7 @@ export function TaskPool({
       <CardContent className="flex flex-col gap-5">
         <div
           role="img"
-          aria-label={`${arrived} of ${total} requests arrived; ${running} running, ${waiting} waiting, ${completed} completed, ${rejected} rejected`}
+          aria-label={`${continuous ? `${total} requests offered so far` : `${arrived} of ${total} requests arrived`}; ${running} running, ${waiting} waiting, ${completed} completed, ${rejected} rejected`}
           className="flex h-3 overflow-hidden rounded-sm bg-muted"
         >
           {rows
@@ -96,8 +98,9 @@ export function TaskPool({
           ))}
         </dl>
         <p className="caption border-t pt-4">
-          {arrived.toLocaleString()} arrived / {total.toLocaleString()} total
-          requests.
+          {continuous
+            ? `${total.toLocaleString()} requests offered so far.`
+            : `${arrived.toLocaleString()} arrived / ${total.toLocaleString()} total requests.`}
         </p>
       </CardContent>
     </Card>

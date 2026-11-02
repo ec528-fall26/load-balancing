@@ -22,6 +22,9 @@
     "lib/saved-setups.ts",
     "tests/saved-setups.test.ts",
     "lib/comparison.ts",
-    "tests/comparison.test.ts"
+    "tests/comparison.test.ts",
+    "lib/server/session-proxy.ts",
+    "lib/live-session.ts",
+    "tests/live-api.test.ts"
   ]
 }

@@ -4,8 +4,7 @@ The Python service owns each session's clock and mutable engine in a separate
 spawned process. Polling reads state; it does not step the simulation. This
 first slice supports individual servers in one pool, using the existing
 round-robin and least-active-request admission semantics. Regional contracts
-are A-09 and Next.js live controls are A-10. The existing Next.js lab continues
-to use the one-shot Run endpoint; no live UI connection is claimed here.
+are A-09 and Next.js live controls are A-10. The Next.js lab now connects single-pool live sessions as documented in [live-frontend.md](live-frontend.md). One-shot execution remains separate.
 
 Run one API process locally:
 
