@@ -1,9 +1,50 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Config, defaults, engineRequest, policies, Run } from "@/lib/engine";
 import { Results, seconds } from "@/components/results";
 import previewRun from "@/lib/preview-run.json";
 import { NumberField } from "@/components/number-field";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+  FieldSet,
+  FieldLegend,
+} from "@/components/ui/field";
+import {
+  NativeSelect,
+  NativeSelectOption,
+} from "@/components/ui/native-select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Separator } from "@/components/ui/separator";
+import {
+  Empty,
+  EmptyHeader,
+  EmptyTitle,
+  EmptyDescription,
+  EmptyMedia,
+} from "@/components/ui/empty";
+import { Panel, Notice } from "@/components/surface";
+import { AppHeader, SetupToggle } from "@/components/app-header";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarHeader,
+  SidebarInset,
+  SidebarProvider,
+} from "@/components/ui/sidebar";
+import { Play, Server, LoaderCircle } from "lucide-react";
 function Upload({
   label,
   accept,
@@ -14,27 +55,21 @@ function Upload({
   onFile: (file: File) => void;
 }) {
   return (
-    <label className="upload-label">
-      {label}
-      <span className="upload">
-        <span>
-          ⇧ &nbsp; Drag and drop file here
-          <span className="caption">
-            Limit 200MB per file • {accept.slice(1).toUpperCase()}
-          </span>
-        </span>
-        <span className="browse">Browse files</span>
-        <input
-          type="file"
-          accept={accept}
-          aria-label={label}
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) onFile(file);
-          }}
-        />
-      </span>
-    </label>
+    <Field>
+      <FieldLabel>{label}</FieldLabel>
+      <Input
+        type="file"
+        accept={accept}
+        aria-label={label}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) onFile(file);
+        }}
+      />
+      <FieldDescription>
+        Choose an original {accept.slice(1).toUpperCase()} export. Limit 200 MB.
+      </FieldDescription>
+    </Field>
   );
 }
 function Comparison({ runs }: { runs: [Run, Run] }) {
@@ -43,16 +78,14 @@ function Comparison({ runs }: { runs: [Run, Run] }) {
   );
   return (
     <>
-      <div
-        className={`notice ${changed.some((k) => k !== "policy") ? "warning" : ""}`}
-      >
+      <Notice>
         {changed.some((k) => k !== "policy")
           ? `Settings differ: ${changed.join(", ")}. Workload or capacity differences also affect these results; this is not an isolated policy comparison.`
           : changed.length
             ? "Only the routing policy differs; workload and capacity settings match."
             : "Both files have the same configuration."}
-      </div>
-      <div className="columns">
+      </Notice>
+      <div className="grid gap-6 md:grid-cols-2">
         {runs.map((r, i) => {
           const s = r.summary,
             total = s.completed_count + s.rejected_count,
@@ -87,22 +120,22 @@ function Comparison({ runs }: { runs: [Run, Run] }) {
                   <div className="metric-value">{value}</div>
                 </div>
               ))}
-              <table>
-                <thead>
-                  <tr>
-                    <th>Server ID</th>
-                    <th>Slot utilization (%)</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Server ID</TableHead>
+                    <TableHead>Slot utilization (%)</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {Object.entries(s.per_server_utilization).map(([sid, u]) => (
-                    <tr key={sid}>
-                      <td>{sid}</td>
-                      <td>{(u * 100).toFixed(2)}</td>
-                    </tr>
+                    <TableRow key={sid}>
+                      <TableCell>{sid}</TableCell>
+                      <TableCell>{(u * 100).toFixed(2)}</TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </section>
           );
         })}
@@ -113,28 +146,29 @@ function Comparison({ runs }: { runs: [Run, Run] }) {
         utilization averages all servers in each run. No completions: N/A
         latency; no generated requests: N/A rejection rate.
       </p>
-      <table>
-        <thead>
-          <tr>
-            <th>Setting</th>
-            <th>Run A</th>
-            <th>Run B</th>
-          </tr>
-        </thead>
-        <tbody>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Setting</TableHead>
+            <TableHead>Run A</TableHead>
+            <TableHead>Run B</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {(Object.keys(runs[0].config) as (keyof Config)[]).map((k) => (
-            <tr key={k}>
-              <td>{k}</td>
-              <td>{String(runs[0].config[k])}</td>
-              <td>{String(runs[1].config[k])}</td>
-            </tr>
+            <TableRow key={k}>
+              <TableCell>{k}</TableCell>
+              <TableCell>{String(runs[0].config[k])}</TableCell>
+              <TableCell>{String(runs[1].config[k])}</TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </>
   );
 }
 export default function Page() {
+  const setupTrigger = useRef<HTMLButtonElement>(null);
   const requestPending = useRef(false);
   const csvFiles = useRef<[string, string]>(["", ""]);
   const uploadVersions = useRef([0, 0]);
@@ -142,7 +176,6 @@ export default function Page() {
   const [config, setConfig] = useState<Config>(defaults),
     [run, setRun] = useState<Run | null>(null),
     [preview, setPreview] = useState(false),
-    [sidebar, setSidebar] = useState(true),
     [feedback, setFeedback] = useState(""),
     [busy, setBusy] = useState(false),
     [saved, setSaved] = useState<unknown>(null),
@@ -152,7 +185,6 @@ export default function Page() {
     [fileNames, setFileNames] = useState<[string, string]>(["", ""]),
     [compareError, setCompareError] = useState("");
   useEffect(() => {
-    if (window.matchMedia("(max-width:760px)").matches) setSidebar(false);
     if (new URLSearchParams(location.search).has("preview")) {
       setPreview(true);
       setRun(previewRun as unknown as Run);
@@ -224,12 +256,17 @@ export default function Page() {
       if (next.every(Boolean)) {
         const version = ++comparisonVersion.current;
         activeComparison = version;
-        const result = await engineRequest<[Run, Run]>("compare", { results: next });
+        const result = await engineRequest<[Run, Run]>("compare", {
+          results: next,
+        });
         if (version === comparisonVersion.current) setComparison(result);
       }
     } catch (error) {
-      if (uploadVersion === uploadVersions.current[index]
-          && (activeComparison === undefined || activeComparison === comparisonVersion.current))
+      if (
+        uploadVersion === uploadVersions.current[index] &&
+        (activeComparison === undefined ||
+          activeComparison === comparisonVersion.current)
+      )
         setCompareError((error as Error).message);
     }
   }
@@ -273,235 +310,279 @@ export default function Page() {
     );
   }
   return (
-    <div className={sidebar ? "app" : "app collapsed"}>
-      <aside aria-label="Run configuration" hidden={!sidebar}>
-        <button
-          className="collapse"
-          title="Close sidebar"
-          onClick={() => setSidebar(false)}
-        >
-          «
-        </button>
-        <h2>Configure a run</h2>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (config.service_min > config.service_max) {
-              setFeedback(
-                "service_min must be less than or equal to service_max",
-              );
-              return;
-            }
-            request("run");
+    <SidebarProvider
+      className="flex-col bg-background"
+      style={{ "--sidebar-width": "20rem" } as CSSProperties}
+    >
+      <AppHeader triggerRef={setupTrigger} />
+      <div className="flex flex-1">
+        <Sidebar
+          collapsible="offcanvas"
+          mobileTitle="Run configuration"
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            setupTrigger.current?.focus();
           }}
+          className="top-16 h-[calc(100svh-4rem)]"
+          aria-label="Run configuration"
         >
-          <h3>Servers</h3>
-          {number("server_count", "Server count")}
-          {number(
-            "concurrency",
-            "Slots per server",
-            "Requests each server can process at once.",
-          )}
-          {number(
-            "queue_limit",
-            "Waiting places per server",
-            "Zero rejects requests when all slots are busy.",
-          )}
-          <label>
-            Routing policy
-            <span
-              className="help"
-              title="Least active counts running requests only; ties favor the lowest server ID. Waiting requests do not count and full targets reject without retrying."
-            >
-              ?
-            </span>
-            <select
-              value={config.policy}
-              onChange={(e) =>
-                setConfig({
-                  ...config,
-                  policy: e.target.value as Config["policy"],
-                })
-              }
-            >
-              {Object.entries(policies).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <h3>Traffic</h3>
-          {number("arrival_rate", "Requests per second", undefined, 0.01)}
-          {number("duration", "Arrival window (seconds)", undefined, 0.01)}
-          <div className="columns small-gap">
-            {number("service_min", "Min service (s)", undefined, 0.001)}
-            {number("service_max", "Max service (s)", undefined, 0.001)}
-          </div>
-          <details>
-            <summary>Repeatability</summary>
-            <div className="details-content">
-              {number("seed", "Random seed")}
-              <p className="caption">
-                Keep the settings and seed unchanged to repeat a run.
-              </p>
-            </div>
-          </details>
-          <button className="primary" type="submit" disabled={busy}>
-            {busy ? "Running simulation..." : "Run simulation"}
-          </button>
-        </form>
-        <p className="caption">
-          Evenly spaced arrivals, sampled service times, and identical servers.
-        </p>
-        <details>
-          <summary>Replay a saved run</summary>
-          <div className="details-content">
-            <Upload
-              label="Configuration export (JSON)"
-              accept=".json"
-              onFile={readConfig}
-            />
-            {replayError && (
-              <div role="alert" className="notice error">
-                {replayError}
+          <SidebarHeader className="p-5 pb-0">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <h2 className="text-lg font-semibold">Configure a run</h2>
+                <p className="caption">Set capacity, traffic, and routing.</p>
               </div>
-            )}
-            {saved !== null && (
-              <>
-                <p className="caption">{savedName}</p>
-                <pre>
-                  {JSON.stringify(
-                    (saved as { config: Config }).config,
-                    null,
-                    2,
-                  )}
-                </pre>
-                <p className="caption">
-                  Replay uses these saved settings and seed, independently of
-                  the settings form above. It verifies the saved metrics before
-                  replacing the current results.
-                </p>
-                <button disabled={busy} onClick={() => request("replay")}>
-                  Replay saved configuration
-                </button>
-              </>
-            )}
-          </div>
-        </details>
-      </aside>
-      {!sidebar && (
-        <button
-          className="expand"
-          title="Open sidebar"
-          onClick={() => setSidebar(true)}
-        >
-          »
-        </button>
-      )}
-      <main>
-        <h1>Load balancing simulator</h1>
-        <p>
-          Explore how traffic and server capacity affect waiting, latency, and
-          rejected requests.
-        </p>
-        {feedback && (
-          <div role="status" className="notice warning">
-            {feedback}
-          </div>
-        )}
-        {preview && (
-          <div className="notice preview">
-            UI preview · Recorded example run. The Python engine is not
-            connected.
-            <button
-              onClick={() => {
-                setRun(null);
-                setPreview(false);
-                history.replaceState(null, "", location.pathname);
+              <div className="md:hidden">
+                <SetupToggle />
+              </div>
+            </div>
+          </SidebarHeader>
+          <SidebarContent className="gap-0 p-5">
+            <form
+              className="flex flex-col gap-6"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (config.service_min > config.service_max) {
+                  setFeedback(
+                    "service_min must be less than or equal to service_max",
+                  );
+                  return;
+                }
+                request("run");
               }}
             >
-              Close preview
-            </button>
+              <FieldSet>
+                <FieldLegend>Servers</FieldLegend>
+                <FieldGroup>
+                  {number("server_count", "Server count")}
+                  {number(
+                    "concurrency",
+                    "Slots per server",
+                    "Requests each server can process at once.",
+                  )}
+                  {number(
+                    "queue_limit",
+                    "Waiting places per server",
+                    "Zero rejects requests when all slots are busy.",
+                  )}
+                  <Field>
+                    <FieldLabel htmlFor="routing-policy">
+                      Routing policy
+                    </FieldLabel>
+                    <NativeSelect
+                      id="routing-policy"
+                      value={config.policy}
+                      onChange={(e) =>
+                        setConfig((current) => ({
+                          ...current,
+                          policy: e.target.value as Config["policy"],
+                        }))
+                      }
+                    >
+                      {Object.entries(policies).map(([value, label]) => (
+                        <NativeSelectOption key={value} value={value}>
+                          {label}
+                        </NativeSelectOption>
+                      ))}
+                    </NativeSelect>
+                    <FieldDescription>
+                      Least active counts running requests. Full targets reject
+                      without retrying.
+                    </FieldDescription>
+                  </Field>
+                </FieldGroup>
+              </FieldSet>
+              <Separator />
+              <FieldSet>
+                <FieldLegend>Traffic</FieldLegend>
+                <FieldGroup>
+                  {number(
+                    "arrival_rate",
+                    "Requests per second",
+                    undefined,
+                    0.01,
+                  )}
+                  {number(
+                    "duration",
+                    "Arrival window (seconds)",
+                    undefined,
+                    0.01,
+                  )}
+                  <FieldGroup className="grid grid-cols-2 gap-3">
+                    {number("service_min", "Min service (s)", undefined, 0.001)}
+                    {number("service_max", "Max service (s)", undefined, 0.001)}
+                  </FieldGroup>
+                </FieldGroup>
+              </FieldSet>
+              <Panel title="Repeatability">
+                <FieldGroup>
+                  {number("seed", "Random seed")}
+                  <FieldDescription>
+                    Keep the settings and seed unchanged to repeat a run.
+                  </FieldDescription>
+                </FieldGroup>
+              </Panel>
+              <Button type="submit" disabled={busy}>
+                {busy ? (
+                  <LoaderCircle
+                    data-icon="inline-start"
+                    className="animate-spin"
+                  />
+                ) : (
+                  <Play data-icon="inline-start" />
+                )}
+                {busy ? "Running simulation..." : "Run simulation"}
+              </Button>
+            </form>
+            <p className="caption mt-4">
+              Evenly spaced arrivals, sampled service times, and identical
+              servers.
+            </p>
+            <Panel title="Replay a saved run">
+              <FieldGroup>
+                <Upload
+                  label="Configuration export (JSON)"
+                  accept=".json"
+                  onFile={readConfig}
+                />
+                {replayError && <Notice error>{replayError}</Notice>}
+                {saved !== null && (
+                  <>
+                    <p className="caption">{savedName}</p>
+                    <pre>
+                      {JSON.stringify(
+                        (saved as { config: Config }).config,
+                        null,
+                        2,
+                      )}
+                    </pre>
+                    <p className="caption">
+                      Replay uses these saved settings and seed, independently
+                      of the settings form above. It verifies the saved metrics
+                      before replacing the current results.
+                    </p>
+                    <Button
+                      variant="outline"
+                      disabled={busy}
+                      onClick={() => request("replay")}
+                    >
+                      Replay saved configuration
+                    </Button>
+                  </>
+                )}
+              </FieldGroup>
+            </Panel>
+          </SidebarContent>
+        </Sidebar>
+        <SidebarInset className="flex min-w-0 flex-col gap-6 p-5 md:p-8 lg:p-10">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
+              Load balancing simulator
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+              Explore how traffic and server capacity affect waiting, latency,
+              and rejected requests.
+            </p>
           </div>
-        )}
-        {run ? (
-          <>
-            <Results key={JSON.stringify(run.config)} run={run} />
-            <details>
-              <summary>Run configuration</summary>
-              <div className="details-content">
-                <pre>{JSON.stringify(run.config, null, 2)}</pre>
+          {feedback && (
+            <Notice role="status" error>
+              {feedback}
+            </Notice>
+          )}
+          {preview && (
+            <Notice>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <span>
+                  <Badge variant="secondary">UI preview</Badge> Recorded example
+                  run. Run simulation to get new Python results.
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setRun(null);
+                    setPreview(false);
+                    history.replaceState(null, "", location.pathname);
+                  }}
+                >
+                  Close preview
+                </Button>
               </div>
-            </details>
-            <details>
-              <summary>Download run</summary>
-              <div className="details-content">
-                <p className="caption">
+            </Notice>
+          )}
+          {run ? (
+            <>
+              <Results key={JSON.stringify(run.config)} run={run} />
+              <Panel title="Run configuration">
+                <pre>{JSON.stringify(run.config, null, 2)}</pre>
+              </Panel>
+              <Panel title="Download run">
+                <p className="caption mb-4">
                   Download the last completed run&apos;s configuration and
                   results. CSV includes summary metrics and per-server
                   utilization.
                 </p>
-                <div className="columns">
-                  <button onClick={() => download("configuration")}>
+                <div className="flex flex-wrap gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => download("configuration")}
+                  >
                     Download configuration (JSON)
-                  </button>
-                  <button onClick={() => download("results")}>
+                  </Button>
+                  <Button variant="outline" onClick={() => download("results")}>
                     Download results (CSV)
-                  </button>
+                  </Button>
                 </div>
-              </div>
-            </details>
-          </>
-        ) : (
-          <>
-            <div className="notice">
-              Configure your servers and traffic in the sidebar, then select Run
-              simulation.
-            </div>
-            <h2>What you&apos;ll see</h2>
-            <p>
-              Request outcomes show whether capacity kept up with traffic.
-              Response times include both queue waiting and service. Server
-              utilization shows how evenly work was distributed.
-            </p>
-          </>
-        )}
-        <details>
-          <summary>Compare saved results</summary>
-          <div className="details-content">
-            <p className="caption">
-              Upload two original results CSV exports. Comparison reads their
-              saved metrics and does not run a simulation or change the active
-              run.
-            </p>
-            <div className="columns">
-              {[0, 1].map((i) => (
-                <div key={i}>
-                  <Upload
-                    label={`Run ${i ? "B" : "A"} results (CSV)`}
-                    accept=".csv"
-                    onFile={(file) => readCsv(file, i)}
-                  />
-                  {fileNames[i] && <p className="caption">{fileNames[i]}</p>}
-                </div>
-              ))}
-            </div>
-            {compareError && (
-              <div className="notice warning" role="alert">
-                {compareError}
-              </div>
-            )}
-            {comparison ? (
-              <Comparison runs={comparison} />
-            ) : (
-              <div className="notice">
-                Choose two valid results CSV files to compare.
-              </div>
-            )}
-          </div>
-        </details>
-      </main>
-    </div>
+              </Panel>
+            </>
+          ) : (
+            <Empty className="min-h-80 border border-dashed">
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <Server />
+                </EmptyMedia>
+                <EmptyTitle>Ready for your first run</EmptyTitle>
+                <EmptyDescription>
+                  Configure your servers and traffic, then select Run
+                  simulation. Results show request outcomes, response times, and
+                  server utilization.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          )}
+          <Panel title="Compare saved results">
+            <FieldGroup>
+              <FieldDescription>
+                Upload two original results CSV exports. Comparison reads their
+                saved metrics and does not run a simulation or change the active
+                run.
+              </FieldDescription>
+              <FieldGroup className="grid gap-6 md:grid-cols-2">
+                {[0, 1].map((i) => (
+                  <div className="min-w-0" key={i}>
+                    <Upload
+                      label={`Run ${i ? "B" : "A"} results (CSV)`}
+                      accept=".csv"
+                      onFile={(file) => readCsv(file, i)}
+                    />
+                    {fileNames[i] && (
+                      <p className="caption mt-2">{fileNames[i]}</p>
+                    )}
+                  </div>
+                ))}
+              </FieldGroup>
+              {compareError && <Notice error>{compareError}</Notice>}
+              {comparison ? (
+                <Comparison runs={comparison} />
+              ) : (
+                <p className="caption">
+                  Choose two valid results CSV files to compare.
+                </p>
+              )}
+            </FieldGroup>
+          </Panel>
+        </SidebarInset>
+      </div>
+    </SidebarProvider>
   );
 }

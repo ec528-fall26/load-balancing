@@ -1,9 +1,24 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import fixture from "../lib/preview-run.json";
+async function expectHeaderPinned(page: Page) {
+  await page.evaluate(() => window.scrollTo(0, 600));
+  await expect
+    .poll(() => page.evaluate(() => window.scrollY))
+    .toBeGreaterThan(100);
+  expect((await page.getByRole("banner").boundingBox())?.y).toBe(0);
+  await page.evaluate(() => window.scrollTo(0, 0));
+}
 test("initial UI and unavailable backend feedback", async ({ page }) => {
-  await page.route("**/api/engine/run", route => route.fulfill({ status: 503,
-    contentType: "application/json", body: JSON.stringify({ code: "BACKEND_UNAVAILABLE",
-      message: "Cannot reach the Python API. Start the backend and retry." }) }));
+  await page.route("**/api/engine/run", (route) =>
+    route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({
+        code: "BACKEND_UNAVAILABLE",
+        message: "Cannot reach the Python API. Start the backend and retry.",
+      }),
+    }),
+  );
   await page.goto("/");
   await expect(
     page.getByRole("heading", { name: "Load balancing simulator" }),
@@ -27,14 +42,23 @@ test("recorded results, playback, tables and downloads", async ({ page }) => {
     page.getByRole("tab", { name: "Overview", exact: true }),
   ).toBeVisible();
   await expect(page.locator(".chart svg")).toHaveCount(3);
+  await expect(
+    page.locator(".recharts-bar-rectangle path").first(),
+  ).toBeVisible();
   await page.screenshot({
     path: "test-results/next-overview.png",
     fullPage: true,
   });
+  await expectHeaderPinned(page);
   await page.getByRole("tab", { name: "Datacenter", exact: true }).click();
   await expect(page.getByText("Server 0", { exact: true })).toBeVisible();
-  await page.getByRole("slider").fill("10");
-  await expect(page.getByText("Paused · 10.0 / 60.0 s")).toBeVisible();
+  await page.getByRole("slider").focus();
+  await page.getByRole("slider").press("Home");
+  await page.getByRole("slider").press("ArrowRight", { delay: 0 });
+  await page.getByRole("slider").press("End");
+  await expect(page.getByText("Finished · 60.0 / 60.0 s")).toBeVisible();
+  await page.getByRole("slider").press("Home");
+  await expect(page.getByText("Paused · 0.0 / 60.0 s")).toBeVisible();
   await page.getByRole("button", { name: "Play", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "Pause", exact: true }),
@@ -63,6 +87,9 @@ test("mobile layout stays within the viewport", async ({ page }) => {
     page.getByRole("tab", { name: "Overview", exact: true }),
   ).toBeVisible();
   await expect(page.locator(".chart svg")).toHaveCount(3);
+  await expect(
+    page.locator(".recharts-bar-rectangle path").first(),
+  ).toBeVisible();
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
@@ -72,6 +99,7 @@ test("mobile layout stays within the viewport", async ({ page }) => {
     path: "test-results/next-mobile.png",
     fullPage: true,
   });
+  await expectHeaderPinned(page);
 });
 test("API boundary never fabricates engine results", async ({ request }) => {
   for (const operation of ["replay", "compare", "exports"]) {
@@ -86,8 +114,12 @@ test("API boundary never fabricates engine results", async ({ request }) => {
   expect((await invalid.json()).code).toBe("INVALID_REQUEST");
   expect((await request.post("/api/engine/unknown")).status()).toBe(404);
 });
-test("Run returns the actual Python result through the proxy", async ({ request }) => {
-  const response = await request.post("/api/engine/run", { data: { config: fixture.config } });
+test("Run returns the actual Python result through the proxy", async ({
+  request,
+}) => {
+  const response = await request.post("/api/engine/run", {
+    data: { config: fixture.config },
+  });
   expect(response.status()).toBe(200);
   const run = await response.json();
   expect(run.api_version).toBe("1");
@@ -138,18 +170,22 @@ test("replay and comparison send uploaded files to the engine boundary", async (
     .click();
   await expect(page.getByRole("status")).toContainText("not connected");
   await page.route("**/api/engine/compare", (route) => {
-    expect(route.request().postDataJSON().results).toEqual(["Run A payload", "Run B payload"]);
+    expect(route.request().postDataJSON().results).toEqual([
+      "Run A payload",
+      "Run B payload",
+    ]);
     return route.fulfill({ json: [fixture, fixture] });
   });
   await page.getByText("Compare saved results", { exact: true }).click();
-  await Promise.all(["Run A results (CSV)", "Run B results (CSV)"].map((label, index) =>
-    page
-      .getByLabel(label, { exact: true })
-      .setInputFiles({
+  await Promise.all(
+    ["Run A results (CSV)", "Run B results (CSV)"].map((label, index) =>
+      page.getByLabel(label, { exact: true }).setInputFiles({
         name: "results.csv",
         mimeType: "text/csv",
         buffer: Buffer.from(index === 0 ? "Run A payload" : "Run B payload"),
-      })));
+      }),
+    ),
+  );
   await expect(
     page.getByText("Both files have the same configuration."),
   ).toBeVisible();
@@ -158,6 +194,85 @@ test("replay and comparison send uploaded files to the engine boundary", async (
   ).toBeVisible();
   await page.screenshot({
     path: "test-results/next-comparison.png",
+    fullPage: true,
+  });
+});
+
+test("real Run updates the UI and preserves results after validation failure", async ({
+  page,
+}) => {
+  await page.goto("/");
+  for (const [name, value] of [
+    ["Server count", "1"],
+    ["Slots per server", "1"],
+    ["Waiting places per server", "0"],
+    ["Requests per second", "10"],
+    ["Arrival window (seconds)", "1"],
+    ["Min service (s)", "1"],
+    ["Max service (s)", "1"],
+  ]) {
+    const input = page.getByRole("spinbutton", { name, exact: true });
+    await input.fill(value);
+    await expect(input).toHaveValue(value);
+  }
+  await page
+    .getByRole("button", { name: "Run simulation", exact: true })
+    .click();
+  await expect(page.locator("dl").first()).toContainText(
+    "Completed requests1Rejected requests9",
+  );
+  await expect(
+    page.locator(".recharts-bar-rectangle path").first(),
+  ).toBeVisible();
+  await page
+    .getByRole("spinbutton", { name: "Server count", exact: true })
+    .fill("0");
+  await page
+    .getByRole("button", { name: "Run simulation", exact: true })
+    .click();
+  await expect(page.getByRole("status")).toContainText("server_count");
+  await expect(page.locator("dl").first()).toContainText(
+    "Completed requests1Rejected requests9",
+  );
+});
+
+test("setup uses a mobile sheet and preserves settings when reopened", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Show setup", exact: true }).click();
+  const sheet = page.getByRole("dialog");
+  await expect(sheet).toBeVisible();
+  const count = sheet.getByRole("spinbutton", {
+    name: "Server count",
+    exact: true,
+  });
+  await count.fill("7");
+  await page.keyboard.press("Escape");
+  await expect(sheet).not.toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Show setup", exact: true }),
+  ).toBeFocused();
+  await page.getByRole("button", { name: "Show setup", exact: true }).click();
+  await expect(
+    sheet.getByRole("spinbutton", { name: "Server count", exact: true }),
+  ).toHaveValue("7");
+  await expect(
+    sheet.getByRole("button", { name: "Hide setup", exact: true }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBeTruthy();
+  await sheet.evaluate(async (element) => {
+    await Promise.all(
+      element.getAnimations().map((animation) => animation.finished),
+    );
+  });
+  await page.screenshot({
+    path: "test-results/next-mobile-setup.png",
     fullPage: true,
   });
 });

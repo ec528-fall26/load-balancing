@@ -95,3 +95,28 @@ Python error propagation, streamed body limits, backend failures, deadlines,
 and actionable client-side errors. Live HTTP and browser checks should additionally
 exercise real Python results with two configurations and preservation of prior
 results after a failed request.
+
+## Shared component system
+
+The interface uses shadcn/ui (Radix, Nova style) with Tailwind CSS v4. Source
+components live in `components/ui/`; `components.json` records the registry,
+style, and aliases. Use these components for all controls, tabs, tables,
+callouts, empty states, and playback widgets. Compose application behavior in
+`components/` rather than creating another set of styled HTML controls.
+
+Charts use the shadcn `ChartContainer` and tooltip components with Recharts v3.
+Vega is no longer a frontend dependency. Response samples are counted into at
+most 20 histogram bins before rendering; the p95 line uses the engine's exact
+reported percentile. Utilization uses bars for up to 40 servers and a line for
+larger pools. These rendering choices do not alter the engine metrics or bound
+the API response size. Playback still follows recorded events, not a running
+continuous simulation.
+
+Add components with `npx shadcn@latest add <component>`. Use semantic theme
+variables in `app/globals.css`, built-in variants, and Lucide icons. The source
+font is served locally. See [DESIGN.md](DESIGN.md) for the UI conventions.
+
+Setup uses shadcn `SidebarProvider` / `Sidebar` / `SidebarContent`, with the
+built-in mobile Sheet. The local Sidebar source adds `mobileTitle` and forwards
+`onCloseAutoFocus` to SheetContent so the setup tray has a useful accessible
+name and restores focus to its external header trigger on dismissal.
