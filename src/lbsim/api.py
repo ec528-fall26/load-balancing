@@ -15,6 +15,8 @@ from starlette.concurrency import run_in_threadpool
 from starlette.exceptions import HTTPException
 
 from lbsim.settings import validate_config
+from lbsim.regional import RegionalSimulation, run_regional, presets
+from lbsim.regions import Region, validate_topology
 from lbsim.simulation import run_simulation
 from lbsim.sessions import SessionLimits, SessionManager, SessionError
 
@@ -146,6 +148,60 @@ def checked_session_config(values, limits, session_limits):
     return config
 
 
+def checked_regional_config(values, limits, session_limits, *, continuous=False):
+    """Normalize a distinct regional schema; never reinterpret a server policy."""
+    allowed = {'topology','regions','latency_ms','client_latency_ms','source','policy',
+               'arrival_rate','service_min','service_max','seed'} | (set() if continuous else {'duration'})
+    try:
+        if set(values)-allowed or values.get('topology') != 'regions':
+            raise ValueError('Use the regional schema; unknown fields or continuous duration are not allowed.')
+        rows = values.get('regions')
+        if not isinstance(rows,list) or not 1 <= len(rows) <= 12:
+            raise ValueError('Use 1–12 regions.')
+        regions = [Region(**r) for r in rows]
+        if any(len(r.name) > 64 or r.name != r.name.strip() for r in regions):
+            raise ValueError('Names must be trimmed and at most 64 characters.')
+        matrix = values.get('latency_ms')
+        validate_topology(regions, matrix)
+        source = values.get('source',0)
+        if type(source) is not int or not 0 <= source < len(rows):
+            raise ValueError('Source must identify a region.')
+        rate, low, high = (values.get(k) for k in ('arrival_rate','service_min','service_max'))
+        if not finite_number(rate) or not 0 <= rate <= session_limits.max_arrival_rate:
+            raise ValueError('Arrival rate must be between 0 and 100,000 requests/s.')
+        if not all(finite_number(v) for v in (low,high)) or not 0 < low <= high:
+            raise ValueError('Service bounds must be positive and ordered.')
+        seed = values.get('seed',42)
+        if type(seed) is not int or not 0 <= seed <= 2**32-1:
+            raise ValueError('Seed must be an integer between 0 and 4,294,967,295.')
+        duration = values.get('duration')
+        if not continuous and (not finite_number(duration) or not 0 < duration <= 3600):
+            raise ValueError('Arrival duration must be positive and at most 3,600 seconds.')
+        if sum(r.servers for r in regions)>limits.servers or sum(r.slots for r in regions)>limits.slots or sum(r.queue_limit for r in regions)>limits.waiting_places:
+            raise ValueError('Regional totals exceed the server, slot or queue limits.')
+        if any(not 1e-9 <= low/r.compute <= high/r.compute <= 3600 for r in regions):
+            raise ValueError('Effective service times must be between 1 ns and 3,600 seconds.')
+        from dataclasses import asdict
+        config = dict(topology='regions', regions=[asdict(r) for r in regions], latency_ms=matrix,
+            client_latency_ms=values.get('client_latency_ms',matrix[source]), source=source,
+            arrival_rate=rate,service_min=low,service_max=high,seed=seed,policy=values.get('policy','least_loaded'))
+        # Verify the engine contract, including client RTT and regional policy.
+        RegionalSimulation(config)
+        if not continuous and rate*duration > limits.generated_requests:
+            raise ValueError('Arrival rate × duration exceeds the request limit.')
+        # Bound outstanding travel memory at the maximum permitted session rate,
+        # even when a running session later changes traffic via a command.
+        travel_rate = session_limits.max_arrival_rate if continuous else rate
+        if travel_rate * max(config['client_latency_ms'])/1000 > 100000:
+            raise ValueError('Client RTT × maximum traffic exceeds the 100,000 in-transit budget. Reduce RTT (or one-shot traffic).')
+        if not continuous:
+            config['duration'] = duration
+        return config
+    except (ValueError, TypeError, KeyError, OverflowError) as error:
+        raise APIError(422,'INVALID_CONFIG','Regional configuration validation failed.',
+            [{'field':'config','message':str(error)}]) from error
+
+
 def checked_command(action, value, session_limits):
     if action in ('pause', 'resume'):
         if value is not None:
@@ -160,7 +216,7 @@ def checked_command(action, value, session_limits):
 
 def _worker(connection, config):
     try:
-        connection.send(('ok', run_simulation(config)))
+        connection.send(('ok', run_regional(config) if config.get('topology') == 'regions' else run_simulation(config)))
     except ValueError as error:
         connection.send(('invalid', str(error)))
     except Exception:
@@ -257,10 +313,28 @@ def create_app(*, limits=None, runner=isolated_run, session_limits=None, session
             gate.release()
         return {'api_version': '1', 'config': config, 'summary': summary}
 
+
+    @app.get('/v1/regions/presets')
+    async def region_presets():
+        return dict(api_version='1', presets=presets(), latency_assumptions='illustrative', model='aggregate_regional_pools')
+
+    @app.post('/v1/regions/run')
+    async def regional_run(request: RunRequest):
+        config = checked_regional_config(request.config, limits, session_limits)
+        if not gate.acquire(blocking=False):
+            raise APIError(429, 'RUN_BUSY', 'Another simulation is running. Retry after it finishes.')
+        try:
+            summary = await run_in_threadpool(runner, config, limits)
+        finally:
+            gate.release()
+        return dict(api_version='1', config=config, summary=summary)
+
     @app.post('/v1/sessions', status_code=201)
     async def create_session(request: SessionRequest):
         checked_command('set_speed', request.speed, session_limits)
-        config = checked_session_config(request.config, limits, session_limits)
+        config = (checked_regional_config(request.config, limits, session_limits, continuous=True)
+                  if request.config.get('topology') == 'regions' else
+                  checked_session_config(request.config, limits, session_limits))
         return await run_in_threadpool(manager.create, config, speed=request.speed, paused=request.paused)
 
     @app.get('/v1/sessions/{session_id}/snapshot')

@@ -1,0 +1,127 @@
+import unittest
+from math import exp
+
+from lbsim.regional_engine import LiveSimulation
+from lbsim.regions import Region, PRESETS
+
+
+class LiveTests(unittest.TestCase):
+    def test_one_shot_excludes_cutoff_arrival_and_drains_network_and_queue(self):
+        sim = LiveSimulation([Region('east', 1, 1, 1, 10)], [[200]],
+                             arrival_rate=4, service_min=1, service_max=1)
+        sim.run_once(1)
+        self.assertEqual((sim.offered, sim.completed, sim.rejected), (4, 4, 0))
+        self.assertFalse(sim.events)
+        self.assertEqual(sim.returning, 0)
+        self.assertGreater(sim.now, 4)
+        self.check_conservation(sim)
+        sim.advance(sim.now + 10)
+        self.assertEqual(sim.offered, 4)
+
+    def check_conservation(self, sim):
+        active = sim.returning + sum(p.running + len(p.waiting) + p.flying for p in sim.pools)
+        self.assertEqual(sim.offered, sim.completed + sim.rejected + active)
+        for pool in sim.pools:
+            self.assertLessEqual(pool.running, pool.region.slots)
+            self.assertLessEqual(len(pool.waiting), pool.region.queue_limit)
+
+    def test_network_both_directions_and_compute_speed(self):
+        sim = LiveSimulation([Region('east', 1, 1, 2)], [[200]],
+                             arrival_rate=1, service_min=2, service_max=2)
+        sim.advance(0)
+        self.assertEqual(sim.pools[0].flying, 1)
+        sim.set_rate(0)
+        sim.advance(0.1)
+        self.assertEqual(sim.pools[0].running, 1)
+        sim.advance(1.1)
+        self.assertEqual(sim.returning, 1)
+        self.assertEqual(sim.completed, 0)
+        sim.advance(1.21)
+        self.assertEqual(sim.completed, 1)
+        self.assertAlmostEqual(sim.responses[0], 1.2)
+        self.check_conservation(sim)
+
+    def test_completion_precedes_tied_dispatch(self):
+        sim = LiveSimulation([Region('east', 1, 1, 1, 0)], [[0]],
+                             arrival_rate=1, service_min=1, service_max=1)
+        sim.advance(2)
+        self.assertEqual((sim.offered, sim.completed, sim.rejected), (3, 2, 0))
+        self.check_conservation(sim)
+
+    def test_queues_reject_and_drain_after_traffic_stops(self):
+        sim = LiveSimulation([Region('east', 1, 1, 1, 1)], [[20]],
+                             arrival_rate=100, service_min=1, service_max=1)
+        sim.advance(0.1)
+        self.assertGreater(sim.rejected, 0)
+        self.check_conservation(sim)
+        sim.set_rate(0)
+        sim.advance(5)
+        self.assertEqual(sim.offered, sim.completed + sim.rejected)
+        self.assertFalse(sim.events)
+
+    def test_chunking_preserves_seeded_results_and_budget_does_not_drop_work(self):
+        regions, matrix = PRESETS['US · balanced']
+        full = LiveSimulation(regions, matrix, arrival_rate=1000)
+        chunked = LiveSimulation(regions, matrix, arrival_rate=1000)
+        self.assertFalse(chunked.advance(5, max_events=10))
+        self.assertLess(chunked.now, 5)
+        while not chunked.advance(5, max_events=200):
+            self.check_conservation(chunked)
+        full.advance(5)
+        self.assertEqual(full.offered, chunked.offered)
+        self.assertEqual(full.completed, chunked.completed)
+        self.assertEqual(list(full.responses), list(chunked.responses))
+        self.assertEqual(full.report(), chunked.report())
+        self.check_conservation(full)
+
+    def test_rate_changes_are_relative_to_current_clock(self):
+        sim = LiveSimulation([Region('east')], [[0]], arrival_rate=100)
+        sim.advance(1)
+        count = sim.offered
+        sim.set_rate(1)
+        sim.advance(1.99)
+        self.assertEqual(sim.offered, count)
+        sim.advance(2)
+        self.assertEqual(sim.offered, count + 1)
+        sim.set_rate(0)
+        sim.advance(10)
+        self.assertEqual(sim.offered, count + 1)
+        idle = LiveSimulation([Region('empty')], [[0]], arrival_rate=0)
+        idle.advance(10)
+        self.assertEqual(idle.offered, 0)
+
+    def test_load_average_and_bounded_retention(self):
+        sim = LiveSimulation([Region('east', 1, 1)], [[0]], arrival_rate=1,
+                             service_min=100, service_max=100)
+        sim.advance(0)
+        sim.set_rate(0)
+        sim.advance(60)
+        sim.report()
+        self.assertAlmostEqual(sim.pools[0].load[0], 1 - exp(-1))
+        for _ in range(300):
+            sim.now += 0.1
+            sim.sample()
+        self.assertEqual(len(sim.history), 240)
+        sim = LiveSimulation([Region('fast', 10, 4, 100)], [[0]], arrival_rate=1000,
+                             service_min=.1, service_max=.1)
+        sim.advance(5)
+        self.assertEqual(len(sim.responses), 2000)
+        self.assertEqual(len(sim.pools[0].responses), 2000)
+        self.check_conservation(sim)
+
+    def test_nearest_policy_and_invalid_topology(self):
+        sim = LiveSimulation([Region('east'), Region('west')], [[2, 80], [80, 2]],
+                             source=1, policy='nearest')
+        sim.advance(0.1)
+        self.assertEqual(sim.pools[0].running, 0)
+        self.assertGreater(sim.pools[1].running, 0)
+        with self.assertRaises(ValueError):
+            LiveSimulation([Region('duplicate'), Region('duplicate')], [[0, 1], [1, 0]])
+        with self.assertRaises(ValueError):
+            LiveSimulation([Region('east')], [[-1]])
+        with self.assertRaises(ValueError):
+            Region('bad', slots_per_server=0)
+
+
+if __name__ == '__main__':
+    unittest.main()
