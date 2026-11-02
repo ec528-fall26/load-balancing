@@ -211,4 +211,4 @@ polling, editable-versus-active setup semantics and testing. Regional sessions
 remain unavailable pending A-09. Use `npm run test:live` for proxy/client tests.
 
 
-Regional topology works with both execution modes. Configure presets, per-region capacity/compute, source and client/matrix RTT in the Lab. Regional cards are aggregate pools, with immediate telemetry and illustrative RTT assumptions; regional saves/exports/comparisons remain unavailable. See [regional API model](../docs/regional-api.md).
+Regional topology works with both execution modes. Configure presets, per-region capacity/compute, source and client/matrix RTT in the Lab. Regional cards are aggregate pools, with immediate telemetry and illustrative RTT assumptions; regional saves/exports remain unavailable; fresh bounded regional comparisons are supported. See [regional API model](../docs/regional-api.md).

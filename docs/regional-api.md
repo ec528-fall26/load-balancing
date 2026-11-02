@@ -54,7 +54,7 @@ The lifetime mean uses all completions. Global and regional p95 use their respec
 
 In the Lab choose **Topology → Regions**, load a preset, edit capacities/compute and source/client/matrix RTTs, then independently select **Execution → One-shot / Continuous**. Regional cards show current capacity separately from task outcomes. Continuous controls, non-overlapping polling, stale-revision rejection and reconnect reuse A-10. Sidebar edits affect the next start; live controls affect the active session. Switching topology or returning to one-shot stops an active session first; stop failure preserves the active view.
 
-Regional browser saves, replay, CSV exports and comparison transfers remain unavailable pending a versioned regional export schema. No database persistence, failure injection, retries or cloud deployment is added here. Broad scale measurements remain A-11.
+Regional browser saves, replay and CSV exports remain unavailable pending a versioned regional export schema. Lab-to-Compare transfer now supports regional configurations for bounded baseline/variant runs; this does not introduce a saved regional-results schema. No database persistence, failure injection, retries or cloud deployment is added here. Broad scale measurements remain A-11.
 
 Launch the two processes using [live-frontend.md](live-frontend.md). Existing Streamlit code and the original uncommitted local prototypes are preserved.
 

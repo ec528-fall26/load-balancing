@@ -25,7 +25,9 @@ import {
 import { Notice, Panel } from "@/components/surface";
 import {
   changedSettings,
-  configLabels,
+  settingLabel,
+  settingValue,
+  isRegional,
   metrics,
   type ComparisonRun,
 } from "@/lib/comparison";
@@ -56,18 +58,14 @@ function value(n: number | null, unit: string, delta = false) {
         : "")
   );
 }
-function setting(c: Config, key: keyof Config) {
-  if (key === "policy") return policies[c.policy];
-  if (key === "processing_rates")
-    return c.processing_rates
-      ? `${c.processing_rates.length} rates: ${c.processing_rates.slice(0, 8).join(", ")}${c.processing_rates.length > 8 ? "…" : ""}`
-      : "Identical (1×)";
-  return String(c[key]);
-}
 export function ComparisonResults({ cases }: { cases: CompletedCase[] }) {
   const base = cases[0].run.config,
     rows = cases.map((c) => ({ name: c.label, ...metrics(c.run) })),
     baseline = rows[0];
+  const regional = isRegional(base);
+  const visibleDefinitions = regional
+    ? definitions.filter((m) => m.key !== "utilization")
+    : definitions;
   const changed = [
     ...new Set(
       cases.slice(1).flatMap((c) => changedSettings(base, c.run.config)),
@@ -77,7 +75,10 @@ export function ComparisonResults({ cases }: { cases: CompletedCase[] }) {
     completed: { label: "Completed", color: "var(--chart-1)" },
     rejected: { label: "Rejected", color: "var(--chart-2)" },
     mean: { label: "Mean (s)", color: "var(--chart-1)" },
-    p95: { label: "p95 (s)", color: "var(--chart-2)" },
+    p95: {
+      label: regional ? "Recent p95 (s)" : "p95 (s)",
+      color: "var(--chart-2)",
+    },
   };
   return (
     <section aria-label="Comparison results" className="flex flex-col gap-6">
@@ -93,6 +94,8 @@ export function ComparisonResults({ cases }: { cases: CompletedCase[] }) {
           ? "Inputs other than routing policy differ. These deltas reflect all listed changes, not an isolated policy effect."
           : "Only the routing policy differs. Workload, capacity, service times and seed match."}{" "}
         These are single seeded runs, not statistical estimates.
+        {regional &&
+          " Regional means include all completions; each p95 uses only that case’s latest 2,000 completions. Regional compute is pooled and RTT assumptions are illustrative."}
       </Notice>
       <Table>
         <TableHeader>
@@ -104,9 +107,13 @@ export function ComparisonResults({ cases }: { cases: CompletedCase[] }) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {definitions.map((metric) => (
+          {visibleDefinitions.map((metric) => (
             <TableRow key={metric.key}>
-              <TableCell>{metric.label}</TableCell>
+              <TableCell>
+                {regional && metric.key === "p95"
+                  ? "Recent-window p95 response time"
+                  : metric.label}
+              </TableCell>
               {rows.map((row, i) => (
                 <TableCell key={row.name} className="tabular-nums">
                   <div>{value(row[metric.key], metric.unit)}</div>
@@ -165,7 +172,9 @@ export function ComparisonResults({ cases }: { cases: CompletedCase[] }) {
           <CardHeader>
             <CardTitle>Response times</CardTitle>
             <CardDescription>
-              Completed requests only, including queue waiting and draining.
+              Completed requests only, including queue waiting and draining.{" "}
+              {regional &&
+                "Regional latency also includes client RTT. p95 uses the recent response window, not the entire run."}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -205,10 +214,10 @@ export function ComparisonResults({ cases }: { cases: CompletedCase[] }) {
           <TableBody>
             {changed.map((key) => (
               <TableRow key={key}>
-                <TableCell>{configLabels[key]}</TableCell>
+                <TableCell>{settingLabel(base, key)}</TableCell>
                 {cases.map((c) => (
                   <TableCell key={c.label}>
-                    {setting(c.run.config, key)}
+                    {settingValue(c.run.config, key)}
                   </TableCell>
                 ))}
               </TableRow>
@@ -217,9 +226,10 @@ export function ComparisonResults({ cases }: { cases: CompletedCase[] }) {
         </Table>
       </div>
       <p className="caption">
-        Utilization averages server slot occupancy during the arrival window,
-        excluding draining. pp = percentage points. N/A means the metric is
-        undefined for that run.
+        {regional
+          ? `Regional p95 sample counts: ${cases.map((c) => `${c.label}: ${c.run.response_window_count ?? 0}`).join("; ")}. `
+          : "Utilization averages server slot occupancy during the arrival window, excluding draining. "}{" "}
+        pp = percentage points. N/A means the metric is undefined for that run.
       </p>
       <Panel title="Full compared configurations">
         <pre>

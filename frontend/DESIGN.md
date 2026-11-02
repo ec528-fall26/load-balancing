@@ -117,3 +117,8 @@ and session utilization labels; continuous task pools have no finite future
 request total. Show lag, connection/expiry state and retained-snapshot status.
 Use bounded sequential polling, cancellation and revision checks. Preserve
 user-editing state across updates and provide feedback inside mobile settings.
+
+
+## Focused comparison editing
+
+Compare captures the current Lab draft or active-session configuration as a fixed baseline. Clones begin identical; users select individual settings to override instead of editing a full repeated form. Keep baseline values beside each chosen field, list exact before/after values, and support cloning either the baseline or a variant. Reset removes an override without mutating the source. The comparison window is shared unless explicitly overridden. Header navigation from Lab also carries its draft. Single-pool and regional comparisons use bounded fresh Python runs; they never clone or mutate a live worker. Regional p95 must retain its recent-window label and sample counts; omit unavailable regional average utilization.

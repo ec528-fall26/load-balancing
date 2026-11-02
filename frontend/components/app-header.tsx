@@ -55,11 +55,13 @@ export function AppHeader({
   actions,
   section = "library",
   labHref = "/simulator",
+  compareHref = "/compare",
 }: {
   triggerRef?: RefObject<HTMLButtonElement | null>;
   actions?: ReactNode;
   section?: PageSection;
   labHref?: string;
+  compareHref?: string;
 }) {
   return (
     <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-3 md:gap-4 md:px-6">
@@ -86,7 +88,13 @@ export function AppHeader({
             size="sm"
           >
             <Link
-              href={page.id === "lab" ? labHref : page.href}
+              href={
+                page.id === "lab"
+                  ? labHref
+                  : page.id === "compare"
+                    ? compareHref
+                    : page.href
+              }
               aria-current={section === page.id ? "page" : undefined}
             >
               {page.label}
@@ -107,7 +115,13 @@ export function AppHeader({
               {pages.map((page) => (
                 <DropdownMenuItem key={page.id} asChild>
                   <Link
-                    href={page.id === "lab" ? labHref : page.href}
+                    href={
+                      page.id === "lab"
+                        ? labHref
+                        : page.id === "compare"
+                          ? compareHref
+                          : page.href
+                    }
                     aria-current={section === page.id ? "page" : undefined}
                   >
                     {page.label}

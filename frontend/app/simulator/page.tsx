@@ -14,7 +14,11 @@ import { useLiveSession } from "@/hooks/use-live-session";
 import { LiveSessionPanel } from "@/components/live-session-panel";
 import { useRouter } from "next/navigation";
 import { OpenSetupOnLoad } from "@/components/open-setup-on-load";
-import { COMPARE_DRAFT_KEY } from "@/lib/comparison";
+import {
+  COMPARE_DRAFT_KEY,
+  validCompareConfig,
+  isRegional,
+} from "@/lib/comparison";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Config, defaults, engineRequest, policies, Run } from "@/lib/engine";
 import { Results, seconds } from "@/components/results";
@@ -263,9 +267,22 @@ export default function Page() {
             "The comparison's lab setup is unavailable in this tab.",
           );
         const draft = JSON.parse(raw);
-        if (draft.version !== 1 || !validConfig(draft.config))
+        if (draft.version !== 1 || !validCompareConfig(draft.config))
           throw new Error("The comparison's lab setup could not be loaded.");
-        setConfig(draft.config);
+        if (isRegional(draft.config)) {
+          setRegional(draft.config);
+          setRegionalPolicy(draft.config.policy);
+          setTopology("regions");
+          setConfig({
+            ...defaults,
+            arrival_rate: draft.config.arrival_rate,
+            duration: draft.config.duration,
+            service_min: draft.config.service_min,
+            service_max: draft.config.service_max,
+            seed: draft.config.seed,
+          });
+        } else setConfig(draft.config);
+        if (draft.execution === "continuous") setExecution("continuous");
         setSetupName(typeof draft.name === "string" ? draft.name : "Lab setup");
         setSourceReady(true);
       } else if (query.has("save")) {
@@ -311,6 +328,39 @@ export default function Page() {
     duration: config.duration,
   };
   const draftConfig = topology === "regions" ? regionalConfig : config;
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        COMPARE_DRAFT_KEY,
+        JSON.stringify({
+          version: 1,
+          name: setupName,
+          config: draftConfig,
+          execution,
+        }),
+      );
+    } catch {
+      /* The explicit Compare action reports storage errors. */
+    }
+  }, [config, regional, regionalPolicy, topology, execution, setupName]);
+  function openComparison(compareConfig: Config | RegionalConfig) {
+    try {
+      sessionStorage.setItem(
+        COMPARE_DRAFT_KEY,
+        JSON.stringify({
+          version: 1,
+          name: setupName,
+          config: compareConfig,
+          execution,
+        }),
+      );
+      router.push("/compare?draft=1");
+    } catch {
+      setFeedback(
+        "Could not transfer this setup to Compare. Browser session storage may be unavailable.",
+      );
+    }
+  }
   async function runRegional() {
     if (requestPending.current) return;
     requestPending.current = true;
@@ -460,6 +510,7 @@ export default function Page() {
       />
       <AppHeader
         section="lab"
+        compareHref="/compare?draft=1"
         triggerRef={setupTrigger}
         actions={
           topology === "single_pool" ? (
@@ -749,7 +800,7 @@ export default function Page() {
             )}
             {topology === "regions" && (
               <p className="caption">
-                Regional saves, exports and comparisons require a separate
+                Regional saves and exports require a separate
                 schema and are not available here yet.
               </p>
             )}
@@ -765,23 +816,26 @@ export default function Page() {
               variant="outline"
               size="sm"
               className="mt-3"
-              disabled={topology === "regions"}
-              onClick={() => {
-                try {
-                  sessionStorage.setItem(
-                    COMPARE_DRAFT_KEY,
-                    JSON.stringify({ version: 1, name: setupName, config }),
-                  );
-                  router.push("/compare?draft=1");
-                } catch {
-                  setFeedback(
-                    "Could not transfer this setup to Compare. Browser session storage may be unavailable.",
-                  );
-                }
-              }}
+              onClick={() => openComparison(draftConfig)}
             >
               Compare current setup
             </Button>
+            {live.id && live.snapshot && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="ml-2 mt-3"
+                onClick={() =>
+                  openComparison({
+                    ...live.snapshot!.config,
+                    arrival_rate: live.snapshot!.arrival_rate,
+                    duration: config.duration,
+                  })
+                }
+              >
+                Compare active session
+              </Button>
+            )}
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
               Explore how traffic and server capacity affect waiting, latency,
               and rejected requests.
