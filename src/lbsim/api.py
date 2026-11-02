@@ -1,20 +1,22 @@
 """Local Python API. Start with: uv run uvicorn lbsim.api:app --host 127.0.0.1."""
 
-from dataclasses import dataclass
+from contextlib import asynccontextmanager
+from dataclasses import dataclass, replace
 from math import isfinite
 import multiprocessing
 from threading import BoundedSemaphore
-from typing import Any
+from typing import Any, Literal
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, StrictBool, StrictFloat, StrictInt
 from starlette.concurrency import run_in_threadpool
 from starlette.exceptions import HTTPException
 
 from lbsim.settings import validate_config
 from lbsim.simulation import run_simulation
+from lbsim.sessions import SessionLimits, SessionManager, SessionError
 
 
 @dataclass(frozen=True)
@@ -105,6 +107,57 @@ def checked_config(values, limits):
     return config
 
 
+def finite_number(value):
+    try:
+        return type(value) in (int, float) and isfinite(value)
+    except OverflowError:
+        return False
+
+
+class SessionRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    config: dict[str, Any]
+    speed: StrictFloat | StrictInt = 1.0
+    paused: StrictBool = False
+
+
+class SessionCommand(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    action: Literal['pause', 'resume', 'set_rate', 'set_speed']
+    value: StrictFloat | StrictInt | None = None
+
+
+def checked_session_config(values, limits, session_limits):
+    if 'duration' in values:
+        raise APIError(422, 'INVALID_CONFIG', 'Continuous sessions have no arrival-window duration.',
+                       [{'field': 'config.duration', 'message': 'Omit duration for a continuous session.'}])
+    rate = values.get('arrival_rate')
+    if not finite_number(rate) or not 0 <= rate <= session_limits.max_arrival_rate:
+        raise APIError(422, 'INVALID_CONFIG', 'Invalid continuous traffic rate.',
+                       [{'field': 'config.arrival_rate', 'message': f'Use 0–{session_limits.max_arrival_rate:g} requests/s.'}])
+    config = checked_config({**values, 'duration': 1, 'arrival_rate': rate or 1}, replace(limits, generated_requests=session_limits.max_arrival_rate))
+    config.pop('duration')
+    config['arrival_rate'] = rate
+    rates = config.get('processing_rates', (1.0,))
+    for speed in rates:
+        low, high = config['service_min'] / speed, config['service_max'] / speed
+        if not isfinite(high) or not 1e-9 <= low <= high <= 3600:
+            raise APIError(422, 'INVALID_CONFIG', 'Effective service times must be between 1 ns and 3,600 seconds.')
+    return config
+
+
+def checked_command(action, value, session_limits):
+    if action in ('pause', 'resume'):
+        if value is not None:
+            raise APIError(422, 'INVALID_COMMAND', 'Pause/resume commands do not take a value.')
+    elif not finite_number(value):
+        raise APIError(422, 'INVALID_COMMAND', 'Command value must be finite.')
+    elif action == 'set_rate' and not 0 <= value <= session_limits.max_arrival_rate:
+        raise APIError(422, 'INVALID_COMMAND', f'Traffic must be between 0 and {session_limits.max_arrival_rate:g} requests/s.')
+    elif action == 'set_speed' and not .25 <= value <= 10:
+        raise APIError(422, 'INVALID_COMMAND', 'Simulation speed must be between 0.25 and 10.')
+
+
 def _worker(connection, config):
     try:
         connection.send(('ok', run_simulation(config)))
@@ -150,12 +203,25 @@ def isolated_run(config, limits, *, worker_target=_worker):
             process.close()
 
 
-def create_app(*, limits=None, runner=isolated_run):
+def create_app(*, limits=None, runner=isolated_run, session_limits=None, session_manager=None):
     limits = limits or Limits()
-    app = FastAPI(title='Load balancing engine API', version='1.0.0')
+    session_limits = session_limits or SessionLimits()
+    manager = session_manager or SessionManager(session_limits)
+
+    @asynccontextmanager
+    async def lifespan(_app):
+        manager.start()
+        try:
+            yield
+        finally:
+            await run_in_threadpool(manager.close)
+
+    app = FastAPI(title='Load balancing engine API', version='1.0.0', lifespan=lifespan)
+    app.state.sessions = manager
     app.add_middleware(BodyLimit, maximum=limits.body_bytes)
     gate = BoundedSemaphore(1)
 
+    @app.exception_handler(SessionError)
     @app.exception_handler(APIError)
     async def api_error(_request, error):
         return error_response(error.status, error.code, error.message, error.fields)
@@ -178,7 +244,7 @@ def create_app(*, limits=None, runner=isolated_run):
     @app.get('/health')
     async def health():
         return {'api_version': '1', 'status': 'ok', 'limits': {
-            **vars(limits), 'concurrent_runs': 1}}
+            **vars(limits), 'concurrent_runs': 1}, 'live_limits': vars(session_limits)}
 
     @app.post('/v1/run')
     async def run(request: RunRequest):
@@ -190,6 +256,29 @@ def create_app(*, limits=None, runner=isolated_run):
         finally:
             gate.release()
         return {'api_version': '1', 'config': config, 'summary': summary}
+
+    @app.post('/v1/sessions', status_code=201)
+    async def create_session(request: SessionRequest):
+        checked_command('set_speed', request.speed, session_limits)
+        config = checked_session_config(request.config, limits, session_limits)
+        return await run_in_threadpool(manager.create, config, speed=request.speed, paused=request.paused)
+
+    @app.get('/v1/sessions/{session_id}/snapshot')
+    async def session_snapshot(session_id: str,
+        server_offset: int = Query(0, ge=0, le=limits.servers),
+        server_limit: int = Query(min(32, session_limits.server_page), ge=1, le=session_limits.server_page),
+        history_limit: int = Query(min(120, session_limits.history_points), ge=0, le=session_limits.history_points)):
+        return await run_in_threadpool(manager.request, session_id, 'snapshot', options=dict(
+            server_offset=server_offset, server_limit=server_limit, history_limit=history_limit))
+
+    @app.post('/v1/sessions/{session_id}/commands')
+    async def session_command(session_id: str, request: SessionCommand):
+        checked_command(request.action, request.value, session_limits)
+        return await run_in_threadpool(manager.request, session_id, request.action, value=request.value)
+
+    @app.delete('/v1/sessions/{session_id}')
+    async def delete_session(session_id: str):
+        return await run_in_threadpool(manager.delete, session_id)
 
     return app
 
