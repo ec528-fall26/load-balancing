@@ -96,4 +96,4 @@ fault injection remains separate.
 
 ## Regional extension
 
-Regional one-shot and continuous execution now share the Lab topology/execution controls. See [regional-api.md](regional-api.md) for regional policies, preset/RTT settings, pooled-capacity assumptions, bounds and scope. Regional saves, comparisons and exports remain unavailable pending a versioned schema.
+Regional one-shot and continuous execution now share the Lab topology/execution controls. See [regional-api.md](regional-api.md) for regional policies, preset/RTT settings, pooled-capacity assumptions, bounds and scope. Regional saves and exports remain unavailable pending a versioned schema. Compare captures regional configurations into fresh bounded cases while preserving the live session.

@@ -56,7 +56,7 @@ test("named saves survive reload, update, copy, reopen and deletion", async ({
   await page
     .getByRole("link", { name: "Load balancing lab home", exact: true })
     .click();
-  await expect(page).toHaveURL("http://localhost:3000/");
+  await expect(page).toHaveURL(new URL("/", test.info().project.use.baseURL).toString());
   await page.reload();
   await expect(
     page.getByRole("link", { name: "Overload experiment", exact: true }),

@@ -36,19 +36,27 @@ test("lab draft comparison runs baseline and two variants, retaining results on 
     name: "Variant A configuration",
     exact: true,
   });
-  await expect(
-    a.getByRole("spinbutton", { name: "Servers", exact: true }),
-  ).toHaveValue("1");
+  await expect(a).toContainText("Matches baseline");
+  await a.getByLabel("Change a setting", { exact: true }).click();
+  await page
+    .getByRole("option", { name: "Slots per server", exact: true })
+    .click();
   await a
-    .getByRole("spinbutton", { name: "Slots / server", exact: true })
+    .getByRole("spinbutton", { name: "Slots per server", exact: true })
     .fill("2");
-  await page.getByRole("button", { name: "Add variant", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Clone baseline", exact: true })
+    .click();
   const b = page.getByRole("region", {
     name: "Variant B configuration",
     exact: true,
   });
+  await b.getByLabel("Change a setting", { exact: true }).click();
+  await page
+    .getByRole("option", { name: "Slots per server", exact: true })
+    .click();
   await b
-    .getByRole("spinbutton", { name: "Slots / server", exact: true })
+    .getByRole("spinbutton", { name: "Slots per server", exact: true })
     .fill("3");
   await page
     .getByRole("button", { name: "Run comparison", exact: true })
@@ -160,8 +168,6 @@ test("comparison rejects unchanged variants before requesting work", async ({
     name: "Variant A configuration",
     exact: true,
   });
-  await variant.getByLabel("Routing policy", { exact: true }).click();
-  await page.getByRole("option", { name: "Round robin", exact: true }).click();
   await page
     .getByRole("button", { name: "Run comparison", exact: true })
     .click();
@@ -169,4 +175,153 @@ test("comparison rejects unchanged variants before requesting work", async ({
     page.getByRole("alert").filter({ hasText: "change at least one setting" }),
   ).toBeVisible();
   expect(calls).toBe(0);
+});
+
+test("clones are exact copies, nested clones preserve changes, and reset removes overrides", async ({
+  page,
+}) => {
+  await page.goto("/compare");
+  const a = page.getByRole("region", {
+    name: "Variant A configuration",
+    exact: true,
+  });
+  await expect(a).toContainText("Matches baseline");
+  await expect(a.getByRole("spinbutton")).toHaveCount(0);
+  await a.getByLabel("Change a setting", { exact: true }).click();
+  await page
+    .getByRole("option", { name: "Requests per second", exact: true })
+    .click();
+  await a
+    .getByRole("spinbutton", { name: "Requests per second", exact: true })
+    .fill("2");
+  await expect(a.getByRole("table")).toContainText("1");
+  await expect(a).toContainText("1 changed");
+  await a.getByRole("button", { name: "Clone Variant A", exact: true }).click();
+  const b = page.getByRole("region", {
+    name: "Variant B configuration",
+    exact: true,
+  });
+  await expect(
+    b.getByRole("spinbutton", { name: "Requests per second", exact: true }),
+  ).toHaveValue("2.00");
+  await b.getByLabel("Change a setting", { exact: true }).click();
+  await page
+    .getByRole("option", { name: "Slots per server", exact: true })
+    .click();
+  await b
+    .getByRole("spinbutton", { name: "Slots per server", exact: true })
+    .fill("2");
+  await expect(b).toContainText("2 changed");
+  await expect(a).toContainText("1 changed");
+  await b
+    .getByRole("button", { name: "Reset Slots per server", exact: true })
+    .click();
+  await expect(b).toContainText("1 changed");
+  await a
+    .getByRole("button", { name: "Reset to baseline", exact: true })
+    .click();
+  await expect(a).toContainText("Matches baseline");
+  await expect(b).toContainText("1 changed");
+  await expect(
+    page.getByRole("region", { name: "Baseline configuration", exact: true }),
+  ).toContainText("2 servers × 1 slots");
+});
+
+test("regional live setup transfers through navigation and compares only the selected compute change", async ({
+  page,
+  request,
+}) => {
+  let sid = "";
+  try {
+    await page.goto("/simulator");
+    await page.getByLabel("Topology", { exact: true }).click();
+    await page.getByRole("option", { name: "Regions", exact: true }).click();
+    await page
+      .getByRole("spinbutton", { name: "Requests per second", exact: true })
+      .fill("10");
+    await page
+      .getByRole("spinbutton", {
+        name: "Arrival window (seconds)",
+        exact: true,
+      })
+      .fill("1");
+    await page.getByLabel("Execution", { exact: true }).click();
+    await page.getByRole("option", { name: "Continuous", exact: true }).click();
+    const started = page.waitForResponse(
+      (r) =>
+        new URL(r.url()).pathname === "/api/sessions" &&
+        r.request().method() === "POST",
+    );
+    await page
+      .getByRole("button", { name: "Start continuous simulation", exact: true })
+      .click();
+    sid = (await (await started).json()).session_id;
+    await expect(
+      page.getByRole("button", { name: "Pause session", exact: true }),
+    ).toBeVisible();
+    await page
+      .getByRole("button", { name: "Pause session", exact: true })
+      .click();
+    await page.getByRole("link", { name: "Compare", exact: true }).click();
+    const a = page.getByRole("region", {
+      name: "Variant A configuration",
+      exact: true,
+    });
+    await expect(
+      page.getByRole("region", { name: "Baseline configuration", exact: true }),
+    ).toContainText("3 regions · 30 servers");
+    await expect(a).toContainText("Matches baseline");
+    await a.getByLabel("Change a setting", { exact: true }).click();
+    await page
+      .getByRole("option", {
+        name: "us-west-1 · Compute multiplier",
+        exact: true,
+      })
+      .click();
+    await a
+      .getByRole("spinbutton", {
+        name: "us-west-1 · Compute multiplier",
+        exact: true,
+      })
+      .fill("2");
+    const payloads: unknown[] = [];
+    await page.route("**/api/regions/run", async (route) => {
+      payloads.push(route.request().postDataJSON().config);
+      await route.continue();
+    });
+    await page
+      .getByRole("button", { name: "Run comparison", exact: true })
+      .click();
+    const results = page.getByRole("region", {
+      name: "Comparison results",
+      exact: true,
+    });
+    await expect(results).toBeVisible();
+    expect(payloads).toHaveLength(2);
+    const [base, variant] = payloads as { regions: { compute: number }[] }[];
+    expect(base.regions[2].compute).toBe(1);
+    expect(variant.regions[2].compute).toBe(2);
+    expect({ ...variant, regions: base.regions }).toEqual(base);
+    await expect(results).toContainText("Recent-window p95");
+    await expect(results).toContainText("us-west-1 · Compute multiplier");
+    expect(
+      (await (await request.get(`/api/sessions/${sid}/snapshot`)).json())
+        .status,
+    ).toBe("paused");
+    await page.screenshot({
+      path: "test-results/comparison-regional-desktop.png",
+      fullPage: true,
+    });
+    await page
+      .getByRole("link", { name: "Back to Lab", exact: true })
+      .click();
+    await expect(page.getByLabel("Topology", { exact: true })).toContainText(
+      "Regions",
+    );
+    await expect(
+      page.getByRole("button", { name: "Resume session", exact: true }),
+    ).toBeVisible();
+  } finally {
+    if (sid) await request.delete(`/api/sessions/${sid}`);
+  }
 });

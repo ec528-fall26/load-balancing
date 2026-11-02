@@ -57,3 +57,27 @@ test("comparison retains metrics without retaining event and response sample arr
   assert.equal(metrics(result).rejection, 100 / 3);
   assert.deepEqual(run.summary.response_times, [0.2, 0.8]);
 });
+
+test("regional clones change only the selected nested setting and leave the baseline untouched", async () => {
+  const { regionalFixture } = await import("./fixtures/regional-snapshot");
+  const { updateSetting, validCompareConfig, compactRegionalRun } =
+    await import("../lib/comparison");
+  const base = { ...structuredClone(regionalFixture.config), duration: 1 };
+  const clone = updateSetting(base, "regions.0.compute", 3);
+  assert.deepEqual(changedSettings(base, clone), ["regions.0.compute"]);
+  assert.equal(base.regions[0].compute, 2);
+  assert.equal((clone as typeof base).regions[0].compute, 3);
+  assert.ok(validCompareConfig(clone));
+  assert.equal(validCompareConfig({ ...clone, arrival_rate: 200000 }), false);
+  const compact = compactRegionalRun({
+    api_version: "1",
+    config: base,
+    summary: regionalFixture,
+  });
+  assert.equal(
+    compact.response_window_count,
+    regionalFixture.metrics.response_window_count,
+  );
+  assert.equal(metrics(compact).utilization, null);
+  assert.equal("history" in compact.summary, false);
+});
