@@ -34,3 +34,27 @@ controls consistent across setup, results, saved-run workflows, and playback.
 Verification: production build and TypeScript, Node API/client suite, browser
 suite with live Python Run parity, real UI run and validation recovery,
 recorded playback, comparison uploads, and desktop/mobile screenshots.
+
+## Datacenter components
+
+`components/datacenter/` separates rack composition (`rack-view.tsx`), server
+blades and capacity cells (`server-node.tsx`), the global request pool
+(`task-pool.tsx`), and the inspection Sheet (`server-inspector.tsx`). The parent
+`datacenter.tsx` owns playback and passes snapshots; visual components do not
+run simulations or change routing.
+
+A rack contains up to eight server blades; a page renders at most 32 servers.
+Execution and waiting have separate strips, exact counts, and at most 16 cells
+per strip. Larger capacities group places into cells, with fractional fill for
+a partially occupied group. Empty queue capacity says "No waiting queue".
+Teal denotes executing work, orange waiting, green completed, and destructive
+red rejected/full queues. Badge variants share these semantic tokens with the
+visuals. Status labels distinguish idle, executing, busy, queued, and queue full;
+run-average mode does not present these as current server status.
+
+Selecting a server pauses playback and opens a Sheet showing the recorded
+snapshot, capacities, processing-rate multiplier, and run-average utilization.
+Closing restores focus to the selected server. Task-pool counts always cover
+all servers, including those outside the current page. Its segmented bar counts
+all generated requests, including those that have not yet arrived. These views
+model neither physical network layout nor actual hardware telemetry.

@@ -1,18 +1,10 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Run } from "@/lib/engine";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/card";
-import {
   Field,
-  FieldGroup,
   FieldLabel,
   FieldSet,
   FieldLegend,
@@ -23,9 +15,14 @@ import {
 } from "@/components/ui/native-select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Slider } from "@/components/ui/slider";
-import { Progress } from "@/components/ui/progress";
 import { Play, Pause, RotateCcw } from "lucide-react";
+import { RackView } from "./datacenter/rack-view";
+import { TaskPool } from "./datacenter/task-pool";
+import { ServerInspector } from "./datacenter/server-inspector";
+import type { ServerSnapshot } from "./datacenter/server-node";
 export function Datacenter({ run }: { run: Run }) {
+  const selectedTrigger = useRef<HTMLElement | null>(null);
+  const [selected, setSelected] = useState<string | null>(null);
   const [mode, setMode] = useState("Playback"),
     [page, setPage] = useState(0),
     [now, setNow] = useState(0),
@@ -48,8 +45,12 @@ export function Datacenter({ run }: { run: Run }) {
   useEffect(() => {
     if (now >= end) setPlaying(false);
   }, [now, end]);
-  const servers = Object.entries(summary.per_server_utilization).sort(
-    (a, b) => Number(a[0]) - Number(b[0]),
+  const servers = useMemo(
+    () =>
+      Object.entries(summary.per_server_utilization).sort(
+        (a, b) => Number(a[0]) - Number(b[0]),
+      ),
+    [summary.per_server_utilization],
   );
   const states: Record<string, [number, number]> = {};
   servers.forEach(([sid]) => (states[sid] = [0, 0]));
@@ -68,6 +69,18 @@ export function Datacenter({ run }: { run: Run }) {
     total = Math.floor(config.arrival_rate * config.duration),
     arrived = running + waiting + completed + rejected;
   const visible = servers.slice(page * 32, (page + 1) * 32);
+  const snapshot = ([id, utilization]: [string, number]): ServerSnapshot => ({
+    id,
+    utilization,
+    active: states[id]?.[0] ?? 0,
+    queued: states[id]?.[1] ?? 0,
+    slots: config.concurrency,
+    queueLimit: config.queue_limit,
+    processingRate: config.processing_rates?.[Number(id)] ?? 1,
+  });
+  const displayed = visible.map(snapshot);
+  const inspected =
+    selected === null ? undefined : servers.find(([id]) => id === selected);
   return (
     <div className="flex flex-col gap-5">
       <div>
@@ -179,6 +192,26 @@ export function Datacenter({ run }: { run: Run }) {
           </p>
         </div>
       )}
+      {mode === "Playback" && (
+        <div className="flex flex-wrap items-center justify-between gap-3 border-y py-3">
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="executing">
+              {running.toLocaleString()} executing
+            </Badge>
+            <Badge variant="waiting">{waiting.toLocaleString()} waiting</Badge>
+            <Badge variant="secondary">
+              {
+                servers.filter(([id]) => !states[id][0] && !states[id][1])
+                  .length
+              }{" "}
+              idle servers
+            </Badge>
+          </div>
+          <p className="caption">
+            Teal: executing · Orange: waiting · Empty cells: available
+          </p>
+        </div>
+      )}
       <div
         className={
           mode === "Playback"
@@ -189,152 +222,48 @@ export function Datacenter({ run }: { run: Run }) {
         <div
           className={
             visible.length > 8
-              ? "grid min-w-0 gap-5 md:grid-cols-2"
+              ? "grid min-w-0 items-start gap-5 md:grid-cols-2"
               : "grid min-w-0 gap-5"
           }
         >
-          {Array.from({ length: Math.ceil(visible.length / 8) }, (_, r) => (
-            <Card key={r} className="min-w-0">
-              <CardHeader>
-                <CardTitle>Rack {page * 4 + r + 1}</CardTitle>
-                <CardDescription>
-                  {visible.slice(r * 8, r * 8 + 8).length} servers
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-5">
-                {visible.slice(r * 8, r * 8 + 8).map(([sid, u]) => {
-                  const [active, queued] = states[sid];
-                  return (
-                    <div
-                      key={sid}
-                      className="flex flex-col gap-3 border-t pt-4"
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <strong className="text-sm">Server {sid}</strong>
-                        {mode === "Playback" && (
-                          <Badge
-                            variant={
-                              queued === config.queue_limit && queued > 0
-                                ? "destructive"
-                                : active
-                                  ? "default"
-                                  : "secondary"
-                            }
-                          >
-                            {queued
-                              ? queued === config.queue_limit
-                                ? "Queue full"
-                                : "Queued"
-                              : active
-                                ? "Executing"
-                                : "Idle"}
-                          </Badge>
-                        )}
-                      </div>
-                      {mode === "Run averages" ? (
-                        <>
-                          <div className="flex justify-between text-sm">
-                            <span>Average utilization</span>
-                            <span className="tabular-nums">
-                              {(u * 100).toFixed(1)}%
-                            </span>
-                          </div>
-                          <Progress
-                            value={u * 100}
-                            role="meter"
-                            aria-label={`Server ${sid} slot utilization`}
-                            aria-valuemin={0}
-                            aria-valuemax={100}
-                            aria-valuenow={u * 100}
-                          />
-                        </>
-                      ) : (
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="flex flex-col gap-2">
-                            <div className="text-sm text-muted-foreground">
-                              Executing{" "}
-                              <span className="tabular-nums">
-                                {active}/{config.concurrency}
-                              </span>
-                            </div>
-                            <Progress
-                              value={(100 * active) / config.concurrency}
-                              aria-label={`Server ${sid} executing slots`}
-                            />
-                            <Badge variant={active ? "default" : "outline"}>
-                              {active ? `Running × ${active}` : "Available"}
-                            </Badge>
-                          </div>
-                          <div className="flex flex-col gap-2">
-                            <div className="text-sm text-muted-foreground">
-                              Waiting{" "}
-                              <span className="tabular-nums">
-                                {queued}/{config.queue_limit}
-                              </span>
-                            </div>
-                            <Progress
-                              value={
-                                config.queue_limit
-                                  ? (100 * queued) / config.queue_limit
-                                  : 0
-                              }
-                              aria-label={`Server ${sid} waiting queue`}
-                            />
-                            <Badge variant={queued ? "secondary" : "outline"}>
-                              {queued
-                                ? `Waiting × ${queued}`
-                                : config.queue_limit
-                                  ? "Available"
-                                  : "Disabled"}
-                            </Badge>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </CardContent>
-            </Card>
+          {Array.from({ length: Math.ceil(displayed.length / 8) }, (_, r) => (
+            <RackView
+              key={r}
+              number={page * 4 + r + 1}
+              servers={displayed.slice(r * 8, r * 8 + 8)}
+              averages={mode === "Run averages"}
+              onInspect={(id) => {
+                selectedTrigger.current =
+                  document.activeElement instanceof HTMLElement
+                    ? document.activeElement
+                    : null;
+                setPlaying(false);
+                setSelected(id);
+              }}
+            />
           ))}
         </div>
         {mode === "Playback" && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Task pool</CardTitle>
-              <CardDescription>Across all servers</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <dl className="flex flex-col gap-4">
-                {[
-                  ["Not arrived", total - arrived],
-                  ["Running", running],
-                  ["Waiting", waiting],
-                  ["Completed", completed],
-                  ["Rejected", rejected],
-                ].map(([label, value]) => (
-                  <div
-                    key={label}
-                    className="flex items-center justify-between gap-2"
-                  >
-                    <dt className="text-sm text-muted-foreground">{label}</dt>
-                    <dd className="font-semibold tabular-nums">
-                      {Number(value).toLocaleString()}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-              <p className="caption mt-5">
-                {arrived.toLocaleString()} arrived / {total.toLocaleString()}{" "}
-                total requests.
-              </p>
-            </CardContent>
-          </Card>
+          <TaskPool
+            total={total}
+            running={running}
+            waiting={waiting}
+            completed={completed}
+            rejected={rejected}
+          />
         )}
       </div>
+      <ServerInspector
+        server={inspected ? snapshot(inspected) : undefined}
+        now={now}
+        averages={mode === "Run averages"}
+        onClose={() => setSelected(null)}
+        onRestoreFocus={() => selectedTrigger.current?.focus()}
+      />
       <p className="caption">
         Showing {visible.length} of {servers.length} servers.{" "}
         {mode === "Playback"
-          ? "Counts show occupied execution slots and waiting places separately."
+          ? "Execution and waiting are separate. Up to 16 cells per strip; large capacities group multiple places per cell. Select a server for details."
           : "Bars show average occupied slots during the arrival window."}
       </p>
     </div>

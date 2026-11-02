@@ -120,3 +120,12 @@ Setup uses shadcn `SidebarProvider` / `Sidebar` / `SidebarContent`, with the
 built-in mobile Sheet. The local Sidebar source adds `mobileTitle` and forwards
 `onCloseAutoFocus` to SheetContent so the setup tray has a useful accessible
 name and restores focus to its external header trigger on dismissal.
+
+Datacenter graphics are reusable application components in
+`components/datacenter/`: `ServerNode`, `CapacityCells`, `RackView`, `TaskPool`,
+and `ServerInspector`. They compose shadcn controls and surfaces with bounded
+capacity-cell graphics. Server inspection pauses playback and shows the exact
+recorded state; closing the tray returns focus to its trigger. Displaying 40
+servers with 64 execution slots and 64 queue places renders at most 32 server
+blades and 1,024 capacity cells per page. The browser suite verifies this using
+a real 10,000-request Python result, including queue saturation and pagination.
