@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Config, defaults, engineRequest, policies, Run } from "@/lib/engine";
 import { Results, seconds } from "@/components/results";
 import previewRun from "@/lib/preview-run.json";
@@ -135,6 +135,7 @@ function Comparison({ runs }: { runs: [Run, Run] }) {
   );
 }
 export default function Page() {
+  const requestPending = useRef(false);
   const [config, setConfig] = useState<Config>(defaults),
     [run, setRun] = useState<Run | null>(null),
     [preview, setPreview] = useState(false),
@@ -156,6 +157,8 @@ export default function Page() {
     }
   }, []);
   async function request(operation: "run" | "replay") {
+    if (requestPending.current) return;
+    requestPending.current = true;
     setBusy(true);
     setFeedback("");
     try {
@@ -168,6 +171,7 @@ export default function Page() {
     } catch (error) {
       setFeedback((error as Error).message);
     } finally {
+      requestPending.current = false;
       setBusy(false);
     }
   }
@@ -231,7 +235,7 @@ export default function Page() {
     }
   }
   function number(
-    key: Exclude<keyof Config, "policy">,
+    key: Exclude<keyof Config, "policy" | "processing_rates">,
     label: string,
     help?: string,
     step = 1,
