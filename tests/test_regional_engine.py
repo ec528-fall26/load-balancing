@@ -25,6 +25,16 @@ class LiveTests(unittest.TestCase):
             self.assertLessEqual(pool.running, pool.region.slots)
             self.assertLessEqual(len(pool.waiting), pool.region.queue_limit)
 
+    def test_large_arrival_windows_exclude_the_cutoff_without_accumulated_drift(self):
+        for rate in (1000, 10000):
+            with self.subTest(rate=rate):
+                sim = LiveSimulation([Region('east', 100, 4)], [[2]],
+                                     arrival_rate=rate)
+                sim.run_once(100000 / rate)
+                self.assertEqual(sim.offered, 100000)
+                self.assertEqual(sim.offered, sim.completed + sim.rejected)
+                self.check_conservation(sim)
+
     def test_network_both_directions_and_compute_speed(self):
         sim = LiveSimulation([Region('east', 1, 1, 2)], [[200]],
                              arrival_rate=1, service_min=2, service_max=2)

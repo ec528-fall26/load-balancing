@@ -1,3 +1,4 @@
+from dataclasses import replace
 from concurrent.futures import ThreadPoolExecutor
 from threading import Event
 from time import monotonic, sleep
@@ -139,7 +140,17 @@ class SessionTests(unittest.TestCase):
             response = client.get(f"/v1/sessions/{sid}/snapshot")
             self.assertEqual(response.status_code, 410, response.text)
             self.assertEqual(response.json()["code"], "SESSION_EXPIRED")
-            new = self.create(client, paused=True)["session_id"]
+            # An expired worker still counts toward admission until the sweeper
+            # finishes reaping it. A 410 can race with that bounded cleanup.
+            deadline = monotonic() + 2
+            while True:
+                created = client.post("/v1/sessions", json={"config": CONFIG, "paused": True})
+                if created.status_code == 201:
+                    break
+                self.assertEqual(created.status_code, 429, created.text)
+                self.assertLess(monotonic(), deadline, "Expired worker did not release capacity")
+                sleep(.02)
+            new = created.json()["session_id"]
             self.assertNotEqual(new, sid)
             remaining = app.state.sessions.sessions[new].process
         self.assertEqual(app.state.sessions.sessions, {})
@@ -248,6 +259,9 @@ class SessionTests(unittest.TestCase):
                 self.assertEqual(manager.sessions, {})
                 self.assertEqual(manager.pending, 0)
                 manager.worker_target = session_worker
+                # Failure probes use a short startup timeout; recovery gets the
+                # normal healthy-worker budget, including fresh-process imports.
+                manager.limits = replace(limits, startup_seconds=SessionLimits().startup_seconds)
                 self.create(client)
 
     def test_healthy_session_and_health_remain_responsive_during_one_shot(self):
