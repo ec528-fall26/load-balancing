@@ -123,17 +123,31 @@ test("API boundary never fabricates engine results", async ({ request }) => {
   expect((await invalid.json()).code).toBe("INVALID_REQUEST");
   expect((await request.post("/api/engine/unknown")).status()).toBe(404);
 });
-test("Run returns the actual Python result through the proxy", async ({
+test("Run returns exact Python metrics with bounded data and paginated playback", async ({
   request,
 }) => {
   const response = await request.post("/api/engine/run", {
     data: { config: fixture.config },
   });
-  expect(response.status()).toBe(200);
+  expect(response.status()).toBe(201);
   const run = await response.json();
   expect(run.api_version).toBe("1");
   expect(run.config).toEqual(fixture.config);
-  expect(run.summary).toEqual(fixture.summary);
+  for (const key of [
+    "completed_count",
+    "rejected_count",
+    "mean_response_time",
+    "p95_response_time",
+    "per_server_utilization",
+  ])
+    expect(run.summary[key]).toEqual((fixture.summary as any)[key]);
+  expect(run.summary.events).toEqual([]);
+  expect(run.summary.response_times).toEqual([]);
+  const events = await (
+    await request.get(`/api/runs/${run.run_id}/events?limit=1000`)
+  ).json();
+  expect(events.items.map((r: any) => r.event)).toEqual(fixture.summary.events);
+  await request.delete(`/api/runs/${run.run_id}`);
 });
 test("future API results retain the completed configuration after form edits", async ({
   page,
@@ -301,7 +315,7 @@ test("large rack view bounds cells, paginates, and shows queue saturation", asyn
     service_max: 2,
   };
   const response = await request.post("/api/engine/run", { data: { config } });
-  expect(response.status()).toBe(200);
+  expect(response.status()).toBe(201);
   const run = await response.json();
   await page.route("**/api/engine/run", (route) =>
     route.fulfill({ json: run }),

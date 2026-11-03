@@ -148,8 +148,12 @@ def main(args):
                     report['one_shot_api'].append(record);save()
                     if seed==42:
                         proxied,measure=request_sample(client,args.frontend+proxy,'POST',dict(config=config))
-                        assert proxied==data
-                        report['one_shot_api'].append({**record,'transport':'next_proxy','sample':measure});save()
+                        if proxied.get('run_id'):
+                            for key in ('completed_count','rejected_count','mean_response_time','p95_response_time','per_server_utilization'):
+                                assert proxied['summary'][key]==data['summary'][key]
+                            client.delete(args.frontend+'/api/runs/'+proxied['run_id']).raise_for_status()
+                        else:assert proxied==data
+                        report['one_shot_api'].append({**record,'transport':'next_proxy','sample':measure,'trace_events':len(proxied['summary'].get('events',[])),'response_format':'recorded_summary' if proxied.get('run_id') else 'full_trace'});save()
                     print(f'one-shot API {topology} {rate}/s seed {seed}: {sample["latency_ms"]:.0f}ms, {sample["decoded_bytes"]:,} decoded bytes',flush=True)
         for topology in ('single_pool','regions'):
             for rate in (1000,10000):

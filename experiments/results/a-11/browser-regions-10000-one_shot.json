@@ -1,7 +1,7 @@
 {
-  "recorded_at_utc": "2026-11-03T00:12:42.448Z",
+  "recorded_at_utc": "2026-11-03T00:37:38.933Z",
   "git_head": "d6fbfafeab8d429e83567efd7a45f76ef09513ff",
-  "benchmark_source_sha256": "feb963cf9a57e536b32e5e4a5b52edc96246693ce6d1cb8b763953ee7f1359e7",
+  "benchmark_source_sha256": "e2e6e57d763d220fa04d14bc95259827acf7d6a54bf5d136223b2329a364bd48",
   "topology": "regions",
   "rate": 10000,
   "mode": "one_shot",
@@ -10,36 +10,38 @@
     "width": 1440,
     "height": 1000
   },
-  "first_ready_ms": 513.1447499999995,
+  "first_ready_ms": 578.2577499999898,
   "initial_heap": {
-    "usedSize": 7625444,
-    "totalSize": 8470528,
-    "embedderHeapUsedSize": 2423872,
-    "backingStorageSize": 1533998
+    "usedSize": 7629256,
+    "totalSize": 8732672,
+    "embedderHeapUsedSize": 2456472,
+    "backingStorageSize": 1535918
   },
   "natural_end_heap": {
-    "usedSize": 11091588,
-    "totalSize": 22364160,
-    "embedderHeapUsedSize": 3334808,
-    "backingStorageSize": 1538903
+    "usedSize": 11113504,
+    "totalSize": 21839872,
+    "embedderHeapUsedSize": 3348808,
+    "backingStorageSize": 1540828
   },
   "post_gc_end_heap": {
-    "usedSize": 11037064,
-    "totalSize": 11616256,
-    "embedderHeapUsedSize": 3153888,
-    "backingStorageSize": 1538422
+    "usedSize": 11060332,
+    "totalSize": 11878400,
+    "embedderHeapUsedSize": 2994240,
+    "backingStorageSize": 1540347
   },
-  "retained_heap_delta_bytes": 3411620,
+  "retained_heap_delta_bytes": 3431076,
   "rendering": {
-    "long_tasks": [],
-    "frames": 119,
-    "frame_gap_max_ms": 33.39999999999998,
-    "frame_gap_mean_ms": 16.805882352941175,
+    "long_tasks": [
+      52
+    ],
+    "frames": 123,
+    "frame_gap_max_ms": 33.299999999999955,
+    "frame_gap_mean_ms": 16.800813008130078,
     "frame_gaps_over_100ms": 0,
     "json_reads": [
       {
         "url": "/api/regions/run",
-        "ms": 0.5
+        "ms": 0.29999999701976776
       }
     ],
     "visibility": "visible"
@@ -47,7 +49,7 @@
   "cdp_metrics": [
     {
       "name": "Timestamp",
-      "value": 86149.573689
+      "value": 87646.053084
     },
     {
       "name": "AudioHandlers",
@@ -67,7 +69,7 @@
     },
     {
       "name": "JSEventListeners",
-      "value": 3627
+      "value": 3628
     },
     {
       "name": "LayoutObjects",
@@ -83,7 +85,7 @@
     },
     {
       "name": "Nodes",
-      "value": 1099
+      "value": 1109
     },
     {
       "name": "Resources",
@@ -127,27 +129,27 @@
     },
     {
       "name": "LayoutCount",
-      "value": 78
+      "value": 77
     },
     {
       "name": "RecalcStyleCount",
-      "value": 133
+      "value": 134
     },
     {
       "name": "LayoutDuration",
-      "value": 0.00346
+      "value": 0.003801
     },
     {
       "name": "RecalcStyleDuration",
-      "value": 0.007396
+      "value": 0.007914
     },
     {
       "name": "DevToolsCommandDuration",
-      "value": 0.004879
+      "value": 0.004185
     },
     {
       "name": "ScriptDuration",
-      "value": 0.049792
+      "value": 0.053329
     },
     {
       "name": "V8CompileDuration",
@@ -155,39 +157,39 @@
     },
     {
       "name": "TaskDuration",
-      "value": 0.105674
+      "value": 0.108108
     },
     {
       "name": "TaskOtherDuration",
-      "value": 0.040147
+      "value": 0.038879
     },
     {
       "name": "ThreadTime",
-      "value": 0.106909
+      "value": 0.108056
     },
     {
       "name": "ProcessTime",
-      "value": 0.562014
+      "value": 0.591738
     },
     {
       "name": "JSHeapUsedSize",
-      "value": 11137084
+      "value": 11159128
     },
     {
       "name": "JSHeapTotalSize",
-      "value": 22364160
+      "value": 21839872
     },
     {
       "name": "FirstMeaningfulPaint",
-      "value": 86147.234956
+      "value": 87643.649652
     },
     {
       "name": "DomContentLoaded",
-      "value": 86147.220012
+      "value": 87643.643196
     },
     {
       "name": "NavigationStart",
-      "value": 86147.195108
+      "value": 87643.617079
     }
   ],
   "poll_count": 0,

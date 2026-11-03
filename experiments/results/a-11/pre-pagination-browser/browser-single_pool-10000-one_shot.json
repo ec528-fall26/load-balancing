@@ -1,0 +1,206 @@
+{
+  "recorded_at_utc": "2026-11-03T00:12:02.530Z",
+  "git_head": "d6fbfafeab8d429e83567efd7a45f76ef09513ff",
+  "benchmark_source_sha256": "feb963cf9a57e536b32e5e4a5b52edc96246693ce6d1cb8b763953ee7f1359e7",
+  "topology": "single_pool",
+  "rate": 10000,
+  "mode": "one_shot",
+  "browser_version": "156.0.8078.4",
+  "viewport": {
+    "width": 1440,
+    "height": 1000
+  },
+  "first_ready_ms": 1152.4413750000022,
+  "initial_heap": {
+    "usedSize": 6829564,
+    "totalSize": 7421952,
+    "embedderHeapUsedSize": 1782056,
+    "backingStorageSize": 1529041
+  },
+  "natural_end_heap": {
+    "usedSize": 22353440,
+    "totalSize": 39059456,
+    "embedderHeapUsedSize": 4997208,
+    "backingStorageSize": 1540303
+  },
+  "post_gc_end_heap": {
+    "usedSize": 17876544,
+    "totalSize": 18874368,
+    "embedderHeapUsedSize": 3100856,
+    "backingStorageSize": 1536418
+  },
+  "retained_heap_delta_bytes": 11046980,
+  "rendering": {
+    "long_tasks": [
+      55
+    ],
+    "frames": 157,
+    "frame_gap_max_ms": 49.899999999999864,
+    "frame_gap_mean_ms": 16.878343949044584,
+    "frame_gaps_over_100ms": 0,
+    "json_reads": [
+      {
+        "url": "/api/engine/run",
+        "ms": 18.099999994039536
+      }
+    ],
+    "visibility": "visible"
+  },
+  "cdp_metrics": [
+    {
+      "name": "Timestamp",
+      "value": 86109.655249
+    },
+    {
+      "name": "AudioHandlers",
+      "value": 0
+    },
+    {
+      "name": "AudioWorkletProcessors",
+      "value": 0
+    },
+    {
+      "name": "Documents",
+      "value": 1
+    },
+    {
+      "name": "Frames",
+      "value": 1
+    },
+    {
+      "name": "JSEventListeners",
+      "value": 3812
+    },
+    {
+      "name": "LayoutObjects",
+      "value": 1123
+    },
+    {
+      "name": "MediaKeySessions",
+      "value": 0
+    },
+    {
+      "name": "MediaKeys",
+      "value": 0
+    },
+    {
+      "name": "Nodes",
+      "value": 1306
+    },
+    {
+      "name": "Resources",
+      "value": 19
+    },
+    {
+      "name": "ContextLifecycleStateObservers",
+      "value": 28
+    },
+    {
+      "name": "V8PerContextDatas",
+      "value": 2
+    },
+    {
+      "name": "WorkerGlobalScopes",
+      "value": 0
+    },
+    {
+      "name": "UACSSResources",
+      "value": 0
+    },
+    {
+      "name": "RTCPeerConnections",
+      "value": 0
+    },
+    {
+      "name": "ResourceFetchers",
+      "value": 1
+    },
+    {
+      "name": "AdSubframes",
+      "value": 0
+    },
+    {
+      "name": "DetachedScriptStates",
+      "value": 0
+    },
+    {
+      "name": "ArrayBufferContents",
+      "value": 36
+    },
+    {
+      "name": "LayoutCount",
+      "value": 159
+    },
+    {
+      "name": "RecalcStyleCount",
+      "value": 244
+    },
+    {
+      "name": "LayoutDuration",
+      "value": 0.004059
+    },
+    {
+      "name": "RecalcStyleDuration",
+      "value": 0.009126
+    },
+    {
+      "name": "DevToolsCommandDuration",
+      "value": 0.018073
+    },
+    {
+      "name": "ScriptDuration",
+      "value": 0.056818
+    },
+    {
+      "name": "V8CompileDuration",
+      "value": 0
+    },
+    {
+      "name": "TaskDuration",
+      "value": 0.163743
+    },
+    {
+      "name": "TaskOtherDuration",
+      "value": 0.075667
+    },
+    {
+      "name": "ThreadTime",
+      "value": 0.144904
+    },
+    {
+      "name": "ProcessTime",
+      "value": 0.500877
+    },
+    {
+      "name": "JSHeapUsedSize",
+      "value": 22396764
+    },
+    {
+      "name": "JSHeapTotalSize",
+      "value": 39059456
+    },
+    {
+      "name": "FirstMeaningfulPaint",
+      "value": 86106.902243
+    },
+    {
+      "name": "DomContentLoaded",
+      "value": 86106.887972
+    },
+    {
+      "name": "NavigationStart",
+      "value": 86106.862236
+    }
+  ],
+  "poll_count": 0,
+  "max_simultaneous_polls": 0,
+  "poll_latency_ms": null,
+  "poll_body_bytes": null,
+  "poll_start_gap_ms": null,
+  "polls": [],
+  "counts": {
+    "completed": 8411,
+    "rejected": 91589
+  },
+  "errors": []
+}

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { proxyRun } from "@/lib/server/engine-proxy";
+import { proxyPython } from "@/lib/server/engine-proxy";
 const operations = new Set(["run", "replay", "compare", "exports"]);
 export async function POST(
   request: Request,
@@ -11,7 +11,7 @@ export async function POST(
       { message: "Unknown engine operation." },
       { status: 404 },
     );
-  if (operation === "run") return proxyRun(request);
+  if (operation === "run") return proxyPython(request, "runs");
   // Saved-run workflows are connected separately in A-07.
   return NextResponse.json(
     {

@@ -1,0 +1,3065 @@
+{
+  "recorded_at_utc": "2026-11-03T00:27:49.882572+00:00",
+  "git_head": "d6fbfafeab8d429e83567efd7a45f76ef09513ff",
+  "source_hashes": {
+    "src/lbsim/runs.py": "9dd5e353e06283221a6003ba43c028497fe2fb09252961bd15625c05801bf45e",
+    "src/lbsim/sessions.py": "810896faf0530558737d5c82d9add70b48f1bf75629d8889e90720542f75e28a",
+    "src/lbsim/regional_engine.py": "b8d226f5b7afa8db3ed7484e6321d17fe7aa7316fb4d15003939b5e93fb27eb4",
+    "experiments/pagination_scale.py": "214bf3ffb1a5f867aae39bd8a94dd376270462bd257857121edbcae2fdac3f20"
+  },
+  "one_shot": [
+    {
+      "config": {
+        "server_count": 100,
+        "concurrency": 4,
+        "queue_limit": 10,
+        "arrival_rate": 1000,
+        "duration": 100.0,
+        "service_min": 0.1,
+        "service_max": 1.0,
+        "seed": 42,
+        "policy": "round_robin"
+      },
+      "legacy": {
+        "ms": 1490.661290998105,
+        "decoded_bytes": 7870218,
+        "wire_bytes": 7870218
+      },
+      "bounded": {
+        "ms": 1177.7633750025416,
+        "decoded_bytes": 4097,
+        "wire_bytes": 4097
+      },
+      "event_count": 173692,
+      "pages": 174,
+      "largest_page_bytes": 70748,
+      "page_ms": {
+        "median": 5.67012499232078,
+        "max": 13.84370900632348
+      },
+      "all_pages_ms": 1375.4485419922275,
+      "event_digest_sha256": "c5cf02adc12037cc72c2ee7716af473562f0cc1078af31568838070b7b5cbee3",
+      "snapshots": [
+        {
+          "time": 0,
+          "totals": {
+            "offered": 1,
+            "completed": 0,
+            "rejected": 0,
+            "running": 1,
+            "waiting": 0
+          },
+          "measure": {
+            "ms": 1.4178330020513386,
+            "decoded_bytes": 2865,
+            "wire_bytes": 2865
+          },
+          "visible": 32
+        },
+        {
+          "time": 50.0,
+          "totals": {
+            "offered": 50001,
+            "completed": 36002,
+            "rejected": 12675,
+            "running": 400,
+            "waiting": 924
+          },
+          "measure": {
+            "ms": 0.9688749996712431,
+            "decoded_bytes": 2902,
+            "wire_bytes": 2902
+          },
+          "visible": 32
+        },
+        {
+          "time": 102.7083893550402,
+          "totals": {
+            "offered": 100000,
+            "completed": 73692,
+            "rejected": 26308,
+            "running": 0,
+            "waiting": 0
+          },
+          "measure": {
+            "ms": 1.1811669974122196,
+            "decoded_bytes": 2914,
+            "wire_bytes": 2914
+          },
+          "visible": 32
+        }
+      ]
+    },
+    {
+      "config": {
+        "server_count": 1000,
+        "concurrency": 4,
+        "queue_limit": 10,
+        "arrival_rate": 10000,
+        "duration": 10.0,
+        "service_min": 0.1,
+        "service_max": 1.0,
+        "seed": 42,
+        "policy": "round_robin"
+      },
+      "legacy": {
+        "ms": 6390.8551250060555,
+        "decoded_bytes": 8633692,
+        "wire_bytes": 8633692
+      },
+      "bounded": {
+        "ms": 6060.200708001503,
+        "decoded_bytes": 24300,
+        "wire_bytes": 24300
+      },
+      "event_count": 182682,
+      "pages": 183,
+      "largest_page_bytes": 74862,
+      "page_ms": {
+        "median": 5.469999989145435,
+        "max": 12.199582997709513
+      },
+      "all_pages_ms": 1391.8051250075223,
+      "event_digest_sha256": "6805449ac4548298f5ed496d99566437f2949c485099d18a707850ba94cd8a91",
+      "snapshots": [
+        {
+          "time": 0,
+          "totals": {
+            "offered": 1,
+            "completed": 0,
+            "rejected": 0,
+            "running": 1,
+            "waiting": 0
+          },
+          "measure": {
+            "ms": 1.040250004734844,
+            "decoded_bytes": 2900,
+            "wire_bytes": 2900
+          },
+          "visible": 32
+        },
+        {
+          "time": 5.0,
+          "totals": {
+            "offered": 50001,
+            "completed": 33159,
+            "rejected": 3735,
+            "running": 4000,
+            "waiting": 9107
+          },
+          "measure": {
+            "ms": 1.0809169907588512,
+            "decoded_bytes": 2940,
+            "wire_bytes": 2940
+          },
+          "visible": 32
+        },
+        {
+          "time": 12.67619890595673,
+          "totals": {
+            "offered": 100000,
+            "completed": 82682,
+            "rejected": 17318,
+            "running": 0,
+            "waiting": 0
+          },
+          "measure": {
+            "ms": 0.9748750017024577,
+            "decoded_bytes": 2950,
+            "wire_bytes": 2950
+          },
+          "visible": 32
+        }
+      ]
+    },
+    {
+      "config": {
+        "server_count": 1000,
+        "concurrency": 4,
+        "queue_limit": 10,
+        "arrival_rate": 100000,
+        "duration": 1.0,
+        "service_min": 0.1,
+        "service_max": 1.0,
+        "seed": 42,
+        "policy": "round_robin"
+      },
+      "legacy": {
+        "ms": 4338.862791992142,
+        "decoded_bytes": 4807647,
+        "wire_bytes": 4807647
+      },
+      "bounded": {
+        "ms": 4147.018957999535,
+        "decoded_bytes": 16401,
+        "wire_bytes": 16401
+      },
+      "event_count": 119639,
+      "pages": 120,
+      "largest_page_bytes": 74583,
+      "page_ms": {
+        "median": 5.799978505820036,
+        "max": 13.375167007325217
+      },
+      "all_pages_ms": 949.6976250084117,
+      "event_digest_sha256": "9cba5d094b150c4b70b24c859d6f8cd5821b73dbbd6d883d77a3b20f235c908c",
+      "snapshots": [
+        {
+          "time": 0,
+          "totals": {
+            "offered": 1,
+            "completed": 0,
+            "rejected": 0,
+            "running": 1,
+            "waiting": 0
+          },
+          "measure": {
+            "ms": 1.4835420006420463,
+            "decoded_bytes": 2900,
+            "wire_bytes": 2900
+          },
+          "visible": 32
+        },
+        {
+          "time": 0.5,
+          "totals": {
+            "offered": 50001,
+            "completed": 1863,
+            "rejected": 34167,
+            "running": 4000,
+            "waiting": 9971
+          },
+          "measure": {
+            "ms": 1.263124999240972,
+            "decoded_bytes": 2953,
+            "wire_bytes": 2953
+          },
+          "visible": 32
+        },
+        {
+          "time": 3.9241627019274423,
+          "totals": {
+            "offered": 100000,
+            "completed": 19639,
+            "rejected": 80361,
+            "running": 0,
+            "waiting": 0
+          },
+          "measure": {
+            "ms": 1.432166012818925,
+            "decoded_bytes": 2952,
+            "wire_bytes": 2952
+          },
+          "visible": 32
+        }
+      ]
+    }
+  ],
+  "regional": [
+    {
+      "config": {
+        "topology": "regions",
+        "regions": [
+          {
+            "name": "dc-01",
+            "servers": 84,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 1
+          },
+          {
+            "name": "dc-02",
+            "servers": 84,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 0.75
+          },
+          {
+            "name": "dc-03",
+            "servers": 84,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 2
+          },
+          {
+            "name": "dc-04",
+            "servers": 84,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 1
+          },
+          {
+            "name": "dc-05",
+            "servers": 83,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 0.75
+          },
+          {
+            "name": "dc-06",
+            "servers": 83,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 2
+          },
+          {
+            "name": "dc-07",
+            "servers": 83,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 1
+          },
+          {
+            "name": "dc-08",
+            "servers": 83,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 0.75
+          },
+          {
+            "name": "dc-09",
+            "servers": 83,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 2
+          },
+          {
+            "name": "dc-10",
+            "servers": 83,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 1
+          },
+          {
+            "name": "dc-11",
+            "servers": 83,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 0.75
+          },
+          {
+            "name": "dc-12",
+            "servers": 83,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 2
+          }
+        ],
+        "latency_ms": [
+          [
+            2,
+            50,
+            90,
+            130,
+            170,
+            210,
+            250,
+            290,
+            330,
+            370,
+            410,
+            450
+          ],
+          [
+            50,
+            2,
+            50,
+            90,
+            130,
+            170,
+            210,
+            250,
+            290,
+            330,
+            370,
+            410
+          ],
+          [
+            90,
+            50,
+            2,
+            50,
+            90,
+            130,
+            170,
+            210,
+            250,
+            290,
+            330,
+            370
+          ],
+          [
+            130,
+            90,
+            50,
+            2,
+            50,
+            90,
+            130,
+            170,
+            210,
+            250,
+            290,
+            330
+          ],
+          [
+            170,
+            130,
+            90,
+            50,
+            2,
+            50,
+            90,
+            130,
+            170,
+            210,
+            250,
+            290
+          ],
+          [
+            210,
+            170,
+            130,
+            90,
+            50,
+            2,
+            50,
+            90,
+            130,
+            170,
+            210,
+            250
+          ],
+          [
+            250,
+            210,
+            170,
+            130,
+            90,
+            50,
+            2,
+            50,
+            90,
+            130,
+            170,
+            210
+          ],
+          [
+            290,
+            250,
+            210,
+            170,
+            130,
+            90,
+            50,
+            2,
+            50,
+            90,
+            130,
+            170
+          ],
+          [
+            330,
+            290,
+            250,
+            210,
+            170,
+            130,
+            90,
+            50,
+            2,
+            50,
+            90,
+            130
+          ],
+          [
+            370,
+            330,
+            290,
+            250,
+            210,
+            170,
+            130,
+            90,
+            50,
+            2,
+            50,
+            90
+          ],
+          [
+            410,
+            370,
+            330,
+            290,
+            250,
+            210,
+            170,
+            130,
+            90,
+            50,
+            2,
+            50
+          ],
+          [
+            450,
+            410,
+            370,
+            330,
+            290,
+            250,
+            210,
+            170,
+            130,
+            90,
+            50,
+            2
+          ]
+        ],
+        "client_latency_ms": [
+          2,
+          50,
+          90,
+          130,
+          170,
+          210,
+          250,
+          290,
+          330,
+          370,
+          410,
+          450
+        ],
+        "source": 0,
+        "arrival_rate": 10000,
+        "duration": 10.0,
+        "service_min": 0.1,
+        "service_max": 1.0,
+        "seed": 42,
+        "policy": "round_robin"
+      },
+      "measure": {
+        "ms": 577.5710409943713,
+        "decoded_bytes": 11043,
+        "wire_bytes": 11043
+      },
+      "totals": {
+        "offered": 100000,
+        "completed": 83153,
+        "rejected": 16847,
+        "running": 0,
+        "waiting": 0,
+        "in_transit": 0
+      },
+      "regions": 12,
+      "response_window_count": 2000
+    },
+    {
+      "config": {
+        "topology": "regions",
+        "regions": [
+          {
+            "name": "dc-01",
+            "servers": 84,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 1
+          },
+          {
+            "name": "dc-02",
+            "servers": 84,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 0.75
+          },
+          {
+            "name": "dc-03",
+            "servers": 84,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 2
+          },
+          {
+            "name": "dc-04",
+            "servers": 84,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 1
+          },
+          {
+            "name": "dc-05",
+            "servers": 83,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 0.75
+          },
+          {
+            "name": "dc-06",
+            "servers": 83,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 2
+          },
+          {
+            "name": "dc-07",
+            "servers": 83,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 1
+          },
+          {
+            "name": "dc-08",
+            "servers": 83,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 0.75
+          },
+          {
+            "name": "dc-09",
+            "servers": 83,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 2
+          },
+          {
+            "name": "dc-10",
+            "servers": 83,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 1
+          },
+          {
+            "name": "dc-11",
+            "servers": 83,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 0.75
+          },
+          {
+            "name": "dc-12",
+            "servers": 83,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 2
+          }
+        ],
+        "latency_ms": [
+          [
+            2,
+            50,
+            90,
+            130,
+            170,
+            210,
+            250,
+            290,
+            330,
+            370,
+            410,
+            450
+          ],
+          [
+            50,
+            2,
+            50,
+            90,
+            130,
+            170,
+            210,
+            250,
+            290,
+            330,
+            370,
+            410
+          ],
+          [
+            90,
+            50,
+            2,
+            50,
+            90,
+            130,
+            170,
+            210,
+            250,
+            290,
+            330,
+            370
+          ],
+          [
+            130,
+            90,
+            50,
+            2,
+            50,
+            90,
+            130,
+            170,
+            210,
+            250,
+            290,
+            330
+          ],
+          [
+            170,
+            130,
+            90,
+            50,
+            2,
+            50,
+            90,
+            130,
+            170,
+            210,
+            250,
+            290
+          ],
+          [
+            210,
+            170,
+            130,
+            90,
+            50,
+            2,
+            50,
+            90,
+            130,
+            170,
+            210,
+            250
+          ],
+          [
+            250,
+            210,
+            170,
+            130,
+            90,
+            50,
+            2,
+            50,
+            90,
+            130,
+            170,
+            210
+          ],
+          [
+            290,
+            250,
+            210,
+            170,
+            130,
+            90,
+            50,
+            2,
+            50,
+            90,
+            130,
+            170
+          ],
+          [
+            330,
+            290,
+            250,
+            210,
+            170,
+            130,
+            90,
+            50,
+            2,
+            50,
+            90,
+            130
+          ],
+          [
+            370,
+            330,
+            290,
+            250,
+            210,
+            170,
+            130,
+            90,
+            50,
+            2,
+            50,
+            90
+          ],
+          [
+            410,
+            370,
+            330,
+            290,
+            250,
+            210,
+            170,
+            130,
+            90,
+            50,
+            2,
+            50
+          ],
+          [
+            450,
+            410,
+            370,
+            330,
+            290,
+            250,
+            210,
+            170,
+            130,
+            90,
+            50,
+            2
+          ]
+        ],
+        "client_latency_ms": [
+          2,
+          50,
+          90,
+          130,
+          170,
+          210,
+          250,
+          290,
+          330,
+          370,
+          410,
+          450
+        ],
+        "source": 0,
+        "arrival_rate": 100000,
+        "duration": 1.0,
+        "service_min": 0.1,
+        "service_max": 1.0,
+        "seed": 42,
+        "policy": "round_robin"
+      },
+      "measure": {
+        "ms": 428.457583009731,
+        "decoded_bytes": 9660,
+        "wire_bytes": 9660
+      },
+      "totals": {
+        "offered": 100000,
+        "completed": 21313,
+        "rejected": 78687,
+        "running": 0,
+        "waiting": 0,
+        "in_transit": 0
+      },
+      "regions": 12,
+      "response_window_count": 2000
+    }
+  ],
+  "live": [
+    {
+      "topology": "single_pool",
+      "rate": 10000,
+      "config": {
+        "server_count": 1000,
+        "concurrency": 4,
+        "queue_limit": 10,
+        "arrival_rate": 10000,
+        "service_min": 0.1,
+        "service_max": 1.0,
+        "seed": 42,
+        "policy": "round_robin"
+      },
+      "pause_ms": 2.2322079894365743,
+      "samples": [
+        {
+          "wall_seconds": 0.0017289169918512926,
+          "simulation_time": 0.0,
+          "target": 0.0,
+          "lag": 0.0,
+          "totals": {
+            "offered": 0,
+            "completed": 0,
+            "rejected": 0,
+            "running": 0,
+            "waiting": 0
+          },
+          "retention": {
+            "pending_completions": 0,
+            "waiting_requests": 0,
+            "history_points": 1,
+            "history_limit": 240
+          },
+          "measure": {
+            "ms": 1.6603330004727468,
+            "decoded_bytes": 5120,
+            "wire_bytes": 5120
+          }
+        },
+        {
+          "wall_seconds": 0.5086741249979241,
+          "simulation_time": 0.4866463329963153,
+          "target": 0.4866463329963153,
+          "lag": 0.0,
+          "totals": {
+            "offered": 4867,
+            "completed": 799,
+            "rejected": 0,
+            "running": 3743,
+            "waiting": 325
+          },
+          "retention": {
+            "pending_completions": 3743,
+            "waiting_requests": 325,
+            "history_points": 1,
+            "history_limit": 240
+          },
+          "measure": {
+            "ms": 1.857124996604398,
+            "decoded_bytes": 7006,
+            "wire_bytes": 7006
+          }
+        },
+        {
+          "wall_seconds": 1.0168400419934187,
+          "simulation_time": 0.9790822909999406,
+          "target": 0.9790822909999406,
+          "lag": 0.0,
+          "totals": {
+            "offered": 9791,
+            "completed": 3817,
+            "rejected": 0,
+            "running": 3975,
+            "waiting": 1999
+          },
+          "retention": {
+            "pending_completions": 3975,
+            "waiting_requests": 1999,
+            "history_points": 2,
+            "history_limit": 240
+          },
+          "measure": {
+            "ms": 4.452082997886464,
+            "decoded_bytes": 7120,
+            "wire_bytes": 7120
+          }
+        },
+        {
+          "wall_seconds": 1.5277170420013135,
+          "simulation_time": 1.4993668329989305,
+          "target": 1.4993668329989305,
+          "lag": 0.0,
+          "totals": {
+            "offered": 14994,
+            "completed": 7640,
+            "rejected": 0,
+            "running": 3999,
+            "waiting": 3355
+          },
+          "retention": {
+            "pending_completions": 3999,
+            "waiting_requests": 3355,
+            "history_points": 3,
+            "history_limit": 240
+          },
+          "measure": {
+            "ms": 5.737083003623411,
+            "decoded_bytes": 7228,
+            "wire_bytes": 7228
+          }
+        },
+        {
+          "wall_seconds": 2.0383747079904424,
+          "simulation_time": 2.0047336660063593,
+          "target": 2.0047336660063593,
+          "lag": 0.0,
+          "totals": {
+            "offered": 20048,
+            "completed": 11339,
+            "rejected": 0,
+            "running": 3999,
+            "waiting": 4710
+          },
+          "retention": {
+            "pending_completions": 3999,
+            "waiting_requests": 4710,
+            "history_points": 4,
+            "history_limit": 240
+          },
+          "measure": {
+            "ms": 5.547833003220148,
+            "decoded_bytes": 7347,
+            "wire_bytes": 7347
+          }
+        },
+        {
+          "wall_seconds": 2.54374700000335,
+          "simulation_time": 2.5142,
+          "target": 2.523982957995031,
+          "lag": 0.009782957995030817,
+          "totals": {
+            "offered": 25143,
+            "completed": 15008,
+            "rejected": 15,
+            "running": 3998,
+            "waiting": 6122
+          },
+          "retention": {
+            "pending_completions": 3998,
+            "waiting_requests": 6122,
+            "history_points": 5,
+            "history_limit": 240
+          },
+          "measure": {
+            "ms": 2.155750000383705,
+            "decoded_bytes": 7462,
+            "wire_bytes": 7462
+          }
+        },
+        {
+          "wall_seconds": 3.0528622919955524,
+          "simulation_time": 2.9597,
+          "target": 3.003949707999709,
+          "lag": 0.04424970799970884,
+          "totals": {
+            "offered": 29598,
+            "completed": 18239,
+            "rejected": 156,
+            "running": 4000,
+            "waiting": 7203
+          },
+          "retention": {
+            "pending_completions": 4000,
+            "waiting_requests": 7203,
+            "history_points": 6,
+            "history_limit": 240
+          },
+          "measure": {
+            "ms": 4.013625002698973,
+            "decoded_bytes": 7574,
+            "wire_bytes": 7574
+          }
+        },
+        {
+          "wall_seconds": 3.5571191670023836,
+          "simulation_time": 3.4733,
+          "target": 3.5029677499987883,
+          "lag": 0.029667749998788295,
+          "totals": {
+            "offered": 34734,
+            "completed": 22040,
+            "rejected": 598,
+            "running": 4000,
+            "waiting": 8096
+          },
+          "retention": {
+            "pending_completions": 4000,
+            "waiting_requests": 8096,
+            "history_points": 7,
+            "history_limit": 240
+          },
+          "measure": {
+            "ms": 1.957875007065013,
+            "decoded_bytes": 7694,
+            "wire_bytes": 7694
+          }
+        },
+        {
+          "wall_seconds": 4.0638792919926345,
+          "simulation_time": 4.029971750002005,
+          "target": 4.029971750002005,
+          "lag": 0.0,
+          "totals": {
+            "offered": 40300,
+            "completed": 25995,
+            "rejected": 1549,
+            "running": 4000,
+            "waiting": 8756
+          },
+          "retention": {
+            "pending_completions": 4000,
+            "waiting_requests": 8756,
+            "history_points": 8,
+            "history_limit": 240
+          },
+          "measure": {
+            "ms": 4.580958004225977,
+            "decoded_bytes": 7796,
+            "wire_bytes": 7796
+          }
+        },
+        {
+          "wall_seconds": 4.575177124992479,
+          "simulation_time": 4.508343614830575,
+          "target": 4.51798858300026,
+          "lag": 0.00964496816968552,
+          "totals": {
+            "offered": 45084,
+            "completed": 29515,
+            "rejected": 2553,
+            "running": 4000,
+            "waiting": 9016
+          },
+          "retention": {
+            "pending_completions": 4000,
+            "waiting_requests": 9016,
+            "history_points": 9,
+            "history_limit": 240
+          },
+          "measure": {
+            "ms": 6.055167003069073,
+            "decoded_bytes": 7944,
+            "wire_bytes": 7944
+          }
+        },
+        {
+          "wall_seconds": 5.080941041989718,
+          "simulation_time": 5.0074,
+          "target": 5.059577624997473,
+          "lag": 0.05217762499747369,
+          "totals": {
+            "offered": 50075,
+            "completed": 33193,
+            "rejected": 3750,
+            "running": 4000,
+            "waiting": 9132
+          },
+          "retention": {
+            "pending_completions": 4000,
+            "waiting_requests": 9132,
+            "history_points": 10,
+            "history_limit": 240
+          },
+          "measure": {
+            "ms": 1.9724160083569586,
+            "decoded_bytes": 8057,
+            "wire_bytes": 8057
+          }
+        },
+        {
+          "wall_seconds": 5.589639874990098,
+          "simulation_time": 5.3863,
+          "target": 5.5595221249968745,
+          "lag": 0.17322212499687417,
+          "totals": {
+            "offered": 53864,
+            "completed": 35965,
+            "rejected": 4732,
+            "running": 4000,
+            "waiting": 9167
+          },
+          "retention": {
+            "pending_completions": 4000,
+            "waiting_requests": 9167,
+            "history_points": 11,
+            "history_limit": 240
+          },
+          "measure": {
+            "ms": 3.5760830069193617,
+            "decoded_bytes": 8158,
+            "wire_bytes": 8158
+          }
+        },
+        {
+          "wall_seconds": 6.098968666992732,
+          "simulation_time": 6.0376,
+          "target": 6.06529587499972,
+          "lag": 0.027695874999719372,
+          "totals": {
+            "offered": 60377,
+            "completed": 40706,
+            "rejected": 6465,
+            "running": 4000,
+            "waiting": 9206
+          },
+          "retention": {
+            "pending_completions": 4000,
+            "waiting_requests": 9206,
+            "history_points": 12,
+            "history_limit": 240
+          },
+          "measure": {
+            "ms": 4.215291002765298,
+            "decoded_bytes": 8275,
+            "wire_bytes": 8275
+          }
+        },
+        {
+          "wall_seconds": 6.602825708003365,
+          "simulation_time": 6.4169863770197,
+          "target": 6.582799166004406,
+          "lag": 0.16581278898470586,
+          "totals": {
+            "offered": 64170,
+            "completed": 43443,
+            "rejected": 7480,
+            "running": 4000,
+            "waiting": 9247
+          },
+          "retention": {
+            "pending_completions": 4000,
+            "waiting_requests": 9247,
+            "history_points": 13,
+            "history_limit": 240
+          },
+          "measure": {
+            "ms": 2.99145799363032,
+            "decoded_bytes": 8407,
+            "wire_bytes": 8407
+          }
+        },
+        {
+          "wall_seconds": 7.11171995800396,
+          "simulation_time": 7.035197367894067,
+          "target": 7.083566165994853,
+          "lag": 0.048368798100785426,
+          "totals": {
+            "offered": 70352,
+            "completed": 47944,
+            "rejected": 9156,
+            "running": 4000,
+            "waiting": 9252
+          },
+          "retention": {
+            "pending_completions": 4000,
+            "waiting_requests": 9252,
+            "history_points": 14,
+            "history_limit": 240
+          },
+          "measure": {
+            "ms": 3.780917002586648,
+            "decoded_bytes": 8525,
+            "wire_bytes": 8525
+          }
+        },
+        {
+          "wall_seconds": 7.622965916991234,
+          "simulation_time": 7.5528,
+          "target": 7.57107208299567,
+          "lag": 0.018272082995669514,
+          "totals": {
+            "offered": 75529,
+            "completed": 51725,
+            "rejected": 10564,
+            "running": 4000,
+            "waiting": 9240
+          },
+          "retention": {
+            "pending_completions": 4000,
+            "waiting_requests": 9240,
+            "history_points": 15,
+            "history_limit": 240
+          },
+          "measure": {
+            "ms": 5.993458005832508,
+            "decoded_bytes": 8623,
+            "wire_bytes": 8623
+          }
+        }
+      ],
+      "drained": {
+        "offered": 80908,
+        "completed": 68837,
+        "rejected": 12071,
+        "running": 0,
+        "waiting": 0
+      }
+    },
+    {
+      "topology": "single_pool",
+      "rate": 100000,
+      "config": {
+        "server_count": 1000,
+        "concurrency": 4,
+        "queue_limit": 10,
+        "arrival_rate": 100000,
+        "service_min": 0.1,
+        "service_max": 1.0,
+        "seed": 42,
+        "policy": "round_robin"
+      },
+      "pause_ms": 2.4508750066161156,
+      "samples": [
+        {
+          "wall_seconds": 0.001581749995239079,
+          "simulation_time": 0.0,
+          "target": 0.0,
+          "lag": 0.0,
+          "totals": {
+            "offered": 0,
+            "completed": 0,
+            "rejected": 0,
+            "running": 0,
+            "waiting": 0
+          },
+          "retention": {
+            "pending_completions": 0,
+            "waiting_requests": 0,
+            "history_points": 1,
+            "history_limit": 240
+          },
+          "measure": {
+            "ms": 1.517750002676621,
+            "decoded_bytes": 5122,
+            "wire_bytes": 5122
+          }
+        },
+        {
+          "wall_seconds": 0.5116133749979781,
+          "simulation_time": 0.3161057408418096,
+          "target": 0.48184216700610705,
+          "lag": 0.16573642616429746,
+          "totals": {
+            "offered": 31611,
+            "completed": 895,
+            "rejected": 16741,
+            "running": 4000,
+            "waiting": 9975
+          },
+          "retention": {
+            "pending_completions": 4000,
+            "waiting_requests": 9975,
+            "history_points": 1,
+            "history_limit": 240
+          },
+          "measure": {
+            "ms": 4.940790997352451,
+            "decoded_bytes": 7064,
+            "wire_bytes": 7064
+          }
+        },
+        {
+          "wall_seconds": 1.018495875003282,
+          "simulation_time": 0.68203,
+          "target": 0.9982123340014368,
+          "lag": 0.3161823340014368,
+          "totals": {
+            "offered": 68204,
+            "completed": 3044,
+            "rejected": 51200,
+            "running": 4000,
+            "waiting": 9960
+          },
+          "retention": {
+            "pending_completions": 4000,
+            "waiting_requests": 9960,
+            "history_points": 2,
+            "history_limit": 240
+          },
+          "measure": {
+            "ms": 1.8023749871645123,
+            "decoded_bytes": 7158,
+            "wire_bytes": 7158
+          }
+        },
+        {
+          "wall_seconds": 1.5257832500064978,
+          "simulation_time": 0.91803,
+          "target": 1.5069880000082776,
+          "lag": 0.5889580000082776,
+          "totals": {
+            "offered": 91804,
+            "completed": 4967,
+            "rejected": 72883,
+            "running": 4000,
+            "waiting": 9954
+          },
+          "retention": {
+            "pending_completions": 4000,
+            "waiting_requests": 9954,
+            "history_points": 3,
+            "history_limit": 240
+          },
+          "measure": {
+            "ms": 2.0905419951304793,
+            "decoded_bytes": 7273,
+            "wire_bytes": 7273
+          }
+        },
+        {
+          "wall_seconds": 2.03224837500602,
+          "simulation_time": 1.26657,
+          "target": 2.013806625007419,
+          "lag": 0.7472366250074189,
+          "totals": {
+            "offered": 126658,
+            "completed": 7504,
+            "rejected": 105190,
+            "running": 4000,
+            "waiting": 9964
+          },
+          "retention": {
+            "pending_completions": 4000,
+            "waiting_requests": 9964,
+            "history_points": 4,
+            "history_limit": 240
+          },
+          "measure": {
+            "ms": 1.944915988133289,
+            "decoded_bytes": 7369,
+            "wire_bytes": 7369
+          }
+        },
+        {
+          "wall_seconds": 2.5391835839982377,
+          "simulation_time": 1.64201,
+          "target": 2.521024875008152,
+          "lag": 0.8790148750081519,
+          "totals": {
+            "offered": 164202,
+            "completed": 10243,
+            "rejected": 139995,
+            "running": 4000,
+            "waiting": 9964
+          },
+          "retention": {
+            "pending_completions": 4000,
+            "waiting_requests": 9964,
+            "history_points": 5,
+            "history_limit": 240
+          },
+          "measure": {
+            "ms": 1.8397079984424636,
+            "decoded_bytes": 7475,
+            "wire_bytes": 7475
+          }
+        },
+        {
+          "wall_seconds": 3.0462768340075854,
+          "simulation_time": 2.0263,
+          "target": 3.027614959006314,
+          "lag": 1.0013149590063142,
+          "totals": {
+            "offered": 202631,
+            "completed": 13052,
+            "rejected": 175612,
+            "running": 4000,
+            "waiting": 9967
+          },
+          "retention": {
+            "pending_completions": 4000,
+            "waiting_requests": 9967,
+            "history_points": 6,
+            "history_limit": 240
+          },
+          "measure": {
+            "ms": 1.9997079944005236,
+            "decoded_bytes": 7587,
+            "wire_bytes": 7587
+          }
+        },
+        {
+          "wall_seconds": 3.55323133400816,
+          "simulation_time": 2.39994,
+          "target": 3.534785334006301,
+          "lag": 1.1348453340063012,
+          "totals": {
+            "offered": 239995,
+            "completed": 15818,
+            "rejected": 210216,
+            "running": 4000,
+            "waiting": 9961
+          },
+          "retention": {
+            "pending_completions": 4000,
+            "waiting_requests": 9961,
+            "history_points": 7,
+            "history_limit": 240
+          },
+          "measure": {
+            "ms": 1.8574170098872855,
+            "decoded_bytes": 7698,
+            "wire_bytes": 7698
+          }
+        },
+        {
+          "wall_seconds": 4.060478375002276,
+          "simulation_time": 2.69767,
+          "target": 4.041423084010603,
+          "lag": 1.343753084010603,
+          "totals": {
+            "offered": 269768,
+            "completed": 17943,
+            "rejected": 237861,
+            "running": 4000,
+            "waiting": 9964
+          },
+          "retention": {
+            "pending_completions": 4000,
+            "waiting_requests": 9964,
+            "history_points": 8,
+            "history_limit": 240
+          },
+          "measure": {
+            "ms": 2.1529999939957634,
+            "decoded_bytes": 7813,
+            "wire_bytes": 7813
+          }
+        },
+        {
+          "wall_seconds": 4.567528209008742,
+          "simulation_time": 2.998152892422586,
+          "target": 4.548780584009364,
+          "lag": 1.550627691586778,
+          "totals": {
+            "offered": 299816,
+            "completed": 20172,
+            "rejected": 265677,
+            "running": 4000,
+            "waiting": 9967
+          },
+          "retention": {
+            "pending_completions": 4000,
+            "waiting_requests": 9967,
+            "history_points": 9,
+            "history_limit": 240
+          },
+          "measure": {
+            "ms": 1.9590420124586672,
+            "decoded_bytes": 7918,
+            "wire_bytes": 7918
+          }
+        },
+        {
+          "wall_seconds": 5.072881458996562,
+          "simulation_time": 3.35545,
+          "target": 5.056298459006939,
+          "lag": 1.7008484590069393,
+          "totals": {
+            "offered": 335546,
+            "completed": 22837,
+            "rejected": 298750,
+            "running": 4000,
+            "waiting": 9959
+          },
+          "retention": {
+            "pending_completions": 4000,
+            "waiting_requests": 9959,
+            "history_points": 10,
+            "history_limit": 240
+          },
+          "measure": {
+            "ms": 1.9686250016093254,
+            "decoded_bytes": 8021,
+            "wire_bytes": 8021
+          }
+        },
+        {
+          "wall_seconds": 5.580037334002554,
+          "simulation_time": 3.70268,
+          "target": 5.560986625001533,
+          "lag": 1.858306625001533,
+          "totals": {
+            "offered": 370269,
+            "completed": 25284,
+            "rejected": 331013,
+            "running": 4000,
+            "waiting": 9972
+          },
+          "retention": {
+            "pending_completions": 4000,
+            "waiting_requests": 9972,
+            "history_points": 11,
+            "history_limit": 240
+          },
+          "measure": {
+            "ms": 2.0663750037783757,
+            "decoded_bytes": 8134,
+            "wire_bytes": 8134
+          }
+        },
+        {
+          "wall_seconds": 6.084852750005666,
+          "simulation_time": 4.06993,
+          "target": 6.068892834009603,
+          "lag": 1.9989628340096024,
+          "totals": {
+            "offered": 406994,
+            "completed": 27970,
+            "rejected": 365054,
+            "running": 4000,
+            "waiting": 9970
+          },
+          "retention": {
+            "pending_completions": 4000,
+            "waiting_requests": 9970,
+            "history_points": 12,
+            "history_limit": 240
+          },
+          "measure": {
+            "ms": 2.353667005081661,
+            "decoded_bytes": 8257,
+            "wire_bytes": 8257
+          }
+        },
+        {
+          "wall_seconds": 6.589556834005634,
+          "simulation_time": 4.40215,
+          "target": 6.572707417013589,
+          "lag": 2.1705574170135895,
+          "totals": {
+            "offered": 440216,
+            "completed": 30408,
+            "rejected": 395867,
+            "running": 4000,
+            "waiting": 9941
+          },
+          "retention": {
+            "pending_completions": 4000,
+            "waiting_requests": 9941,
+            "history_points": 13,
+            "history_limit": 240
+          },
+          "measure": {
+            "ms": 1.9675420044222847,
+            "decoded_bytes": 8356,
+            "wire_bytes": 8356
+          }
+        },
+        {
+          "wall_seconds": 7.097005083996919,
+          "simulation_time": 4.746406266353187,
+          "target": 7.077656959008891,
+          "lag": 2.331250692655704,
+          "totals": {
+            "offered": 474641,
+            "completed": 32878,
+            "rejected": 427804,
+            "running": 4000,
+            "waiting": 9959
+          },
+          "retention": {
+            "pending_completions": 4000,
+            "waiting_requests": 9959,
+            "history_points": 14,
+            "history_limit": 240
+          },
+          "measure": {
+            "ms": 2.3373750009341165,
+            "decoded_bytes": 8482,
+            "wire_bytes": 8482
+          }
+        },
+        {
+          "wall_seconds": 7.600130083999829,
+          "simulation_time": 5.0399,
+          "target": 7.585814209000091,
+          "lag": 2.545914209000091,
+          "totals": {
+            "offered": 503991,
+            "completed": 35014,
+            "rejected": 455022,
+            "running": 4000,
+            "waiting": 9955
+          },
+          "retention": {
+            "pending_completions": 4000,
+            "waiting_requests": 9955,
+            "history_points": 15,
+            "history_limit": 240
+          },
+          "measure": {
+            "ms": 1.9397080031922087,
+            "decoded_bytes": 8574,
+            "wire_bytes": 8574
+          }
+        }
+      ],
+      "drained": {
+        "offered": 537785,
+        "completed": 51456,
+        "rejected": 486329,
+        "running": 0,
+        "waiting": 0
+      }
+    },
+    {
+      "topology": "regions",
+      "rate": 10000,
+      "config": {
+        "topology": "regions",
+        "regions": [
+          {
+            "name": "dc-01",
+            "servers": 84,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 1
+          },
+          {
+            "name": "dc-02",
+            "servers": 84,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 0.75
+          },
+          {
+            "name": "dc-03",
+            "servers": 84,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 2
+          },
+          {
+            "name": "dc-04",
+            "servers": 84,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 1
+          },
+          {
+            "name": "dc-05",
+            "servers": 83,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 0.75
+          },
+          {
+            "name": "dc-06",
+            "servers": 83,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 2
+          },
+          {
+            "name": "dc-07",
+            "servers": 83,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 1
+          },
+          {
+            "name": "dc-08",
+            "servers": 83,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 0.75
+          },
+          {
+            "name": "dc-09",
+            "servers": 83,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 2
+          },
+          {
+            "name": "dc-10",
+            "servers": 83,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 1
+          },
+          {
+            "name": "dc-11",
+            "servers": 83,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 0.75
+          },
+          {
+            "name": "dc-12",
+            "servers": 83,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 2
+          }
+        ],
+        "latency_ms": [
+          [
+            2,
+            50,
+            90,
+            130,
+            170,
+            210,
+            250,
+            290,
+            330,
+            370,
+            410,
+            450
+          ],
+          [
+            50,
+            2,
+            50,
+            90,
+            130,
+            170,
+            210,
+            250,
+            290,
+            330,
+            370,
+            410
+          ],
+          [
+            90,
+            50,
+            2,
+            50,
+            90,
+            130,
+            170,
+            210,
+            250,
+            290,
+            330,
+            370
+          ],
+          [
+            130,
+            90,
+            50,
+            2,
+            50,
+            90,
+            130,
+            170,
+            210,
+            250,
+            290,
+            330
+          ],
+          [
+            170,
+            130,
+            90,
+            50,
+            2,
+            50,
+            90,
+            130,
+            170,
+            210,
+            250,
+            290
+          ],
+          [
+            210,
+            170,
+            130,
+            90,
+            50,
+            2,
+            50,
+            90,
+            130,
+            170,
+            210,
+            250
+          ],
+          [
+            250,
+            210,
+            170,
+            130,
+            90,
+            50,
+            2,
+            50,
+            90,
+            130,
+            170,
+            210
+          ],
+          [
+            290,
+            250,
+            210,
+            170,
+            130,
+            90,
+            50,
+            2,
+            50,
+            90,
+            130,
+            170
+          ],
+          [
+            330,
+            290,
+            250,
+            210,
+            170,
+            130,
+            90,
+            50,
+            2,
+            50,
+            90,
+            130
+          ],
+          [
+            370,
+            330,
+            290,
+            250,
+            210,
+            170,
+            130,
+            90,
+            50,
+            2,
+            50,
+            90
+          ],
+          [
+            410,
+            370,
+            330,
+            290,
+            250,
+            210,
+            170,
+            130,
+            90,
+            50,
+            2,
+            50
+          ],
+          [
+            450,
+            410,
+            370,
+            330,
+            290,
+            250,
+            210,
+            170,
+            130,
+            90,
+            50,
+            2
+          ]
+        ],
+        "client_latency_ms": [
+          2,
+          50,
+          90,
+          130,
+          170,
+          210,
+          250,
+          290,
+          330,
+          370,
+          410,
+          450
+        ],
+        "source": 0,
+        "arrival_rate": 10000,
+        "service_min": 0.1,
+        "service_max": 1.0,
+        "seed": 42,
+        "policy": "round_robin"
+      },
+      "pause_ms": 5.571957997744903,
+      "samples": [
+        {
+          "wall_seconds": 0.0017666249914327636,
+          "simulation_time": 0.0,
+          "target": 0.0,
+          "lag": 0.0,
+          "totals": {
+            "offered": 0,
+            "completed": 0,
+            "rejected": 0,
+            "running": 0,
+            "waiting": 0,
+            "in_transit": 0
+          },
+          "retention": {
+            "pending_events": 0,
+            "response_values": 0,
+            "history_points": 0
+          },
+          "measure": {
+            "ms": 1.6430830000899732,
+            "decoded_bytes": 5846,
+            "wire_bytes": 5846
+          }
+        },
+        {
+          "wall_seconds": 0.5083373749948805,
+          "simulation_time": 0.4686225409968756,
+          "target": 0.4686225409968756,
+          "lag": 0.0,
+          "totals": {
+            "offered": 4687,
+            "completed": 271,
+            "rejected": 0,
+            "running": 3018,
+            "waiting": 2,
+            "in_transit": 1396
+          },
+          "retention": {
+            "pending_events": 4414,
+            "response_values": 271,
+            "history_points": 0
+          },
+          "measure": {
+            "ms": 1.952584003447555,
+            "decoded_bytes": 7490,
+            "wire_bytes": 7490
+          }
+        },
+        {
+          "wall_seconds": 1.0159973749978235,
+          "simulation_time": 0.9811142499966081,
+          "target": 0.9811142499966081,
+          "lag": 0.0,
+          "totals": {
+            "offered": 9812,
+            "completed": 2775,
+            "rejected": 0,
+            "running": 3593,
+            "waiting": 1498,
+            "in_transit": 1946
+          },
+          "retention": {
+            "pending_events": 5539,
+            "response_values": 2000,
+            "history_points": 1
+          },
+          "measure": {
+            "ms": 2.56470798922237,
+            "decoded_bytes": 7656,
+            "wire_bytes": 7656
+          }
+        },
+        {
+          "wall_seconds": 1.5236522920022253,
+          "simulation_time": 1.4915066249959636,
+          "target": 1.4915066249959636,
+          "lag": 0.0,
+          "totals": {
+            "offered": 14916,
+            "completed": 6621,
+            "rejected": 0,
+            "running": 3584,
+            "waiting": 2624,
+            "in_transit": 2087
+          },
+          "retention": {
+            "pending_events": 5671,
+            "response_values": 2000,
+            "history_points": 2
+          },
+          "measure": {
+            "ms": 2.551875004428439,
+            "decoded_bytes": 7726,
+            "wire_bytes": 7726
+          }
+        },
+        {
+          "wall_seconds": 2.0315290839935187,
+          "simulation_time": 2.0052394999947865,
+          "target": 2.0052394999947865,
+          "lag": 0.0,
+          "totals": {
+            "offered": 20053,
+            "completed": 10524,
+            "rejected": 0,
+            "running": 3610,
+            "waiting": 3922,
+            "in_transit": 1997
+          },
+          "retention": {
+            "pending_events": 5607,
+            "response_values": 2000,
+            "history_points": 3
+          },
+          "measure": {
+            "ms": 2.7769169973907992,
+            "decoded_bytes": 7822,
+            "wire_bytes": 7822
+          }
+        },
+        {
+          "wall_seconds": 2.5399337919952814,
+          "simulation_time": 2.5221590409928467,
+          "target": 2.5221590409928467,
+          "lag": 0.0,
+          "totals": {
+            "offered": 25222,
+            "completed": 14433,
+            "rejected": 0,
+            "running": 3596,
+            "waiting": 5138,
+            "in_transit": 2055
+          },
+          "retention": {
+            "pending_events": 5651,
+            "response_values": 2000,
+            "history_points": 4
+          },
+          "measure": {
+            "ms": 3.304249999928288,
+            "decoded_bytes": 7927,
+            "wire_bytes": 7927
+          }
+        },
+        {
+          "wall_seconds": 3.049837041995488,
+          "simulation_time": 3.0269569999945816,
+          "target": 3.0269569999945816,
+          "lag": 0.0,
+          "totals": {
+            "offered": 30270,
+            "completed": 18271,
+            "rejected": 614,
+            "running": 3566,
+            "waiting": 5795,
+            "in_transit": 2024
+          },
+          "retention": {
+            "pending_events": 5590,
+            "response_values": 2000,
+            "history_points": 5
+          },
+          "measure": {
+            "ms": 4.803832998732105,
+            "decoded_bytes": 8007,
+            "wire_bytes": 8007
+          }
+        },
+        {
+          "wall_seconds": 3.5577221249986906,
+          "simulation_time": 3.5307442909979727,
+          "target": 3.5307442909979727,
+          "lag": 0.0,
+          "totals": {
+            "offered": 35308,
+            "completed": 22091,
+            "rejected": 1349,
+            "running": 3587,
+            "waiting": 6224,
+            "in_transit": 2057
+          },
+          "retention": {
+            "pending_events": 5644,
+            "response_values": 2000,
+            "history_points": 6
+          },
+          "measure": {
+            "ms": 4.797457993845455,
+            "decoded_bytes": 8098,
+            "wire_bytes": 8098
+          }
+        },
+        {
+          "wall_seconds": 4.072944500003359,
+          "simulation_time": 4.0489611249940936,
+          "target": 4.0489611249940936,
+          "lag": 0.0,
+          "totals": {
+            "offered": 40490,
+            "completed": 26066,
+            "rejected": 2162,
+            "running": 3569,
+            "waiting": 6652,
+            "in_transit": 2041
+          },
+          "retention": {
+            "pending_events": 5610,
+            "response_values": 2000,
+            "history_points": 7
+          },
+          "measure": {
+            "ms": 10.100458006490953,
+            "decoded_bytes": 8196,
+            "wire_bytes": 8196
+          }
+        },
+        {
+          "wall_seconds": 4.580090041999938,
+          "simulation_time": 4.5569302499934565,
+          "target": 4.5569302499934565,
+          "lag": 0.0,
+          "totals": {
+            "offered": 45570,
+            "completed": 29917,
+            "rejected": 3370,
+            "running": 3580,
+            "waiting": 6663,
+            "in_transit": 2040
+          },
+          "retention": {
+            "pending_events": 5620,
+            "response_values": 2000,
+            "history_points": 8
+          },
+          "measure": {
+            "ms": 6.125458996393718,
+            "decoded_bytes": 8274,
+            "wire_bytes": 8274
+          }
+        },
+        {
+          "wall_seconds": 5.089671916997759,
+          "simulation_time": 5.080595749997883,
+          "target": 5.080595749997883,
+          "lag": 0.0,
+          "totals": {
+            "offered": 50806,
+            "completed": 33921,
+            "rejected": 4681,
+            "running": 3570,
+            "waiting": 6667,
+            "in_transit": 1967
+          },
+          "retention": {
+            "pending_events": 5537,
+            "response_values": 2000,
+            "history_points": 10
+          },
+          "measure": {
+            "ms": 7.149832992581651,
+            "decoded_bytes": 8460,
+            "wire_bytes": 8460
+          }
+        },
+        {
+          "wall_seconds": 5.5995603339979425,
+          "simulation_time": 5.570194540996454,
+          "target": 5.570194540996454,
+          "lag": 0.0,
+          "totals": {
+            "offered": 55702,
+            "completed": 37558,
+            "rejected": 5851,
+            "running": 3594,
+            "waiting": 6661,
+            "in_transit": 2038
+          },
+          "retention": {
+            "pending_events": 5632,
+            "response_values": 2000,
+            "history_points": 10
+          },
+          "measure": {
+            "ms": 4.775499997776933,
+            "decoded_bytes": 8471,
+            "wire_bytes": 8471
+          }
+        },
+        {
+          "wall_seconds": 6.109582666991628,
+          "simulation_time": 6.089139374991646,
+          "target": 6.089139374991646,
+          "lag": 0.0,
+          "totals": {
+            "offered": 60892,
+            "completed": 41484,
+            "rejected": 7141,
+            "running": 3581,
+            "waiting": 6666,
+            "in_transit": 2020
+          },
+          "retention": {
+            "pending_events": 5601,
+            "response_values": 2000,
+            "history_points": 11
+          },
+          "measure": {
+            "ms": 4.909874987788498,
+            "decoded_bytes": 8568,
+            "wire_bytes": 8568
+          }
+        },
+        {
+          "wall_seconds": 6.6202445840026485,
+          "simulation_time": 6.587161457995535,
+          "target": 6.587161457995535,
+          "lag": 0.0,
+          "totals": {
+            "offered": 65872,
+            "completed": 45245,
+            "rejected": 8324,
+            "running": 3591,
+            "waiting": 6666,
+            "in_transit": 2046
+          },
+          "retention": {
+            "pending_events": 5637,
+            "response_values": 2000,
+            "history_points": 12
+          },
+          "measure": {
+            "ms": 5.53283300541807,
+            "decoded_bytes": 8639,
+            "wire_bytes": 8639
+          }
+        },
+        {
+          "wall_seconds": 7.1311967090005055,
+          "simulation_time": 7.100432999999612,
+          "target": 7.100432999999612,
+          "lag": 0.0,
+          "totals": {
+            "offered": 71005,
+            "completed": 49177,
+            "rejected": 9539,
+            "running": 3593,
+            "waiting": 6665,
+            "in_transit": 2031
+          },
+          "retention": {
+            "pending_events": 5624,
+            "response_values": 2000,
+            "history_points": 13
+          },
+          "measure": {
+            "ms": 5.838458004291169,
+            "decoded_bytes": 8700,
+            "wire_bytes": 8700
+          }
+        },
+        {
+          "wall_seconds": 7.641311125000357,
+          "simulation_time": 7.609427415998653,
+          "target": 7.609427415998653,
+          "lag": 0.0,
+          "totals": {
+            "offered": 76095,
+            "completed": 53033,
+            "rejected": 10781,
+            "running": 3590,
+            "waiting": 6665,
+            "in_transit": 2026
+          },
+          "retention": {
+            "pending_events": 5616,
+            "response_values": 2000,
+            "history_points": 14
+          },
+          "measure": {
+            "ms": 5.283582999254577,
+            "decoded_bytes": 8827,
+            "wire_bytes": 8827
+          }
+        }
+      ],
+      "drained": {
+        "offered": 81223,
+        "completed": 68938,
+        "rejected": 12285,
+        "running": 0,
+        "waiting": 0,
+        "in_transit": 0
+      }
+    },
+    {
+      "topology": "regions",
+      "rate": 100000,
+      "config": {
+        "topology": "regions",
+        "regions": [
+          {
+            "name": "dc-01",
+            "servers": 84,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 1
+          },
+          {
+            "name": "dc-02",
+            "servers": 84,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 0.75
+          },
+          {
+            "name": "dc-03",
+            "servers": 84,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 2
+          },
+          {
+            "name": "dc-04",
+            "servers": 84,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 1
+          },
+          {
+            "name": "dc-05",
+            "servers": 83,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 0.75
+          },
+          {
+            "name": "dc-06",
+            "servers": 83,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 2
+          },
+          {
+            "name": "dc-07",
+            "servers": 83,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 1
+          },
+          {
+            "name": "dc-08",
+            "servers": 83,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 0.75
+          },
+          {
+            "name": "dc-09",
+            "servers": 83,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 2
+          },
+          {
+            "name": "dc-10",
+            "servers": 83,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 1
+          },
+          {
+            "name": "dc-11",
+            "servers": 83,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 0.75
+          },
+          {
+            "name": "dc-12",
+            "servers": 83,
+            "slots_per_server": 4,
+            "queue_per_server": 10,
+            "compute": 2
+          }
+        ],
+        "latency_ms": [
+          [
+            2,
+            50,
+            90,
+            130,
+            170,
+            210,
+            250,
+            290,
+            330,
+            370,
+            410,
+            450
+          ],
+          [
+            50,
+            2,
+            50,
+            90,
+            130,
+            170,
+            210,
+            250,
+            290,
+            330,
+            370,
+            410
+          ],
+          [
+            90,
+            50,
+            2,
+            50,
+            90,
+            130,
+            170,
+            210,
+            250,
+            290,
+            330,
+            370
+          ],
+          [
+            130,
+            90,
+            50,
+            2,
+            50,
+            90,
+            130,
+            170,
+            210,
+            250,
+            290,
+            330
+          ],
+          [
+            170,
+            130,
+            90,
+            50,
+            2,
+            50,
+            90,
+            130,
+            170,
+            210,
+            250,
+            290
+          ],
+          [
+            210,
+            170,
+            130,
+            90,
+            50,
+            2,
+            50,
+            90,
+            130,
+            170,
+            210,
+            250
+          ],
+          [
+            250,
+            210,
+            170,
+            130,
+            90,
+            50,
+            2,
+            50,
+            90,
+            130,
+            170,
+            210
+          ],
+          [
+            290,
+            250,
+            210,
+            170,
+            130,
+            90,
+            50,
+            2,
+            50,
+            90,
+            130,
+            170
+          ],
+          [
+            330,
+            290,
+            250,
+            210,
+            170,
+            130,
+            90,
+            50,
+            2,
+            50,
+            90,
+            130
+          ],
+          [
+            370,
+            330,
+            290,
+            250,
+            210,
+            170,
+            130,
+            90,
+            50,
+            2,
+            50,
+            90
+          ],
+          [
+            410,
+            370,
+            330,
+            290,
+            250,
+            210,
+            170,
+            130,
+            90,
+            50,
+            2,
+            50
+          ],
+          [
+            450,
+            410,
+            370,
+            330,
+            290,
+            250,
+            210,
+            170,
+            130,
+            90,
+            50,
+            2
+          ]
+        ],
+        "client_latency_ms": [
+          2,
+          50,
+          90,
+          130,
+          170,
+          210,
+          250,
+          290,
+          330,
+          370,
+          410,
+          450
+        ],
+        "source": 0,
+        "arrival_rate": 100000,
+        "service_min": 0.1,
+        "service_max": 1.0,
+        "seed": 42,
+        "policy": "round_robin"
+      },
+      "pause_ms": 6.142999991425313,
+      "samples": [
+        {
+          "wall_seconds": 0.0015849170013098046,
+          "simulation_time": 0.0,
+          "target": 0.0,
+          "lag": 0.0,
+          "totals": {
+            "offered": 0,
+            "completed": 0,
+            "rejected": 0,
+            "running": 0,
+            "waiting": 0,
+            "in_transit": 0
+          },
+          "retention": {
+            "pending_events": 0,
+            "response_values": 0,
+            "history_points": 0
+          },
+          "measure": {
+            "ms": 1.4980410051066428,
+            "decoded_bytes": 5848,
+            "wire_bytes": 5848
+          }
+        },
+        {
+          "wall_seconds": 0.5060229590017116,
+          "simulation_time": 0.3593,
+          "target": 0.4671367090049898,
+          "lag": 0.10783670900498982,
+          "totals": {
+            "offered": 35930,
+            "completed": 426,
+            "rejected": 9737,
+            "running": 4000,
+            "waiting": 9912,
+            "in_transit": 11855
+          },
+          "retention": {
+            "pending_events": 15855,
+            "response_values": 426,
+            "history_points": 0
+          },
+          "measure": {
+            "ms": 3.439833002630621,
+            "decoded_bytes": 7473,
+            "wire_bytes": 7473
+          }
+        },
+        {
+          "wall_seconds": 1.0146861669927603,
+          "simulation_time": 0.5579000000000001,
+          "target": 1.0047500420041615,
+          "lag": 0.44685004200416145,
+          "totals": {
+            "offered": 55791,
+            "completed": 1425,
+            "rejected": 27989,
+            "running": 4000,
+            "waiting": 10000,
+            "in_transit": 12377
+          },
+          "retention": {
+            "pending_events": 16377,
+            "response_values": 1425,
+            "history_points": 1
+          },
+          "measure": {
+            "ms": 6.578792002983391,
+            "decoded_bytes": 7663,
+            "wire_bytes": 7663
+          }
+        },
+        {
+          "wall_seconds": 1.5225076250062557,
+          "simulation_time": 0.86375,
+          "target": 1.5049102089978987,
+          "lag": 0.6411602089978987,
+          "totals": {
+            "offered": 86376,
+            "completed": 3878,
+            "rejected": 56025,
+            "running": 4000,
+            "waiting": 9998,
+            "in_transit": 12475
+          },
+          "retention": {
+            "pending_events": 16475,
+            "response_values": 2000,
+            "history_points": 2
+          },
+          "measure": {
+            "ms": 2.6628750056261197,
+            "decoded_bytes": 7751,
+            "wire_bytes": 7751
+          }
+        },
+        {
+          "wall_seconds": 2.0324953340023058,
+          "simulation_time": 1.3107199999999999,
+          "target": 2.0121345840016147,
+          "lag": 0.7014145840016148,
+          "totals": {
+            "offered": 131072,
+            "completed": 7951,
+            "rejected": 96521,
+            "running": 4000,
+            "waiting": 9999,
+            "in_transit": 12601
+          },
+          "retention": {
+            "pending_events": 16601,
+            "response_values": 2000,
+            "history_points": 3
+          },
+          "measure": {
+            "ms": 5.353542001103051,
+            "decoded_bytes": 7854,
+            "wire_bytes": 7854
+          }
+        },
+        {
+          "wall_seconds": 2.5407522089954,
+          "simulation_time": 1.74964,
+          "target": 2.522307916995487,
+          "lag": 0.7726679169954871,
+          "totals": {
+            "offered": 174965,
+            "completed": 12021,
+            "rejected": 136396,
+            "running": 4000,
+            "waiting": 9999,
+            "in_transit": 12549
+          },
+          "retention": {
+            "pending_events": 16549,
+            "response_values": 2000,
+            "history_points": 4
+          },
+          "measure": {
+            "ms": 3.1498329917667434,
+            "decoded_bytes": 7930,
+            "wire_bytes": 7930
+          }
+        },
+        {
+          "wall_seconds": 3.0493369169998914,
+          "simulation_time": 2.18063,
+          "target": 3.0297387089958647,
+          "lag": 0.8491087089958649,
+          "totals": {
+            "offered": 218063,
+            "completed": 15941,
+            "rejected": 175531,
+            "running": 4000,
+            "waiting": 10000,
+            "in_transit": 12591
+          },
+          "retention": {
+            "pending_events": 16591,
+            "response_values": 2000,
+            "history_points": 5
+          },
+          "measure": {
+            "ms": 3.453915996942669,
+            "decoded_bytes": 8013,
+            "wire_bytes": 8013
+          }
+        },
+        {
+          "wall_seconds": 3.55566766699485,
+          "simulation_time": 2.53583,
+          "target": 3.540173750006943,
+          "lag": 1.0043437500069432,
+          "totals": {
+            "offered": 253584,
+            "completed": 19201,
+            "rejected": 207784,
+            "running": 4000,
+            "waiting": 10000,
+            "in_transit": 12599
+          },
+          "retention": {
+            "pending_events": 16599,
+            "response_values": 2000,
+            "history_points": 6
+          },
+          "measure": {
+            "ms": 4.152457986492664,
+            "decoded_bytes": 8084,
+            "wire_bytes": 8084
+          }
+        },
+        {
+          "wall_seconds": 4.0612461249984335,
+          "simulation_time": 2.9390799999999997,
+          "target": 4.045562166997115,
+          "lag": 1.1064821669971154,
+          "totals": {
+            "offered": 293908,
+            "completed": 22948,
+            "rejected": 244442,
+            "running": 4000,
+            "waiting": 9999,
+            "in_transit": 12519
+          },
+          "retention": {
+            "pending_events": 16519,
+            "response_values": 2000,
+            "history_points": 7
+          },
+          "measure": {
+            "ms": 4.156499999226071,
+            "decoded_bytes": 8202,
+            "wire_bytes": 8202
+          }
+        },
+        {
+          "wall_seconds": 4.5723267089924775,
+          "simulation_time": 3.18559,
+          "target": 4.551108083993313,
+          "lag": 1.365518083993313,
+          "totals": {
+            "offered": 318560,
+            "completed": 25104,
+            "rejected": 266920,
+            "running": 4000,
+            "waiting": 9999,
+            "in_transit": 12537
+          },
+          "retention": {
+            "pending_events": 16537,
+            "response_values": 2000,
+            "history_points": 8
+          },
+          "measure": {
+            "ms": 6.238500005565584,
+            "decoded_bytes": 8263,
+            "wire_bytes": 8263
+          }
+        },
+        {
+          "wall_seconds": 5.080431499998667,
+          "simulation_time": 3.60271,
+          "target": 5.061491083994042,
+          "lag": 1.458781083994042,
+          "totals": {
+            "offered": 360272,
+            "completed": 28826,
+            "rejected": 304897,
+            "running": 4000,
+            "waiting": 10000,
+            "in_transit": 12549
+          },
+          "retention": {
+            "pending_events": 16549,
+            "response_values": 2000,
+            "history_points": 9
+          },
+          "measure": {
+            "ms": 5.805332999443635,
+            "decoded_bytes": 8340,
+            "wire_bytes": 8340
+          }
+        },
+        {
+          "wall_seconds": 5.586223499994958,
+          "simulation_time": 4.02002,
+          "target": 5.569577083995682,
+          "lag": 1.5495570839956825,
+          "totals": {
+            "offered": 402003,
+            "completed": 32675,
+            "rejected": 342801,
+            "running": 4000,
+            "waiting": 10000,
+            "in_transit": 12527
+          },
+          "retention": {
+            "pending_events": 16527,
+            "response_values": 2000,
+            "history_points": 10
+          },
+          "measure": {
+            "ms": 4.360874998383224,
+            "decoded_bytes": 8419,
+            "wire_bytes": 8419
+          }
+        },
+        {
+          "wall_seconds": 6.099875458996394,
+          "simulation_time": 4.361090000000001,
+          "target": 6.077374500004225,
+          "lag": 1.7162845000042246,
+          "totals": {
+            "offered": 436110,
+            "completed": 35720,
+            "rejected": 373804,
+            "running": 4000,
+            "waiting": 9999,
+            "in_transit": 12587
+          },
+          "retention": {
+            "pending_events": 16587,
+            "response_values": 2000,
+            "history_points": 11
+          },
+          "measure": {
+            "ms": 8.413417002884671,
+            "decoded_bytes": 8512,
+            "wire_bytes": 8512
+          }
+        },
+        {
+          "wall_seconds": 6.608942000006209,
+          "simulation_time": 4.71392,
+          "target": 6.590347083998495,
+          "lag": 1.876427083998495,
+          "totals": {
+            "offered": 471392,
+            "completed": 38925,
+            "rejected": 405928,
+            "running": 4000,
+            "waiting": 9998,
+            "in_transit": 12541
+          },
+          "retention": {
+            "pending_events": 16541,
+            "response_values": 2000,
+            "history_points": 12
+          },
+          "measure": {
+            "ms": 5.84741699276492,
+            "decoded_bytes": 8576,
+            "wire_bytes": 8576
+          }
+        },
+        {
+          "wall_seconds": 7.11666441700072,
+          "simulation_time": 5.10098,
+          "target": 7.100796917002299,
+          "lag": 1.999816917002299,
+          "totals": {
+            "offered": 510098,
+            "completed": 42457,
+            "rejected": 441094,
+            "running": 4000,
+            "waiting": 10000,
+            "in_transit": 12547
+          },
+          "retention": {
+            "pending_events": 16547,
+            "response_values": 2000,
+            "history_points": 13
+          },
+          "measure": {
+            "ms": 5.260999998426996,
+            "decoded_bytes": 8655,
+            "wire_bytes": 8655
+          }
+        },
+        {
+          "wall_seconds": 7.622885624994524,
+          "simulation_time": 5.45461,
+          "target": 7.607332500003395,
+          "lag": 2.152722500003395,
+          "totals": {
+            "offered": 545462,
+            "completed": 45624,
+            "rejected": 473295,
+            "running": 4000,
+            "waiting": 10000,
+            "in_transit": 12543
+          },
+          "retention": {
+            "pending_events": 16543,
+            "response_values": 2000,
+            "history_points": 14
+          },
+          "measure": {
+            "ms": 5.451749995700084,
+            "decoded_bytes": 8739,
+            "wire_bytes": 8739
+          }
+        }
+      ],
+      "drained": {
+        "offered": 584617,
+        "completed": 65316,
+        "rejected": 519301,
+        "running": 0,
+        "waiting": 0,
+        "in_transit": 0
+      }
+    }
+  ],
+  "health": {
+    "api_version": "1",
+    "status": "ok",
+    "limits": {
+      "body_bytes": 65536,
+      "generated_requests": 100000,
+      "servers": 1000,
+      "slots": 4096,
+      "waiting_places": 100000,
+      "worker_seconds": 15.0,
+      "concurrent_runs": 1
+    },
+    "live_limits": {
+      "max_sessions": 2,
+      "idle_seconds": 300.0,
+      "lifetime_seconds": 3600.0,
+      "startup_seconds": 5.0,
+      "command_seconds": 2.0,
+      "tick_seconds": 0.05,
+      "tick_budget_seconds": 0.01,
+      "events_per_tick": 20000,
+      "response_window": 2000,
+      "history_points": 240,
+      "history_interval_seconds": 0.5,
+      "server_page": 64,
+      "command_log": 128,
+      "tombstones": 128,
+      "max_arrival_rate": 100000.0
+    },
+    "recorded_run_limits": {
+      "max_runs": 4,
+      "max_bytes": 67108864,
+      "ttl_seconds": 600,
+      "event_page": 1000,
+      "server_page": 64
+    }
+  }
+}

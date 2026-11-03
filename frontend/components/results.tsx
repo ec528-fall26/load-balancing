@@ -30,7 +30,13 @@ export const seconds = (v: number | null) =>
   v === null ? "N/A" : `${v.toFixed(3)} s`;
 export function Results({ run }: { run: Run }) {
   const { config: c, summary: s } = run;
-  const bins = useMemo(() => histogram(s.response_times), [s.response_times]);
+  const bins = useMemo(
+    () =>
+      s.histogram
+        ? s.histogram.bins.map((b) => ({ ...b, center: (b.start + b.end) / 2 }))
+        : histogram(s.response_times),
+    [s.response_times, s.histogram],
+  );
   const rows = useMemo(
     () =>
       Object.entries(s.per_server_utilization)

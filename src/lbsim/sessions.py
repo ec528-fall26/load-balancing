@@ -21,7 +21,7 @@ class SessionLimits:
     command_seconds: float = 2.0
     tick_seconds: float = 0.05
     tick_budget_seconds: float = 0.01
-    events_per_tick: int = 2000
+    events_per_tick: int = 20000
     response_window: int = 2000
     history_points: int = 240
     history_interval_seconds: float = 0.5

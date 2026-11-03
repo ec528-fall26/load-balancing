@@ -33,7 +33,7 @@ Use isolated ports to preserve the interactive demo. Run phases sequentially on 
    npm test -- --config benchmarks/playwright.config.ts
    ```
 
-   Defaults to the installed Chromium channel; `PLAYWRIGHT_CHANNEL` can select another installed browser. Eight cases cover both topologies, rates and execution modes. One-shot cases offer 100,000 requests; live cases observe 15 seconds of updates, then pause/drain/stop. This suite is outside the default test directory. It records CDP heap/task metrics, long tasks, animation-frame gaps, decoded polling payloads, request concurrency and control latency. Test-owned sessions are deleted afterward.
+   Defaults to the installed Chromium channel; `PLAYWRIGHT_CHANNEL` can select another installed browser. Ten cases cover both topologies, rates and execution modes, plus 1,000-server playback and the 12-datacenter preset. One-shot cases offer 100,000 requests; live cases observe 15 seconds of updates, then pause/drain/stop. This suite is outside the default test directory. It records CDP heap/task metrics, long tasks, animation-frame gaps, decoded polling payloads, request concurrency and control latency. Test-owned sessions are deleted afterward.
 
 5. Generate the analysis from the repository root:
 
@@ -42,3 +42,10 @@ Use isolated ports to preserve the interactive demo. Run phases sequentially on 
    ```
 
 `baseline-api-engine.json` preserves the pre-fix capture with a 100,001st regional arrival; do not overwrite it. The corrected report records source hashes and dirty-checkout status. Measurements remain local evidence until committed/reviewed. JSON bytes, wire bytes, engine CPU, worker RSS and browser heap are distinct quantities.
+
+
+## Pagination and larger topology follow-up
+
+The first `api-engine.json` capture used the pre-pagination frontend. Its exact harness source is preserved in `capture-source/telemetry_benchmark.py`; source hashes are in the report. The current harness also accepts the bounded frontend response, verifies its metrics against legacy output and deletes its recording.
+
+For the current API, run `PYTHONPATH=src uv run python experiments/pagination_scale.py` against the isolated backend. It verifies all event pages against the legacy trace, precise seeking, 1,000-server workloads and 12-datacenter RTT configurations, then samples 10,000 and 100,000 offered requests/s. Evidence is `pagination-scale.json`; `pagination-before-batch.json` preserves the exploratory event-budget result. Its initial one-shot timings overlapped a frontend build, so use the final capture for timing conclusions.

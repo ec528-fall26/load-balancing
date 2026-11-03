@@ -11,7 +11,8 @@
     "test:api": "tsc -p tsconfig.api-tests.json && node --test .api-tests/tests/api-proxy.test.js",
     "test:library": "tsc -p tsconfig.api-tests.json && node --test .api-tests/tests/saved-setups.test.js",
     "test:comparison": "tsc -p tsconfig.api-tests.json && node --test .api-tests/tests/comparison.test.js",
-    "test:live": "tsc -p tsconfig.api-tests.json && node --test .api-tests/tests/live-api.test.js"
+    "test:live": "tsc -p tsconfig.api-tests.json && node --test .api-tests/tests/live-api.test.js",
+    "test:recordings": "tsc -p tsconfig.api-tests.json && node --test .api-tests/tests/recorded-api.test.js"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
