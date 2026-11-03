@@ -1,0 +1,17 @@
+{
+  "python_tests": 103,
+  "node_api_client_tests": 17,
+  "browser_regressions": 26,
+  "browser_performance_cases": 10,
+  "production_build": "passed",
+  "typescript": "passed",
+  "legacy_metrics_preserved": true,
+  "event_pages_equal_legacy_trace": true,
+  "maximum_tested_servers": 1000,
+  "maximum_tested_datacenters": 12,
+  "client_rtt_ms": [
+    2,
+    450
+  ],
+  "live_100000_per_second_realtime": false
+}

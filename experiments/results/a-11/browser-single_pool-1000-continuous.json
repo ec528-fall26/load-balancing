@@ -1,7 +1,7 @@
 {
-  "recorded_at_utc": "2026-11-03T00:11:59.538Z",
+  "recorded_at_utc": "2026-11-03T00:36:55.758Z",
   "git_head": "d6fbfafeab8d429e83567efd7a45f76ef09513ff",
-  "benchmark_source_sha256": "feb963cf9a57e536b32e5e4a5b52edc96246693ce6d1cb8b763953ee7f1359e7",
+  "benchmark_source_sha256": "e2e6e57d763d220fa04d14bc95259827acf7d6a54bf5d136223b2329a364bd48",
   "topology": "single_pool",
   "rate": 1000,
   "mode": "continuous",
@@ -10,190 +10,190 @@
     "width": 1440,
     "height": 1000
   },
-  "first_ready_ms": 157.0191249999998,
-  "pause_control_ms": 67.86650000000009,
-  "drain_control_ms": 614.9878339999996,
+  "first_ready_ms": 174.98220800000126,
+  "pause_control_ms": 76.44033300000592,
+  "drain_control_ms": 646.6958750000049,
   "initial_heap": {
-    "usedSize": 7770724,
-    "totalSize": 9256960,
-    "embedderHeapUsedSize": 2270160,
-    "backingStorageSize": 1531605
+    "usedSize": 7073040,
+    "totalSize": 8208384,
+    "embedderHeapUsedSize": 2202152,
+    "backingStorageSize": 1533387
   },
   "natural_end_heap": {
-    "usedSize": 30490744,
-    "totalSize": 88424448,
-    "embedderHeapUsedSize": 13411832,
-    "backingStorageSize": 1562165
+    "usedSize": 30576880,
+    "totalSize": 89473024,
+    "embedderHeapUsedSize": 13427888,
+    "backingStorageSize": 1564131
   },
   "post_gc_end_heap": {
-    "usedSize": 14027212,
-    "totalSize": 16072704,
-    "embedderHeapUsedSize": 8319144,
-    "backingStorageSize": 1545595
+    "usedSize": 14054792,
+    "totalSize": 15810560,
+    "embedderHeapUsedSize": 8273320,
+    "backingStorageSize": 1547556
   },
-  "retained_heap_delta_bytes": 6256488,
+  "retained_heap_delta_bytes": 6981752,
   "rendering": {
     "long_tasks": [],
-    "frames": 1003,
-    "frame_gap_max_ms": 33.400000000000034,
-    "frame_gap_mean_ms": 16.715852442671984,
+    "frames": 1008,
+    "frame_gap_max_ms": 50.099999999999966,
+    "frame_gap_mean_ms": 16.699007936507936,
     "frame_gaps_over_100ms": 0,
     "json_reads": [
       {
         "url": "/api/sessions",
-        "ms": 0.29999999701976776
+        "ms": 0.19999998807907104
       },
       {
-        "url": "/api/sessions/b62ac8cc97c14096bae5df1c355ffa54/snapshot",
-        "ms": 0.4000000059604645
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 1.0999999940395355
       },
       {
-        "url": "/api/sessions/b62ac8cc97c14096bae5df1c355ffa54/snapshot",
-        "ms": 0.20000000298023224
-      },
-      {
-        "url": "/api/sessions/b62ac8cc97c14096bae5df1c355ffa54/snapshot",
-        "ms": 0.20000000298023224
-      },
-      {
-        "url": "/api/sessions/b62ac8cc97c14096bae5df1c355ffa54/snapshot",
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
         "ms": 0.10000000894069672
       },
       {
-        "url": "/api/sessions/b62ac8cc97c14096bae5df1c355ffa54/snapshot",
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.20000000298023224
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
         "ms": 0.29999999701976776
       },
       {
-        "url": "/api/sessions/b62ac8cc97c14096bae5df1c355ffa54/snapshot",
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
         "ms": 0.20000000298023224
       },
       {
-        "url": "/api/sessions/b62ac8cc97c14096bae5df1c355ffa54/snapshot",
-        "ms": 0.20000000298023224
-      },
-      {
-        "url": "/api/sessions/b62ac8cc97c14096bae5df1c355ffa54/snapshot",
-        "ms": 0.20000000298023224
-      },
-      {
-        "url": "/api/sessions/b62ac8cc97c14096bae5df1c355ffa54/snapshot",
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
         "ms": 0.09999999403953552
       },
       {
-        "url": "/api/sessions/b62ac8cc97c14096bae5df1c355ffa54/snapshot",
-        "ms": 0.09999999403953552
-      },
-      {
-        "url": "/api/sessions/b62ac8cc97c14096bae5df1c355ffa54/snapshot",
-        "ms": 0.10000000894069672
-      },
-      {
-        "url": "/api/sessions/b62ac8cc97c14096bae5df1c355ffa54/snapshot",
-        "ms": 0.09999999403953552
-      },
-      {
-        "url": "/api/sessions/b62ac8cc97c14096bae5df1c355ffa54/snapshot",
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
         "ms": 0.20000000298023224
       },
       {
-        "url": "/api/sessions/b62ac8cc97c14096bae5df1c355ffa54/snapshot",
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
         "ms": 0.20000000298023224
       },
       {
-        "url": "/api/sessions/b62ac8cc97c14096bae5df1c355ffa54/snapshot",
-        "ms": 0.09999999403953552
-      },
-      {
-        "url": "/api/sessions/b62ac8cc97c14096bae5df1c355ffa54/snapshot",
-        "ms": 0.19999998807907104
-      },
-      {
-        "url": "/api/sessions/b62ac8cc97c14096bae5df1c355ffa54/snapshot",
-        "ms": 0.3999999910593033
-      },
-      {
-        "url": "/api/sessions/b62ac8cc97c14096bae5df1c355ffa54/snapshot",
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
         "ms": 0.29999999701976776
       },
       {
-        "url": "/api/sessions/b62ac8cc97c14096bae5df1c355ffa54/snapshot",
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
         "ms": 0.20000000298023224
       },
       {
-        "url": "/api/sessions/b62ac8cc97c14096bae5df1c355ffa54/snapshot",
-        "ms": 0.20000000298023224
-      },
-      {
-        "url": "/api/sessions/b62ac8cc97c14096bae5df1c355ffa54/snapshot",
-        "ms": 0.20000000298023224
-      },
-      {
-        "url": "/api/sessions/b62ac8cc97c14096bae5df1c355ffa54/snapshot",
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
         "ms": 0.09999999403953552
       },
       {
-        "url": "/api/sessions/b62ac8cc97c14096bae5df1c355ffa54/snapshot",
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
         "ms": 0.20000000298023224
       },
       {
-        "url": "/api/sessions/b62ac8cc97c14096bae5df1c355ffa54/snapshot",
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
         "ms": 0.20000000298023224
       },
       {
-        "url": "/api/sessions/b62ac8cc97c14096bae5df1c355ffa54/snapshot",
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.30000001192092896
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
         "ms": 0.20000000298023224
       },
       {
-        "url": "/api/sessions/b62ac8cc97c14096bae5df1c355ffa54/snapshot",
-        "ms": 0.20000000298023224
-      },
-      {
-        "url": "/api/sessions/b62ac8cc97c14096bae5df1c355ffa54/snapshot",
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
         "ms": 0.29999999701976776
       },
       {
-        "url": "/api/sessions/b62ac8cc97c14096bae5df1c355ffa54/snapshot",
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.19999998807907104
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
         "ms": 0.20000000298023224
       },
       {
-        "url": "/api/sessions/b62ac8cc97c14096bae5df1c355ffa54/snapshot",
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.29999999701976776
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
         "ms": 0.09999999403953552
       },
       {
-        "url": "/api/sessions/b62ac8cc97c14096bae5df1c355ffa54/snapshot",
-        "ms": 0.19999998807907104
-      },
-      {
-        "url": "/api/sessions/b62ac8cc97c14096bae5df1c355ffa54/snapshot",
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
         "ms": 0.20000000298023224
       },
       {
-        "url": "/api/sessions/b62ac8cc97c14096bae5df1c355ffa54/snapshot",
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.09999999403953552
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.29999999701976776
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.09999999403953552
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
         "ms": 0.19999998807907104
       },
       {
-        "url": "/api/sessions/b62ac8cc97c14096bae5df1c355ffa54/commands",
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.09999999403953552
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.20000000298023224
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.09999999403953552
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.29999999701976776
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.20000000298023224
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.29999999701976776
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.20000000298023224
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/commands",
+        "ms": 0.6000000089406967
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/commands",
         "ms": 0.5
       },
       {
-        "url": "/api/sessions/b62ac8cc97c14096bae5df1c355ffa54/commands",
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/commands",
         "ms": 0.29999999701976776
       },
       {
-        "url": "/api/sessions/b62ac8cc97c14096bae5df1c355ffa54/commands",
-        "ms": 0.4000000059604645
-      },
-      {
-        "url": "/api/sessions/b62ac8cc97c14096bae5df1c355ffa54/commands",
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/commands",
         "ms": 0.5
       },
       {
-        "url": "/api/sessions/b62ac8cc97c14096bae5df1c355ffa54/snapshot",
-        "ms": 7.299999997019768
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.20000000298023224
       },
       {
-        "url": "/api/sessions/b62ac8cc97c14096bae5df1c355ffa54/commands",
-        "ms": 0.4000000059604645
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/commands",
+        "ms": 0.5
       }
     ],
     "visibility": "visible"
@@ -201,7 +201,7 @@
   "cdp_metrics": [
     {
       "name": "Timestamp",
-      "value": 86106.574485
+      "value": 87602.798122
     },
     {
       "name": "AudioHandlers",
@@ -225,7 +225,7 @@
     },
     {
       "name": "LayoutObjects",
-      "value": 3037
+      "value": 3072
     },
     {
       "name": "MediaKeySessions",
@@ -237,7 +237,7 @@
     },
     {
       "name": "Nodes",
-      "value": 3324
+      "value": 3359
     },
     {
       "name": "Resources",
@@ -281,27 +281,27 @@
     },
     {
       "name": "LayoutCount",
-      "value": 546
+      "value": 538
     },
     {
       "name": "RecalcStyleCount",
-      "value": 921
+      "value": 916
     },
     {
       "name": "LayoutDuration",
-      "value": 0.052773
+      "value": 0.053418
     },
     {
       "name": "RecalcStyleDuration",
-      "value": 0.156904
+      "value": 0.167428
     },
     {
       "name": "DevToolsCommandDuration",
-      "value": 0.03461
+      "value": 0.036441
     },
     {
       "name": "ScriptDuration",
-      "value": 0.714565
+      "value": 0.739755
     },
     {
       "name": "V8CompileDuration",
@@ -309,27 +309,27 @@
     },
     {
       "name": "TaskDuration",
-      "value": 1.616327
+      "value": 1.746487
     },
     {
       "name": "TaskOtherDuration",
-      "value": 0.657475
+      "value": 0.749445
     },
     {
       "name": "ThreadTime",
-      "value": 1.629645
+      "value": 1.767194
     },
     {
       "name": "ProcessTime",
-      "value": 2.916167
+      "value": 3.119676
     },
     {
       "name": "JSHeapUsedSize",
-      "value": 30645284
+      "value": 30731312
     },
     {
       "name": "JSHeapTotalSize",
-      "value": 88424448
+      "value": 89473024
     },
     {
       "name": "FirstMeaningfulPaint",
@@ -337,275 +337,275 @@
     },
     {
       "name": "DomContentLoaded",
-      "value": 86089.559697
+      "value": 87585.748468
     },
     {
       "name": "NavigationStart",
-      "value": 86089.534912
+      "value": 87585.722556
     }
   ],
   "poll_count": 33,
   "max_simultaneous_polls": 1,
   "poll_latency_ms": {
     "count": 33,
-    "min": 8.635290999998688,
-    "median": 10.61974999999984,
-    "p95": 29.320833999998285,
-    "max": 31.75737500000014
+    "min": 9.311667000001762,
+    "median": 13.446457999998529,
+    "p95": 30.64287499999773,
+    "max": 44.066915999999765
   },
   "poll_body_bytes": {
     "count": 33,
     "min": 5070,
-    "median": 8624,
-    "p95": 10367,
-    "max": 10910
+    "median": 8625,
+    "p95": 10369,
+    "max": 10789
   },
   "poll_start_gap_ms": {
     "count": 32,
-    "min": 504.033666000003,
-    "median": 505.559874999999,
-    "p95": 510.6647499999999,
-    "max": 511.15045800000007
+    "min": 504.8575830000009,
+    "median": 507.81829199999993,
+    "p95": 511.68016700000226,
+    "max": 512.2695420000018
   },
   "polls": [
     {
-      "started": 5154.270292,
-      "ms": 21.494165999999495,
+      "started": 22265.08975,
+      "ms": 21.673750000001746,
       "bytes": 5070,
       "offered": 0,
       "lag": 0
     },
     {
-      "started": 5663.264958,
-      "ms": 31.75737500000014,
-      "bytes": 7051,
-      "offered": 545,
+      "started": 22776.769917,
+      "ms": 44.066915999999765,
+      "bytes": 7053,
+      "offered": 547,
       "lag": 0
     },
     {
-      "started": 6168.829583,
-      "ms": 10.61974999999984,
-      "bytes": 7051,
-      "offered": 1024,
+      "started": 23286.368333,
+      "ms": 12.782959000000119,
+      "bytes": 7045,
+      "offered": 1033,
       "lag": 0
     },
     {
-      "started": 6674.020167,
-      "ms": 9.167457999999897,
-      "bytes": 7152,
-      "offered": 1533,
+      "started": 23794.942125,
+      "ms": 25.174457999997685,
+      "bytes": 7156,
+      "offered": 1540,
       "lag": 0
     },
     {
-      "started": 7179.597125,
-      "ms": 12.532457999999679,
-      "bytes": 7267,
-      "offered": 2037,
+      "started": 24300.054875,
+      "ms": 13.411207999997714,
+      "bytes": 7263,
+      "offered": 2049,
       "lag": 0
     },
     {
-      "started": 7684.961792,
-      "ms": 9.929540999999517,
+      "started": 24805.999833,
+      "ms": 11.60216699999728,
       "bytes": 7384,
-      "offered": 2544,
+      "offered": 2555,
       "lag": 0
     },
     {
-      "started": 8190.7985,
-      "ms": 12.867750000000342,
-      "bytes": 7498,
-      "offered": 3049,
+      "started": 25313.174875,
+      "ms": 9.67570799999885,
+      "bytes": 7499,
+      "offered": 3062,
       "lag": 0
     },
     {
-      "started": 8697.959958,
-      "ms": 9.470209000000978,
-      "bytes": 7613,
-      "offered": 3555,
+      "started": 25818.032458,
+      "ms": 11.486417000000074,
+      "bytes": 7614,
+      "offered": 3569,
       "lag": 0
     },
     {
-      "started": 9203.126708,
-      "ms": 12.85083400000076,
-      "bytes": 7732,
-      "offered": 4061,
+      "started": 26324.021583,
+      "ms": 30.64287499999773,
+      "bytes": 7731,
+      "offered": 4071,
       "lag": 0
     },
     {
-      "started": 9711.396708,
-      "ms": 9.33587500000067,
-      "bytes": 7847,
-      "offered": 4568,
+      "started": 26833.654875,
+      "ms": 13.126124999998865,
+      "bytes": 7841,
+      "offered": 4582,
       "lag": 0
     },
     {
-      "started": 10216.543917,
-      "ms": 8.635290999998688,
-      "bytes": 7957,
-      "offered": 5072,
+      "started": 27342.522458,
+      "ms": 10.975750000001426,
+      "bytes": 7953,
+      "offered": 5093,
       "lag": 0
     },
     {
-      "started": 10721.998292,
-      "ms": 9.757916000000478,
-      "bytes": 8059,
-      "offered": 5577,
+      "started": 27848.730208,
+      "ms": 16.346708999997645,
+      "bytes": 8049,
+      "offered": 5596,
       "lag": 0
     },
     {
-      "started": 11227.052667,
-      "ms": 9.150832999999693,
-      "bytes": 8175,
-      "offered": 6083,
+      "started": 28357.974792,
+      "ms": 15.075457999999344,
+      "bytes": 8172,
+      "offered": 6105,
       "lag": 0
     },
     {
-      "started": 11732.039583,
-      "ms": 9.61712500000067,
-      "bytes": 8276,
-      "offered": 6590,
+      "started": 28868.342625,
+      "ms": 13.446457999998529,
+      "bytes": 8282,
+      "offered": 6621,
       "lag": 0
     },
     {
-      "started": 12237.841125,
-      "ms": 9.750124999998661,
-      "bytes": 8396,
-      "offered": 7095,
+      "started": 29375.734083,
+      "ms": 10.411667000000307,
+      "bytes": 8394,
+      "offered": 7125,
       "lag": 0
     },
     {
-      "started": 12742.658542,
-      "ms": 9.447875000001659,
+      "started": 29882.067125,
+      "ms": 20.55620799999815,
       "bytes": 8509,
-      "offered": 7600,
+      "offered": 7629,
       "lag": 0
     },
     {
-      "started": 13247.074542,
-      "ms": 11.150040999998964,
-      "bytes": 8624,
-      "offered": 8105,
+      "started": 30392.821875,
+      "ms": 24.27287499999875,
+      "bytes": 8625,
+      "offered": 8139,
       "lag": 0
     },
     {
-      "started": 13753.18225,
-      "ms": 13.13458300000093,
-      "bytes": 8739,
-      "offered": 8613,
+      "started": 30900.640167,
+      "ms": 10.030124999997497,
+      "bytes": 8746,
+      "offered": 8649,
       "lag": 0
     },
     {
-      "started": 14264.332708,
-      "ms": 17.22466700000041,
-      "bytes": 8856,
-      "offered": 9119,
+      "started": 31407.674208,
+      "ms": 13.792750000000524,
+      "bytes": 8854,
+      "offered": 9154,
       "lag": 0
     },
     {
-      "started": 14774.997458,
-      "ms": 13.4096669999999,
-      "bytes": 8976,
-      "offered": 9630,
+      "started": 31919.022125,
+      "ms": 13.869666999999026,
+      "bytes": 8968,
+      "offered": 9666,
       "lag": 0
     },
     {
-      "started": 15282.257125,
-      "ms": 9.686083000000508,
-      "bytes": 9069,
-      "offered": 10139,
+      "started": 32428.061125,
+      "ms": 13.386666999998852,
+      "bytes": 9070,
+      "offered": 10176,
       "lag": 0
     },
     {
-      "started": 15787.627417,
-      "ms": 10.03137500000048,
-      "bytes": 9198,
-      "offered": 10644,
+      "started": 32935.689583,
+      "ms": 9.54491699999926,
+      "bytes": 9188,
+      "offered": 10683,
       "lag": 0
     },
     {
-      "started": 16292.009083,
-      "ms": 11.297041999998328,
-      "bytes": 9322,
-      "offered": 11153,
+      "started": 33441.141917,
+      "ms": 10.46612499999901,
+      "bytes": 9309,
+      "offered": 11188,
       "lag": 0
     },
     {
-      "started": 16797.720542,
-      "ms": 13.401958000002196,
-      "bytes": 9442,
-      "offered": 11656,
+      "started": 33948.625958,
+      "ms": 16.35212500000489,
+      "bytes": 9429,
+      "offered": 11695,
       "lag": 0
     },
     {
-      "started": 17305.032667,
-      "ms": 12.209083000001556,
-      "bytes": 9562,
-      "offered": 12163,
+      "started": 34460.8955,
+      "ms": 10.659166999997979,
+      "bytes": 9551,
+      "offered": 12209,
       "lag": 0
     },
     {
-      "started": 17811.552083,
-      "ms": 10.011375000001863,
-      "bytes": 9663,
-      "offered": 12667,
+      "started": 34966.50825,
+      "ms": 13.712542000001122,
+      "bytes": 9669,
+      "offered": 12717,
       "lag": 0
     },
     {
-      "started": 18316.595167,
-      "ms": 14.030083000001468,
-      "bytes": 9787,
-      "offered": 13177,
+      "started": 35476.0765,
+      "ms": 17.244457999993756,
+      "bytes": 9781,
+      "offered": 13222,
       "lag": 0
     },
     {
-      "started": 18822.155042,
-      "ms": 10.552625000000262,
-      "bytes": 9903,
-      "offered": 13679,
+      "started": 35985.493458,
+      "ms": 16.619542000000365,
+      "bytes": 9904,
+      "offered": 13735,
       "lag": 0
     },
     {
-      "started": 19327.922875,
-      "ms": 10.85504199999923,
-      "bytes": 10002,
-      "offered": 14185,
+      "started": 36496.502042,
+      "ms": 15.572999999996682,
+      "bytes": 10012,
+      "offered": 14241,
       "lag": 0
     },
     {
-      "started": 19832.421083,
-      "ms": 10.109291999997367,
-      "bytes": 10131,
-      "offered": 14693,
+      "started": 37007.049083,
+      "ms": 11.520917000001646,
+      "bytes": 10128,
+      "offered": 14757,
       "lag": 0
     },
     {
-      "started": 20337.777,
-      "ms": 10.233458000002429,
-      "bytes": 10248,
-      "offered": 15195,
+      "started": 37514.326875,
+      "ms": 9.311667000001762,
+      "bytes": 10251,
+      "offered": 15260,
       "lag": 0
     },
     {
-      "started": 20843.293292,
-      "ms": 10.778583000002982,
-      "bytes": 10367,
-      "offered": 15702,
+      "started": 38019.385083,
+      "ms": 10.683166999995592,
+      "bytes": 10369,
+      "offered": 15766,
       "lag": 0
     },
     {
-      "started": 21347.326958,
-      "ms": 29.320833999998285,
-      "bytes": 10910,
-      "offered": 15949,
+      "started": 38525.438583,
+      "ms": 22.618875000000116,
+      "bytes": 10789,
+      "offered": 15911,
       "lag": 0
     }
   ],
   "counts": {
-    "offered": 15949,
-    "completed": 11242,
-    "rejected": 3375,
+    "offered": 15911,
+    "completed": 11219,
+    "rejected": 3367,
     "running": 400,
-    "waiting": 932
+    "waiting": 925
   },
   "errors": []
 }

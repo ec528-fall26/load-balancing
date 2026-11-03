@@ -51,6 +51,13 @@ PRESETS = {
 }
 
 
+# A large illustrative topology, within API limits (1,000 servers/4,000 slots).
+PRESETS['Scale · 1,000 servers / 12 datacenters'] = (
+    tuple(Region(f'dc-{i+1:02}', 84 if i < 4 else 83, 4, (1, .75, 2)[i % 3], 10) for i in range(12)),
+    tuple(tuple(2 if i == j else 10 + abs(i-j)*40 for j in range(12)) for i in range(12)),
+)
+
+
 def validate_topology(regions, latency_ms):
     if not 1 <= len(regions) <= 12:
         raise ValueError('Use between 1 and 12 regions.')

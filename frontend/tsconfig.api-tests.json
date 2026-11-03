@@ -25,6 +25,8 @@
     "tests/comparison.test.ts",
     "lib/server/session-proxy.ts",
     "lib/live-session.ts",
-    "tests/live-api.test.ts"
+    "tests/live-api.test.ts",
+    "lib/server/run-proxy.ts",
+    "tests/recorded-api.test.ts"
   ]
 }

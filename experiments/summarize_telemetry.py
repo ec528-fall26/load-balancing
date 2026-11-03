@@ -6,7 +6,7 @@ import statistics
 OUT=Path(__file__).resolve().parent/'results/a-11'
 d=json.loads((OUT/'api-engine.json').read_text())
 lines=['# A-11: API, engine and browser scale checks','',
-'This capture measures the existing API/UI before the separately reviewed pagination follow-up.','',
+'The engine/API tables below preserve the initial pre-pagination capture. Browser rows are refreshed by the current harness. See the pagination follow-up for the new API and larger topologies.','',
 'Measured locally on an Apple M4 Pro with 48 GiB RAM. This is a single-machine experiment, not a deployment capacity guarantee.','',
 '100 servers × 4 slots; 10 waiting places per server; deterministic evenly spaced traffic; uniform 0.1–1.0 s service; round-robin routing. Regional capacity is split 40/30/30 across three pools, with illustrative client RTTs of 2/12/75 ms. The individual-server and regional pooled schedulers are different models; this is not a policy-quality comparison.','',
 'One-shot runs offer exactly 100,000 requests: a 100 s arrival window at 1,000/s or 10 s at 10,000/s. Core continuous measurements offer traffic for 100 simulated seconds, then drain. Live API and browser measurements use 1× wall-clock speed before drain.','',
@@ -58,5 +58,26 @@ lines+=['','## Correctness and limitations','',
 'Raw evidence: api-engine.json, baseline-api-engine.json, browser-*.json and browser screenshots. Source hashes, versions and configurations are embedded in the API/core report. Interactive demo services on 3000/8000 were not restarted for this benchmark.','']
 lines += ['## Validation', '', 'Initial capture: 99 Python tests, eight browser benchmark cases, TypeScript and diff checks pass. All 16 direct/proxy one-shot outcome counts match the corresponding engine sample; all test-owned live workers were cleaned up. See validation.json.', '']
 
-(OUT/"analysis.md").write_text("\n".join(lines))
-print(OUT/"analysis.md")
+# Append current bounded-transfer/large-topology measurements without replacing
+# the preserved pre-pagination API evidence above.
+pagination=OUT/'pagination-scale.json'
+if pagination.exists():
+ q=json.loads(pagination.read_text())
+ lines+=['## Pagination and larger topology follow-up','','The frontend now requests compact recorded results; legacy `/v1/run` remains available. Every event page was compared against the original full trace in stable sequence order, and start/middle/end snapshots preserve conservation. One-shot traces are temporary disk-backed records with count/byte/TTL quotas, not browser-held arrays.','',
+ '| Servers | Offered/s | Legacy JSON bytes | Bounded JSON bytes | Reduction | Event pages | Largest page bytes |','| ---: | ---: | ---: | ---: | ---: | ---: | ---: |']
+ for r in q['one_shot']:
+  old,new=r['legacy']['decoded_bytes'],r['bounded']['decoded_bytes']
+  lines.append(f'| {r["config"]["server_count"]:,} | {r["config"]["arrival_rate"]:,} | {old:,} | {new:,} | {100*(1-new/old):.2f}% | {r["pages"]} | {r["largest_page_bytes"]:,} |')
+ lines+=['','The regional tests cover 12 datacenters / 1,000 servers / 4,000 slots, mixed compute and client RTTs from 2 to 450 ms. Both offered rates (10,000 and 100,000/s) generate exactly 100,000 requests and fully drain. 1,001 servers and 13 regions are rejected with validation errors; configured limits were not raised.','',
+ '| Topology (1,000 servers) | Offered/s | Max reported lag in 8-second probe (s) | Pause HTTP (ms) |','| --- | ---: | ---: | ---: |']
+ for r in q['live']:
+  lines.append(f'| {r["topology"]} | {r["rate"]:,} | {max(x["lag"] for x in r["samples"]):.3f} | {r["pause_ms"]:.1f} |')
+ lines+=['','Raising the event ceiling from 2,000 to 20,000 per tick removes an avoidable batch throttle; the 10 ms per-tick CPU budget remains. The 100,000/s live probes still fall behind and must **not** be described as sustained real time. Pause stays responsive, and zero-traffic drain conserves all actually offered work. Commands take effect at processed simulated time and reset catch-up debt, as before. The pre-tuning live evidence is in pagination-before-batch.json; its exploratory one-shot timing overlapped a build and is not used for performance conclusions.','']
+ large_single=OUT/'large-browser-single.json';large_regions=OUT/'large-browser-regions.json'
+ if large_single.exists() and large_regions.exists():
+  a=json.loads(large_single.read_text());b=json.loads(large_regions.read_text())
+  lines += [f'The browser renders the 1,000-server case from a {a["decoded_summary_bytes"]:,}-byte summary. Cached-result-to-visible-results was {a["cached_response_to_results_ms"]:.0f} ms and seek-to-end was {a["seek_to_end_ms"]:.0f} ms in this headless sample; playback shows only 32 servers at a time and reaches server 999 through paging. The 12-datacenter preset renders all latency cards; pause-to-visible-paused control took {b["pause_control_ms"]:.0f} ms. These are local single samples, not GPU paint or mobile guarantees.','']
+ lines += ['The frontend histogram uses at most 20 Python-supplied bins, and playback reads state snapshots rather than collecting all pages in JavaScript. The slider reaches the exact final completion despite fractional-step rounding. Deleted/expired recording errors retain summary metrics and stop retrying.','']
+lines += ['## Pagination validation', '', '103 Python tests, 17 Node API/client tests, 26 browser regressions and ten browser performance cases pass. Production build, TypeScript and diff checks pass. See pagination-validation.json. The worker-expiry regression permits bounded 429 retries while a previously expired worker is still being reaped; admission limits were not loosened.', '']
+(OUT/'analysis.md').write_text('\n'.join(lines))
+print(OUT/'analysis.md')

@@ -1,5 +1,8 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRecordedPlayback } from "@/hooks/use-recorded-playback";
+import { Notice } from "@/components/surface";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { Run } from "@/lib/engine";
 import {
   Card,
@@ -41,7 +44,19 @@ export function Datacenter({ run }: { run: Run }) {
     [speed, setSpeed] = useState(1);
   const { config, summary } = run,
     events = summary.events;
-  const end = Math.max(config.duration, events.at(-1)?.[0] ?? 0);
+  const end =
+    summary.end_time ?? Math.max(config.duration, events.at(-1)?.[0] ?? 0);
+  const recorded = useRecordedPlayback(
+    run.run_id,
+    now,
+    page,
+    mode === "Playback",
+  );
+  const remote = recorded.snapshot;
+  const displayedNow =
+    run.run_id && mode === "Playback" ? (remote?.simulation_time ?? 0) : now;
+  const pageReady =
+    !run.run_id || (remote?.servers.offset === page * 32 && !recorded.error);
   useEffect(() => {
     if (!playing) return;
     let previous = performance.now();
@@ -75,9 +90,24 @@ export function Datacenter({ run }: { run: Run }) {
     rejected += Number(event[4] === "rejected");
     latest = event;
   }
-  const running = Object.values(states).reduce((a, b) => a + b[0], 0),
-    waiting = Object.values(states).reduce((a, b) => a + b[1], 0),
-    total = Math.floor(config.arrival_rate * config.duration),
+  if (run.run_id && remote) {
+    for (const row of remote.servers.items)
+      states[String(row.id)] = [row.running, row.waiting];
+    completed = remote.totals.completed;
+    rejected = remote.totals.rejected;
+    latest = remote.latest_event ?? undefined;
+  }
+  const running =
+      run.run_id && remote
+        ? remote.totals.running
+        : Object.values(states).reduce((a, b) => a + b[0], 0),
+    waiting =
+      run.run_id && remote
+        ? remote.totals.waiting
+        : Object.values(states).reduce((a, b) => a + b[1], 0),
+    total =
+      run.playback?.total_requests ??
+      Math.floor(config.arrival_rate * config.duration),
     arrived = running + waiting + completed + rejected;
   const visible = servers.slice(page * 32, (page + 1) * 32);
   const snapshot = ([id, utilization]: [string, number]): ServerSnapshot => ({
@@ -101,6 +131,19 @@ export function Datacenter({ run }: { run: Run }) {
           or network topology.
         </p>
       </div>
+      {recorded.error && (
+        <Notice error>
+          {recorded.error} Summary metrics remain available. Rerun to recreate
+          playback.
+        </Notice>
+      )}
+      {run.run_id && mode === "Playback" && !recorded.error && (
+        <p className="caption">
+          Recorded state at {(remote?.simulation_time ?? 0).toFixed(2)} s.
+          Playback is temporary; summary metrics remain available after it
+          expires.
+        </p>
+      )}
       {servers.length > 32 && (
         <Field className="max-w-xs">
           <FieldLabel htmlFor="server-page">Servers to display</FieldLabel>
@@ -204,13 +247,24 @@ export function Datacenter({ run }: { run: Run }) {
                 max={Math.max(end, 0.001)}
                 step={end > 0 ? Math.min(0.1, end / 100) : 0.001}
                 value={[now]}
-                onValueChange={(v) => setNow(v[0])}
+                onValueChange={(v) =>
+                  setNow(
+                    end - v[0] <=
+                      (end > 0 ? Math.min(0.1, end / 100) : 0.001) / 2 + 1e-9
+                      ? end
+                      : v[0],
+                  )
+                }
               />
             </Field>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <strong className="text-sm tabular-nums">
-                {now >= end ? "Finished" : playing ? "Playing" : "Paused"} ·{" "}
-                {now.toFixed(1)} / {end.toFixed(1)} s
+                {displayedNow >= end
+                  ? "Finished"
+                  : playing
+                    ? "Playing"
+                    : "Paused"}{" "}
+                · {displayedNow.toFixed(1)} / {end.toFixed(1)} s
               </strong>
               <p className="caption">
                 1× = one simulated second per real second
@@ -237,10 +291,10 @@ export function Datacenter({ run }: { run: Run }) {
             </Badge>
             <Badge variant="waiting">{waiting.toLocaleString()} waiting</Badge>
             <Badge variant="secondary">
-              {
-                servers.filter(([id]) => !states[id][0] && !states[id][1])
-                  .length
-              }{" "}
+              {run.run_id && remote
+                ? remote.idle_servers
+                : servers.filter(([id]) => !states[id][0] && !states[id][1])
+                    .length}{" "}
               idle servers
             </Badge>
           </div>
@@ -263,22 +317,26 @@ export function Datacenter({ run }: { run: Run }) {
               : "grid min-w-0 gap-5"
           }
         >
-          {Array.from({ length: Math.ceil(displayed.length / 8) }, (_, r) => (
-            <RackView
-              key={r}
-              number={page * 4 + r + 1}
-              servers={displayed.slice(r * 8, r * 8 + 8)}
-              averages={mode === "Run averages"}
-              onInspect={(id) => {
-                selectedTrigger.current =
-                  document.activeElement instanceof HTMLElement
-                    ? document.activeElement
-                    : null;
-                setPlaying(false);
-                setSelected(id);
-              }}
-            />
-          ))}
+          {mode === "Playback" && !pageReady ? (
+            <Skeleton className="h-64" />
+          ) : (
+            Array.from({ length: Math.ceil(displayed.length / 8) }, (_, r) => (
+              <RackView
+                key={r}
+                number={page * 4 + r + 1}
+                servers={displayed.slice(r * 8, r * 8 + 8)}
+                averages={mode === "Run averages"}
+                onInspect={(id) => {
+                  selectedTrigger.current =
+                    document.activeElement instanceof HTMLElement
+                      ? document.activeElement
+                      : null;
+                  setPlaying(false);
+                  setSelected(id);
+                }}
+              />
+            ))
+          )}
         </div>
         {mode === "Playback" && (
           <TaskPool
@@ -292,7 +350,7 @@ export function Datacenter({ run }: { run: Run }) {
       </div>
       <ServerInspector
         server={inspected ? snapshot(inspected) : undefined}
-        now={now}
+        now={displayedNow}
         averages={mode === "Run averages"}
         onClose={() => setSelected(null)}
         onRestoreFocus={() => selectedTrigger.current?.focus()}

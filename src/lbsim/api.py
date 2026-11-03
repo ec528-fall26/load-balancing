@@ -14,6 +14,7 @@ from pydantic import BaseModel, ConfigDict, StrictBool, StrictFloat, StrictInt
 from starlette.concurrency import run_in_threadpool
 from starlette.exceptions import HTTPException
 
+from lbsim.runs import RunStore
 from lbsim.settings import validate_config
 from lbsim.regional import RegionalSimulation, run_regional, presets
 from lbsim.regions import Region, validate_topology
@@ -259,21 +260,25 @@ def isolated_run(config, limits, *, worker_target=_worker):
             process.close()
 
 
-def create_app(*, limits=None, runner=isolated_run, session_limits=None, session_manager=None):
+def create_app(*, limits=None, runner=isolated_run, session_limits=None, session_manager=None, run_store=None):
     limits = limits or Limits()
     session_limits = session_limits or SessionLimits()
     manager = session_manager or SessionManager(session_limits)
+    recordings = run_store or RunStore()
 
     @asynccontextmanager
     async def lifespan(_app):
         manager.start()
+        recordings.start()
         try:
             yield
         finally:
             await run_in_threadpool(manager.close)
+            await run_in_threadpool(recordings.close)
 
     app = FastAPI(title='Load balancing engine API', version='1.0.0', lifespan=lifespan)
     app.state.sessions = manager
+    app.state.runs = recordings
     app.add_middleware(BodyLimit, maximum=limits.body_bytes)
     gate = BoundedSemaphore(1)
 
@@ -300,7 +305,7 @@ def create_app(*, limits=None, runner=isolated_run, session_limits=None, session
     @app.get('/health')
     async def health():
         return {'api_version': '1', 'status': 'ok', 'limits': {
-            **vars(limits), 'concurrent_runs': 1}, 'live_limits': vars(session_limits)}
+            **vars(limits), 'concurrent_runs': 1}, 'live_limits': vars(session_limits), 'recorded_run_limits': vars(recordings.limits)}
 
     @app.post('/v1/run')
     async def run(request: RunRequest):
@@ -313,6 +318,34 @@ def create_app(*, limits=None, runner=isolated_run, session_limits=None, session
             gate.release()
         return {'api_version': '1', 'config': config, 'summary': summary}
 
+
+    @app.post('/v1/runs', status_code=201)
+    async def recorded_run(request: RunRequest):
+        config=checked_config(request.config,limits)
+        if not gate.acquire(blocking=False):
+            raise APIError(429,'RUN_BUSY','Another simulation is running. Retry after it finishes.')
+        try:
+            summary=await run_in_threadpool(runner,config,limits)
+            return await run_in_threadpool(recordings.add,config,summary)
+        finally:
+            gate.release()
+
+    @app.get('/v1/runs/{run_id}')
+    async def recorded_summary(run_id: str):
+        return await run_in_threadpool(recordings.get,run_id)
+
+    @app.get('/v1/runs/{run_id}/events')
+    async def recorded_events(run_id: str,offset: int=Query(0,ge=0,le=2*limits.generated_requests),limit: int=Query(min(500,recordings.limits.event_page),ge=1,le=recordings.limits.event_page)):
+        return await run_in_threadpool(recordings.events,run_id,offset,limit)
+
+    @app.get('/v1/runs/{run_id}/snapshot')
+    async def recorded_snapshot(run_id: str,time: float=Query(0,ge=0),server_offset: int=Query(0,ge=0,le=limits.servers),server_limit: int=Query(min(32,recordings.limits.server_page),ge=1,le=recordings.limits.server_page)):
+        if not isfinite(time):raise APIError(422,'INVALID_REQUEST','Time must be finite.')
+        return await run_in_threadpool(recordings.snapshot,run_id,time,server_offset,server_limit)
+
+    @app.delete('/v1/runs/{run_id}')
+    async def delete_recording(run_id: str):
+        return await run_in_threadpool(recordings.delete,run_id)
 
     @app.get('/v1/regions/presets')
     async def region_presets():

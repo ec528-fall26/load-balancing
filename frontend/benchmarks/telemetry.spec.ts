@@ -191,7 +191,9 @@ for (const topology of ["single_pool", "regions"])
             .getByRole("button", { name: "Run simulation", exact: true })
             .click();
           const response = await promise;
-          expect(response.status()).toBe(200);
+          expect(response.status()).toBe(
+            topology === "single_pool" ? 201 : 200,
+          );
           summary = (await response.json()).summary;
           if (topology === "single_pool")
             await expect(

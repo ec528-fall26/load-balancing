@@ -1,7 +1,7 @@
 {
-  "recorded_at_utc": "2026-11-03T00:12:02.530Z",
+  "recorded_at_utc": "2026-11-03T00:36:58.677Z",
   "git_head": "d6fbfafeab8d429e83567efd7a45f76ef09513ff",
-  "benchmark_source_sha256": "feb963cf9a57e536b32e5e4a5b52edc96246693ce6d1cb8b763953ee7f1359e7",
+  "benchmark_source_sha256": "e2e6e57d763d220fa04d14bc95259827acf7d6a54bf5d136223b2329a364bd48",
   "topology": "single_pool",
   "rate": 10000,
   "mode": "one_shot",
@@ -10,38 +10,38 @@
     "width": 1440,
     "height": 1000
   },
-  "first_ready_ms": 1152.4413750000022,
+  "first_ready_ms": 1020.8005830000038,
   "initial_heap": {
-    "usedSize": 6829564,
-    "totalSize": 7421952,
-    "embedderHeapUsedSize": 1782056,
-    "backingStorageSize": 1529041
+    "usedSize": 6836360,
+    "totalSize": 7684096,
+    "embedderHeapUsedSize": 1781656,
+    "backingStorageSize": 1530891
   },
   "natural_end_heap": {
-    "usedSize": 22353440,
-    "totalSize": 39059456,
-    "embedderHeapUsedSize": 4997208,
-    "backingStorageSize": 1540303
+    "usedSize": 10926464,
+    "totalSize": 21053440,
+    "embedderHeapUsedSize": 3436824,
+    "backingStorageSize": 1539552
   },
   "post_gc_end_heap": {
-    "usedSize": 17876544,
-    "totalSize": 18874368,
-    "embedderHeapUsedSize": 3100856,
-    "backingStorageSize": 1536418
+    "usedSize": 10875128,
+    "totalSize": 12140544,
+    "embedderHeapUsedSize": 3069040,
+    "backingStorageSize": 1538174
   },
-  "retained_heap_delta_bytes": 11046980,
+  "retained_heap_delta_bytes": 4038768,
   "rendering": {
     "long_tasks": [
-      55
+      51
     ],
-    "frames": 157,
-    "frame_gap_max_ms": 49.899999999999864,
-    "frame_gap_mean_ms": 16.878343949044584,
+    "frames": 149,
+    "frame_gap_max_ms": 50,
+    "frame_gap_mean_ms": 16.88993288590604,
     "frame_gaps_over_100ms": 0,
     "json_reads": [
       {
         "url": "/api/engine/run",
-        "ms": 18.099999994039536
+        "ms": 0.20000000298023224
       }
     ],
     "visibility": "visible"
@@ -49,7 +49,7 @@
   "cdp_metrics": [
     {
       "name": "Timestamp",
-      "value": 86109.655249
+      "value": 87605.796454
     },
     {
       "name": "AudioHandlers",
@@ -69,11 +69,11 @@
     },
     {
       "name": "JSEventListeners",
-      "value": 3812
+      "value": 3773
     },
     {
       "name": "LayoutObjects",
-      "value": 1123
+      "value": 817
     },
     {
       "name": "MediaKeySessions",
@@ -85,11 +85,11 @@
     },
     {
       "name": "Nodes",
-      "value": 1306
+      "value": 997
     },
     {
       "name": "Resources",
-      "value": 19
+      "value": 18
     },
     {
       "name": "ContextLifecycleStateObservers",
@@ -133,23 +133,23 @@
     },
     {
       "name": "RecalcStyleCount",
-      "value": 244
+      "value": 238
     },
     {
       "name": "LayoutDuration",
-      "value": 0.004059
+      "value": 0.003828
     },
     {
       "name": "RecalcStyleDuration",
-      "value": 0.009126
+      "value": 0.008961
     },
     {
       "name": "DevToolsCommandDuration",
-      "value": 0.018073
+      "value": 0.005683
     },
     {
       "name": "ScriptDuration",
-      "value": 0.056818
+      "value": 0.052818
     },
     {
       "name": "V8CompileDuration",
@@ -157,39 +157,39 @@
     },
     {
       "name": "TaskDuration",
-      "value": 0.163743
+      "value": 0.136376
     },
     {
       "name": "TaskOtherDuration",
-      "value": 0.075667
+      "value": 0.065086
     },
     {
       "name": "ThreadTime",
-      "value": 0.144904
+      "value": 0.117382
     },
     {
       "name": "ProcessTime",
-      "value": 0.500877
+      "value": 0.506937
     },
     {
       "name": "JSHeapUsedSize",
-      "value": 22396764
+      "value": 10972896
     },
     {
       "name": "JSHeapTotalSize",
-      "value": 39059456
+      "value": 21053440
     },
     {
       "name": "FirstMeaningfulPaint",
-      "value": 86106.902243
+      "value": 87603.153734
     },
     {
       "name": "DomContentLoaded",
-      "value": 86106.887972
+      "value": 87603.146023
     },
     {
       "name": "NavigationStart",
-      "value": 86106.862236
+      "value": 87603.11939
     }
   ],
   "poll_count": 0,

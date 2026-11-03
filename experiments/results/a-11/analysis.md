@@ -1,6 +1,6 @@
 # A-11: API, engine and browser scale checks
 
-This capture measures the existing API/UI before the separately reviewed pagination follow-up.
+The engine/API tables below preserve the initial pre-pagination capture. Browser rows are refreshed by the current harness. See the pagination follow-up for the new API and larger topologies.
 
 Measured locally on an Apple M4 Pro with 48 GiB RAM. This is a single-machine experiment, not a deployment capacity guarantee.
 
@@ -53,14 +53,14 @@ Headless Chromium, 1440×1000, production Next.js, one browser case at a time af
 
 | Topology | Mode | Requests/s | First ready (ms) | Pause control (ms) | Long tasks / max (ms) | Max frame gap (ms) | Retained heap delta MiB | Max overlapping polls |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| regions | continuous | 1,000 | 122 | 51 | 0 / 0 | 17 | 4.6 | 1 |
-| regions | one_shot | 1,000 | 729 | — | 1 / 53 | 33 | 3.8 | 0 |
-| regions | continuous | 10,000 | 141 | 66 | 0 / 0 | 17 | 4.6 | 1 |
-| regions | one_shot | 10,000 | 513 | — | 0 / 0 | 33 | 3.3 | 0 |
-| single_pool | continuous | 1,000 | 157 | 68 | 0 / 0 | 33 | 6.0 | 1 |
-| single_pool | one_shot | 1,000 | 1815 | — | 1 / 66 | 83 | 15.0 | 0 |
-| single_pool | continuous | 10,000 | 169 | 77 | 0 / 0 | 33 | 6.9 | 1 |
-| single_pool | one_shot | 10,000 | 1152 | — | 1 / 55 | 50 | 10.5 | 0 |
+| regions | continuous | 1,000 | 137 | 52 | 0 / 0 | 17 | 4.5 | 1 |
+| regions | one_shot | 1,000 | 835 | — | 1 / 60 | 33 | 3.7 | 0 |
+| regions | continuous | 10,000 | 153 | 52 | 0 / 0 | 17 | 4.5 | 1 |
+| regions | one_shot | 10,000 | 578 | — | 1 / 52 | 33 | 3.3 | 0 |
+| single_pool | continuous | 1,000 | 175 | 76 | 0 / 0 | 50 | 6.7 | 1 |
+| single_pool | one_shot | 1,000 | 1441 | — | 1 / 52 | 33 | 3.8 | 0 |
+| single_pool | continuous | 10,000 | 152 | 71 | 0 / 0 | 33 | 6.0 | 1 |
+| single_pool | one_shot | 10,000 | 1021 | — | 1 / 51 | 50 | 3.9 | 0 |
 
 ## Correctness and limitations
 
@@ -77,3 +77,32 @@ Raw evidence: api-engine.json, baseline-api-engine.json, browser-*.json and brow
 ## Validation
 
 Initial capture: 99 Python tests, eight browser benchmark cases, TypeScript and diff checks pass. All 16 direct/proxy one-shot outcome counts match the corresponding engine sample; all test-owned live workers were cleaned up. See validation.json.
+
+## Pagination and larger topology follow-up
+
+The frontend now requests compact recorded results; legacy `/v1/run` remains available. Every event page was compared against the original full trace in stable sequence order, and start/middle/end snapshots preserve conservation. One-shot traces are temporary disk-backed records with count/byte/TTL quotas, not browser-held arrays.
+
+| Servers | Offered/s | Legacy JSON bytes | Bounded JSON bytes | Reduction | Event pages | Largest page bytes |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 100 | 1,000 | 7,870,218 | 4,097 | 99.95% | 174 | 70,748 |
+| 1,000 | 10,000 | 8,633,692 | 24,300 | 99.72% | 183 | 74,862 |
+| 1,000 | 100,000 | 4,807,647 | 16,401 | 99.66% | 120 | 74,583 |
+
+The regional tests cover 12 datacenters / 1,000 servers / 4,000 slots, mixed compute and client RTTs from 2 to 450 ms. Both offered rates (10,000 and 100,000/s) generate exactly 100,000 requests and fully drain. 1,001 servers and 13 regions are rejected with validation errors; configured limits were not raised.
+
+| Topology (1,000 servers) | Offered/s | Max reported lag in 8-second probe (s) | Pause HTTP (ms) |
+| --- | ---: | ---: | ---: |
+| single_pool | 10,000 | 0.173 | 2.2 |
+| single_pool | 100,000 | 2.546 | 2.5 |
+| regions | 10,000 | 0.000 | 5.6 |
+| regions | 100,000 | 2.153 | 6.1 |
+
+Raising the event ceiling from 2,000 to 20,000 per tick removes an avoidable batch throttle; the 10 ms per-tick CPU budget remains. The 100,000/s live probes still fall behind and must **not** be described as sustained real time. Pause stays responsive, and zero-traffic drain conserves all actually offered work. Commands take effect at processed simulated time and reset catch-up debt, as before. The pre-tuning live evidence is in pagination-before-batch.json; its exploratory one-shot timing overlapped a build and is not used for performance conclusions.
+
+The browser renders the 1,000-server case from a 24,296-byte summary. Cached-result-to-visible-results was 146 ms and seek-to-end was 342 ms in this headless sample; playback shows only 32 servers at a time and reaches server 999 through paging. The 12-datacenter preset renders all latency cards; pause-to-visible-paused control took 61 ms. These are local single samples, not GPU paint or mobile guarantees.
+
+The frontend histogram uses at most 20 Python-supplied bins, and playback reads state snapshots rather than collecting all pages in JavaScript. The slider reaches the exact final completion despite fractional-step rounding. Deleted/expired recording errors retain summary metrics and stop retrying.
+
+## Pagination validation
+
+103 Python tests, 17 Node API/client tests, 26 browser regressions and ten browser performance cases pass. Production build, TypeScript and diff checks pass. See pagination-validation.json. The worker-expiry regression permits bounded 429 retries while a previously expired worker is still being reaped; admission limits were not loosened.
