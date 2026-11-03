@@ -57,9 +57,11 @@ class LiveSimulation:
         self.seed = seed
         self.rng = Random(seed)
         self.now = 0.0
+        self.anchor, self.arrival_index = 0.0, 0
         self.next_arrival = 0.0 if arrival_rate else float('inf')
         self.arrival_end = float('inf')
         self.set_rate(arrival_rate)
+        self.arrival_index = 0
         self.next_arrival = 0.0 if arrival_rate else float('inf')
         self.events = []
         self.serial = 0
@@ -73,7 +75,8 @@ class LiveSimulation:
         if type(rate) not in (int, float) or not isfinite(rate) or not 0 <= rate <= 100000:
             raise ValueError('Traffic must be between 0 and 100,000 requests/s.')
         self.arrival_rate = float(rate)
-        self.next_arrival = self.now + 1 / rate if rate else float('inf')
+        self.anchor, self.arrival_index = self.now, 1
+        self.next_arrival = self.anchor + self.arrival_index / rate if rate else float('inf')
 
     def _push(self, now, kind, region, request):
         # Completions free slots before dispatch; serial makes all ties stable.
@@ -147,7 +150,10 @@ class LiveSimulation:
                 self.pools[region].flying += 1
                 self._push(self.now + self.client_latency_ms[region] / 2000,
                            'dispatch', region, request)
-                self.next_arrival = self.now + 1 / self.arrival_rate
+                # Integer-indexed arrivals avoid accumulated interval error
+                # admitting a request just before an exclusive one-shot cutoff.
+                self.arrival_index += 1
+                self.next_arrival = self.anchor + self.arrival_index / self.arrival_rate
         self.now = target
         return True
 
