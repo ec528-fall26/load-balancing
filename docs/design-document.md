@@ -13,6 +13,11 @@ or review status on the board is separate from the implementation described here
 
 ## 1. Architecture
 
+Routing selection now uses per-run strategies from a single topology-aware
+registry. See [routing policies](routing-policies.md) for selection/tie rules,
+frontend metadata generation and exact before/after compatibility checks.
+
+
 The product is a local Streamlit app backed by an importable Python simulation
 package. A simulation finishes before results are displayed. The modeled
 workload uses no real HTTP requests, external workers, databases or cloud services.

@@ -13,6 +13,7 @@ from random import Random
 from time import perf_counter
 
 from lbsim.regions import Region, validate_topology
+from lbsim.policies import RoutingContext, create_policy, supports_policy
 
 
 @dataclass
@@ -41,7 +42,7 @@ class LiveSimulation:
                  policy='least_loaded', seed=42, client_latency_ms=None):
         validate_topology(regions, latency_ms)
         if (type(source) is not int or not 0 <= source < len(regions)
-                or policy not in ('round_robin', 'least_loaded', 'nearest')):
+                or not supports_policy(policy, 'regions')):
             raise ValueError('Choose a valid source region and routing policy.')
         if (not all(type(v) in (int, float) and isfinite(v) for v in (service_min, service_max))
                 or not 0 < service_min <= service_max):
@@ -53,6 +54,12 @@ class LiveSimulation:
             raise ValueError("Client RTT needs one finite nonnegative value per region (at most 60,000 ms).")
         self.pools = [Pool(r) for r in regions]
         self.source, self.policy = source, policy
+        self.routing = create_policy(policy, RoutingContext(
+            len(self.pools), lambda i: self.pools[i].running,
+            demand=lambda i: (self.pools[i].running + len(self.pools[i].waiting)
+                              + self.pools[i].flying),
+            capacity=lambda i: self.regions[i].slots,
+            latency_ms=self.client_latency_ms), 'regions')
         self.service_min, self.service_max = service_min, service_max
         self.seed = seed
         self.rng = Random(seed)
@@ -83,16 +90,6 @@ class LiveSimulation:
         priority = {'complete': 0, 'dispatch': 1, 'response': 2}[kind]
         self.serial += 1
         heappush(self.events, (now, priority, self.serial, kind, region, request))
-
-    def _target(self):
-        if self.policy == 'round_robin':
-            return self.offered % len(self.pools)
-        if self.policy == 'nearest':
-            return min(range(len(self.pools)), key=lambda i: (self.client_latency_ms[i], i))
-        return min(range(len(self.pools)), key=lambda i: (
-            (self.pools[i].running + len(self.pools[i].waiting) + self.pools[i].flying)
-            / self.regions[i].slots,
-            self.client_latency_ms[i], i))
 
     def _start(self, region, request):
         pool = self.pools[region]
@@ -144,7 +141,7 @@ class LiveSimulation:
                     pool.responses.append(response)
             else:
                 self.now = self.next_arrival
-                region = self._target()
+                region = self.routing.choose()
                 request = (self.now, self.rng.uniform(self.service_min, self.service_max))
                 self.offered += 1
                 self.pools[region].flying += 1

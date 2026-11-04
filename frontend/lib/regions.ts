@@ -1,3 +1,4 @@
+import { regionalPolicies } from "./policy-metadata";
 import { EngineError } from "./engine";
 export type Region = {
   name: string;
@@ -14,7 +15,7 @@ export type RegionalTopology = {
 };
 export type RegionalConfig = RegionalTopology & {
   topology: "regions";
-  policy: "round_robin" | "least_loaded" | "nearest";
+  policy: keyof typeof regionalPolicies;
   arrival_rate: number;
   service_min: number;
   service_max: number;

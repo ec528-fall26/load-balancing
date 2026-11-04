@@ -1,10 +1,11 @@
 import random
 from collections import deque
 from lbsim.server import Request, Server
+from lbsim.policies import RoutingContext, create_policy, supports_policy
 
 def route(server_count: int, concurrency: int, queue_limit: int, policy: str, arrival_rate: float, duration: float, service_min: float, service_max: float, seed: int, events: list | None = None,
           processing_rates: tuple[float, ...] | None = None):
-    if policy not in ("round_robin", "least_active_requests"):
+    if not supports_policy(policy):
         raise ValueError("Select a supported routing policy.")
     if processing_rates is not None and len(processing_rates) != server_count:
         raise ValueError("processing_rates needs one value per server")
@@ -28,7 +29,8 @@ def route(server_count: int, concurrency: int, queue_limit: int, policy: str, ar
     completed = []
     rejected = []
 
-    counter = 0
+    routing = create_policy(policy, RoutingContext(
+        server_count, lambda i: len(server_map[i].running)))
 
     # Continue until there are no more requests or pending completions
     while requests or pending:
@@ -49,6 +51,7 @@ def route(server_count: int, concurrency: int, queue_limit: int, policy: str, ar
             server = server_map[server_id]
             c = server.complete(req_id, now)
             
+            routing.update(server_id)
             completed.append(c.finished)
             if events is not None:
                 events.append((now, server_id, len(server.running), len(server.waiting), "completed", req_id))
@@ -63,17 +66,10 @@ def route(server_count: int, concurrency: int, queue_limit: int, policy: str, ar
             now = next_arrival
             req = requests.popleft()
             
-            # Routing policy logic
-            if policy == "round_robin":
-                target_server = server_map[counter % server_count]
-                counter += 1
-            else:
-                # Read live running counts after all earlier events. Waiting
-                # requests do not count; equal loads favor the lowest ID.
-                target_server = min(server_map.values(),
-                                    key=lambda server: (len(server.running), server.id))
-            
+            target_server = server_map[routing.choose()]
+
             admission = target_server.submit(req, now)
+            routing.update(target_server.id)
             if events is not None:
                 events.append((now, target_server.id, len(target_server.running),
                                len(target_server.waiting), admission.status, req.id))

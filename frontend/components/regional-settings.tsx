@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { regionalPolicies } from "@/lib/policy-metadata";
 import {
   regionalRequest,
   type RegionPreset,
@@ -132,11 +133,9 @@ export function RegionalSettings({
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              <SelectItem value="least_loaded">Least loaded region</SelectItem>
-              <SelectItem value="round_robin">
-                Round robin across regions
-              </SelectItem>
-              <SelectItem value="nearest">Nearest region</SelectItem>
+              {Object.entries(regionalPolicies).map(([value, label]) => (
+                <SelectItem key={value} value={value}>{label}</SelectItem>
+              ))}
             </SelectGroup>
           </SelectContent>
         </Select>

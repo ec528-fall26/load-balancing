@@ -11,28 +11,7 @@ from random import Random
 from time import perf_counter
 
 from lbsim.server import Request, Server
-
-
-class _Loads:
-    """Bounded indexed minimum tree; running-count ties favor the lowest ID."""
-
-    def __init__(self, count):
-        self.width = 1 << (count - 1).bit_length()
-        self.tree = [(inf, 0)] * (2 * self.width)
-        for i in range(count):
-            self.tree[self.width + i] = (0, i)
-        for i in range(self.width - 1, 0, -1):
-            self.tree[i] = min(self.tree[2 * i], self.tree[2 * i + 1])
-
-    def update(self, server, running):
-        i = self.width + server
-        self.tree[i] = (running, server)
-        while i > 1:
-            i //= 2
-            self.tree[i] = min(self.tree[2 * i], self.tree[2 * i + 1])
-
-    def target(self):
-        return self.tree[1][1]
+from lbsim.policies import RoutingContext, create_policy
 
 
 class ContinuousSimulation:
@@ -50,7 +29,8 @@ class ContinuousSimulation:
             for i in range(count)
         ]
         self.rng = Random(config["seed"])
-        self.loads = _Loads(count)
+        self.routing = create_policy(config["policy"], RoutingContext(
+            count, lambda i: len(self.servers[i].running)))
         self.active = [0] * count
         self.queued = [0] * count
         self.areas = [0.0] * count
@@ -127,15 +107,11 @@ class ContinuousSimulation:
                 else:
                     self.active[sid] -= 1
                     self.running -= 1
-                self.loads.update(sid, self.active[sid])
+                self.routing.update(sid)
             else:
                 self._time(self.next_arrival)
                 rid = self.offered
-                sid = (
-                    rid % len(self.servers)
-                    if self.config["policy"] == "round_robin"
-                    else self.loads.target()
-                )
+                sid = self.routing.choose()
                 self._touch(sid)
                 demand = self.rng.uniform(
                     self.config["service_min"], self.config["service_max"]
@@ -147,7 +123,7 @@ class ContinuousSimulation:
                 if admission.status == "started":
                     self.active[sid] += 1
                     self.running += 1
-                    self.loads.update(sid, self.active[sid])
+                    self.routing.update(sid)
                     execution = admission.execution
                     heappush(self.pending, (execution.completion_time, sid, rid))
                 elif admission.status == "queued":
