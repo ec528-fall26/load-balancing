@@ -1,8 +1,9 @@
+import { serverPolicies } from "./policy-metadata";
 export type Config = {
   server_count: number;
   concurrency: number;
   queue_limit: number;
-  policy: "round_robin" | "least_active_requests";
+  policy: keyof typeof serverPolicies;
   arrival_rate: number;
   duration: number;
   service_min: number;
@@ -44,10 +45,7 @@ export const defaults: Config = {
   service_max: 1,
   seed: 42,
 };
-export const policies = {
-  round_robin: "Round robin",
-  least_active_requests: "Least active requests",
-};
+export const policies = serverPolicies;
 export type FieldError = { field: string; message: string };
 export class EngineError extends Error {
   constructor(

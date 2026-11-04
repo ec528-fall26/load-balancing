@@ -1,6 +1,7 @@
 """Launch with PYTHONPATH=src uv run streamlit run src/lbsim/app.py."""
 import streamlit as st
 
+from lbsim.policies import policy_options
 from lbsim.simulation import run_simulation
 from lbsim.settings import build_config
 from lbsim.results import display_summary
@@ -10,8 +11,7 @@ from lbsim.comparison import display_saved_comparison
 
 st.set_page_config(page_title="Load balancing simulator", layout="wide")
 
-POLICY_LABELS = {"round_robin": "Round robin",
-                 "least_active_requests": "Least active requests"}
+POLICY_LABELS = policy_options()
 
 with st.sidebar:
     st.header("Configure a run")

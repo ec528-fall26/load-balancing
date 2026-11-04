@@ -4,6 +4,8 @@ from collections.abc import Mapping
 
 from math import isfinite
 
+from lbsim.policies import supports_policy
+
 
 def validate_config(values: Mapping) -> dict:
     """Validate configuration fields and return a new config dictionary."""
@@ -21,7 +23,7 @@ def validate_config(values: Mapping) -> dict:
             errors.append(f"{key}: must be finite and greater than zero")
     if not errors and values["service_min"] > values["service_max"]:
         errors.append("service_min must be less than or equal to service_max")
-    if values.get("policy") not in ("round_robin", "least_active_requests"):
+    if not supports_policy(values.get("policy")):
         errors.append("policy: select a supported routing policy")
     rates = values.get("processing_rates")
     if rates is not None:
