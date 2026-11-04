@@ -204,3 +204,14 @@ output directory to preserve prior evidence. No CPU runtime measurement is made.
 See [results and interpretation](results/d3-02/analysis.md). Lower completed-request
 latency must be considered together with rejection rates. Mean per-run p95 is not
 a pooled p95, and three seeds do not establish a general policy ranking.
+
+## A-24: CPU/I/O request stages and power-of-two choices (research)
+
+```sh
+PYTHONPATH=src uv run python experiments/compare_cpu_io.py --output experiments/results/a-24-rerun
+```
+
+Runs 81 policy cases plus exact replays on 27 shared traces in seconds locally.
+Separates CPU execution, I/O wait and the outstanding admission cap. Existing web
+app behavior is unchanged. See [model and limits](../docs/cpu-io-research.md) and
+[recorded results](results/a-24/analysis.md). No cloud or GPU is required.
