@@ -7,6 +7,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass
 from math import inf
+from random import Random
 from types import MappingProxyType
 
 
@@ -17,6 +18,7 @@ class RoutingContext:
     demand: Callable[[int], int] | None = None
     capacity: Callable[[int], int] | None = None
     latency_ms: tuple[float, ...] = ()
+    routing_rng: Random | None = None
 
 
 class RoutingPolicy(ABC):
@@ -67,6 +69,23 @@ class LeastActiveRequestsPolicy(RoutingPolicy):
         return self.tree[1][1]
 
 
+class PowerOfTwoChoicesPolicy(RoutingPolicy):
+    """Sample two distinct targets; choose fewer CPU-active requests.
+
+    Equal loads choose the first sampled target. A one-target fleet consumes no
+    routing random draw. This experimental variant does not count I/O wait.
+    """
+    def __init__(self, context):
+        super().__init__(context)
+        self.rng = context.routing_rng if context.routing_rng is not None else Random(0)
+
+    def choose(self):
+        if self.context.count == 1:
+            return 0
+        a, b = self.rng.sample(range(self.context.count), 2)
+        return a if self.context.running(a) <= self.context.running(b) else b
+
+
 class NearestRegionPolicy(RoutingPolicy):
     def choose(self):
         return min(range(self.context.count),
@@ -93,11 +112,15 @@ class PolicyDefinition:
 # The only authoritative list of policy identifiers, factories and Python labels.
 POLICY_REGISTRY = MappingProxyType({
     'round_robin': PolicyDefinition(RoundRobinPolicy, (
-        ('single_pool', 'Round robin'), ('regions', 'Round robin across regions'))),
+        ('single_pool', 'Round robin'), ('regions', 'Round robin across regions'),
+        ('cpu_io', 'Round robin'))),
     'least_active_requests': PolicyDefinition(LeastActiveRequestsPolicy, (
-        ('single_pool', 'Least active requests'),)),
+        ('single_pool', 'Least active requests'),
+        ('cpu_io', 'Least CPU-active requests'))),
     'least_loaded': PolicyDefinition(LeastLoadedRegionPolicy, (
         ('regions', 'Least loaded region'),), order=-1),
+    'power_of_two': PolicyDefinition(PowerOfTwoChoicesPolicy, (
+        ('cpu_io', 'Power of two (CPU active)'),)),
     'nearest': PolicyDefinition(NearestRegionPolicy, (
         ('regions', 'Nearest region'),)),
 })
