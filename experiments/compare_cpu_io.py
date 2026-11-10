@@ -17,7 +17,7 @@ from lbsim.policies import policy_options
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--output', type=Path, default=Path('experiments/results/a-24'))
+    parser.add_argument('--output', type=Path, default=Path('experiments/results/a-24-rerun'))
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
     rows, runs, traces = [], [], {}

@@ -10,7 +10,7 @@ The theme and local Source Sans variable font match Streamlit's light theme.
 Requires Node.js 20.9 or later and npm.
 
 ```sh
-cd frontend
+cd src/frontend
 npm ci
 cp .env.example .env.local
 npm run dev
@@ -41,7 +41,7 @@ The **Run simulation** action now calls the real Python engine through the
 same-origin `/api/engine/run` proxy. `LBSIM_API_URL` in `.env.local` is read only
 by the Next.js server and defaults to `http://127.0.0.1:8000`. Restart Next.js
 after changing it. Health and API limits are available at the Python `/health`
-endpoint; see the [API contract](https://github.com/ec528-fall26/load-balancing/blob/sean-api/docs/python-api.md).
+endpoint; see the [API contract](../../docs/python-api.md).
 
 The proxy caps actual request bodies at 65,536 bytes and allows 20 seconds for
 Python to respond (Python's own worker deadline is 15 seconds plus cleanup).
@@ -206,9 +206,9 @@ correct deltas, failure recovery, unchanged-variant rejection and mobile flow.
 The lab's Execution selector switches between one-shot runs and Python-owned
 continuous sessions. Start/pause/resume, traffic, speed, restart and stop controls
 use the same-origin session proxy. Reload reconnects to the per-tab active ID.
-See [the live frontend contract](../docs/live-frontend.md) for lifecycle, bounded
+See [the live frontend contract](../../docs/live-frontend.md) for lifecycle, bounded
 polling, editable-versus-active setup semantics and testing. Regional sessions
 remain unavailable pending A-09. Use `npm run test:live` for proxy/client tests.
 
 
-Regional topology works with both execution modes. Configure presets, per-region capacity/compute, source and client/matrix RTT in the Lab. Regional cards are aggregate pools, with immediate telemetry and illustrative RTT assumptions; regional saves/exports remain unavailable; fresh bounded regional comparisons are supported. See [regional API model](../docs/regional-api.md).
+Regional topology works with both execution modes. Configure presets, per-region capacity/compute, source and client/matrix RTT in the Lab. Regional cards are aggregate pools, with immediate telemetry and illustrative RTT assumptions; regional saves/exports remain unavailable; fresh bounded regional comparisons are supported. See [regional API model](../../docs/regional-api.md).
