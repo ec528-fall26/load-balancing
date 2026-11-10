@@ -45,6 +45,7 @@ export function RackView({
             <Badge variant={queued ? "waiting" : "secondary"}>
               {queued.toLocaleString()} waiting
             </Badge>
+            {servers.some(s=>s.ioWaiting!==undefined)&&<Badge variant="outline">{servers.reduce((n,s)=>n+(s.ioWaiting??0),0)} I/O waiting</Badge>}
           </div>
         )}
       </CardHeader>

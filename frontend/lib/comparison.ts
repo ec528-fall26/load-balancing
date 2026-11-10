@@ -1,3 +1,4 @@
+import { policies } from "./engine";
 import type { Config, Run } from "./engine";
 import type { RegionalConfig, RegionalRun } from "./regions";
 import { validConfig } from "./saved-setups";
@@ -18,6 +19,11 @@ export const configLabels: Record<keyof Config, string> = {
   seed: "Random seed",
   policy: "Routing policy",
   processing_rates: "Processing rates",
+  request_model: "Request model",
+  io_fraction: "I/O share",
+  outstanding_limit: "Outstanding limit per server",
+  io_capacity: "Shared I/O concurrency",
+  io_heavy_probability: "I/O-heavy request fraction",
 };
 export type Setting = {
   key: string;
@@ -76,10 +82,7 @@ export function settings(config: CompareConfig): Setting[] {
             least_loaded: "Least loaded region",
             nearest: "Nearest region",
           }
-        : {
-            round_robin: "Round robin",
-            least_active_requests: "Least active requests",
-          },
+        : policies,
     },
   ];
   if (!regional) {
@@ -105,6 +108,12 @@ export function settings(config: CompareConfig): Setting[] {
         value: config.queue_limit,
         step: 1,
       },
+      ...(config.request_model==="cpu_io" ? [
+        {key:"io_fraction",label:"I/O share (fraction)",group:"Workload",value:config.io_fraction,step:.01},
+        {key:"outstanding_limit",label:"Outstanding limit per server",group:"Capacity",value:config.outstanding_limit,step:1},
+        {key:"io_capacity",label:"Shared I/O concurrency",group:"Capacity",value:config.io_capacity??64,step:1},
+        ...(config.io_heavy_probability!==undefined?[{key:"io_heavy_probability",label:"I/O-heavy request fraction",group:"Workload",value:config.io_heavy_probability,step:.01}]:[]),
+      ] : []),
       ...common,
       {
         key: "processing_rates",

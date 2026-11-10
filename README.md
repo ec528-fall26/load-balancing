@@ -23,7 +23,13 @@ Least-active-requests and saved-run comparison are planned for Demo 3.
 The replacement frontend is in [`frontend/`](frontend/README.md). Run `npm ci`
 and `npm run dev` from that directory, then open `http://localhost:3000`.
 Use `http://localhost:3000/?preview=1` to review all result screens with a
-recorded example. Engine actions currently use explicit API placeholders.
+recorded example. Start the Python API to run new simulations. The replay and
+CSV comparison controls currently show an explicit API placeholder.
+
+The current frontend flow is **Library → Setup → Lab → Compare**. Templates and
+browser saves open editable settings on `/setup`. Run to open `/simulator`, where
+results, playback and live controls stay together. Edit configuration preserves
+the current run while preparing the next. See [CPU/I/O Lab](docs/cpu-io-lab.md).
 
 ### Original Streamlit interface
 
@@ -141,3 +147,11 @@ Demo 2 submission: [slides](slides/demo-2.pdf) · [demo video](videos/demo-2.mp4
 For each demo, two multiple-choice questions with marked answers are due to the
 instructor by **5:30 pm** that day. Keep those questions within the team before
 the presentation quiz.
+
+## CPU/I/O in the main Lab
+
+Single-pool simulations support simple service durations or CPU → I/O wait → CPU
+in both one-shot and continuous mode. CPU/I/O templates prefill Setup;
+least-outstanding routing accounts for CPU queues and I/O wait. See
+[the model and verification guide](docs/cpu-io-lab.md) for configuration,
+visualization, limits and tests. Existing simple-model runs remain supported.

@@ -38,7 +38,7 @@ async function smallTraffic(page: Page) {
 test("regional one-shot uses presets, source/RTT/compute edits, fully drains and preserves results on invalid config", async ({
   page,
 }) => {
-  await page.goto("/simulator");
+  await page.goto("/setup");
   await regions(page);
   await select(page, "Regional preset", "US · compute in the west");
   await select(page, "Source region", "us-west-1");
@@ -104,6 +104,10 @@ test("regional one-shot uses presets, source/RTT/compute edits, fully drains and
     page.getByText("Recent response times", { exact: true }),
   ).toBeVisible();
   await page
+    .getByRole("link", { name: "Edit configuration", exact: true })
+    .click();
+  await page.getByRole("button", { name: "us-east-1", exact: true }).click();
+  await page
     .getByRole("textbox", { name: "Region 1 name", exact: true })
     .fill("us-east-2");
   await page
@@ -112,9 +116,17 @@ test("regional one-shot uses presets, source/RTT/compute edits, fully drains and
   await expect(
     page.getByRole("status").filter({ hasText: "Region names must be unique" }),
   ).toBeVisible();
+  await page.getByRole("link", { name: "Return to Lab", exact: true }).click();
   await expect(page.getByTestId("regional-accounting")).toContainText(
     "20 offered = 20 completed",
   );
+  await page
+    .getByRole("link", { name: "Edit configuration", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "us-east-2", exact: true })
+    .first()
+    .click();
   await expect
     .poll(async () =>
       page
@@ -138,7 +150,7 @@ test("regional one-shot uses presets, source/RTT/compute edits, fully drains and
 test("regional continuous sessions reconnect, preserve active settings, drain, restart and switch topology cleanly", async ({
   page,
 }) => {
-  await page.goto("/simulator");
+  await page.goto("/setup");
   await regions(page);
   await smallTraffic(page);
   await select(page, "Regional preset", "Global · mixed compute");
@@ -176,22 +188,33 @@ test("regional continuous sessions reconnect, preserve active settings, drain, r
   await expect(
     page.getByRole("button", { name: "Resume session", exact: true }),
   ).toBeVisible();
+  await page
+    .getByRole("link", { name: "Edit configuration", exact: true })
+    .click();
   await expect(page.getByLabel("Topology", { exact: true })).toContainText(
     "Regions",
   );
   await expect(
     page.getByLabel("Regional routing policy", { exact: true }),
   ).toContainText("Nearest region");
+  await page.getByRole("link", { name: "Return to Lab", exact: true }).click();
   await expect(page.getByText(/^Simulated time:/)).toHaveText(paused);
   await expect(
     page.getByLabel("Region ap-northeast-1", { exact: true }),
   ).toBeVisible();
   await page
+    .getByRole("link", { name: "Edit configuration", exact: true })
+    .click();
+  await page
     .getByRole("spinbutton", { name: "Requests per second", exact: true })
     .fill("400");
+  await page.getByRole("link", { name: "Return to Lab", exact: true }).click();
   await expect(
     page.getByText("Current traffic:", { exact: false }),
   ).toContainText("20 requests/s");
+  await page
+    .getByRole("button", { name: "Session options", exact: true })
+    .click();
   await select(page, "Simulation speed", "10×");
   await page
     .getByRole("button", { name: "Drain traffic", exact: true })
@@ -206,18 +229,18 @@ test("regional continuous sessions reconnect, preserve active settings, drain, r
     .getByRole("button", { name: "Pause session", exact: true })
     .click();
   await page
-    .getByRole("button", { name: "Restart with current settings", exact: true })
+    .getByRole("link", { name: "Edit configuration", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Replace continuous session", exact: true })
     .click();
   await expect(
     page.getByText("Current traffic:", { exact: false }),
   ).toContainText("400 requests/s");
+  await page
+    .getByRole("link", { name: "Edit configuration", exact: true })
+    .click();
   await select(page, "Topology", "Single server pool");
-  await expect(page.getByLabel("Topology", { exact: true })).toContainText(
-    "Single server pool",
-  );
-  await expect(
-    page.getByRole("button", { name: "Stop session", exact: true }),
-  ).toHaveCount(0);
   await expect(
     page.getByRole("spinbutton", { name: "Server count", exact: true }),
   ).toBeVisible();
@@ -228,14 +251,20 @@ test("regional continuous sessions reconnect, preserve active settings, drain, r
       exact: true,
     }),
   ).toBeVisible();
+  await page.getByRole("link", { name: "Return to Lab", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Stop session", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByLabel("Region ap-northeast-1", { exact: true }),
+  ).toBeVisible();
 });
 
 test("regional mobile setup closes after run/start and live telemetry fits the viewport", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/simulator");
-  await page.getByRole("button", { name: "Show setup", exact: true }).click();
+  await page.goto("/setup");
   await regions(page);
   await smallTraffic(page);
   await page
@@ -248,7 +277,9 @@ test("regional mobile setup closes after run/start and live telemetry fits the v
   await expect(
     page.getByLabel("Regional results", { exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Show setup", exact: true }).click();
+  await page
+    .getByRole("link", { name: "Edit configuration", exact: true })
+    .click();
   await select(page, "Execution", "Continuous");
   await page
     .getByRole("button", { name: "Start continuous simulation", exact: true })

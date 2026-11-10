@@ -6,23 +6,18 @@ snapshots. The one-shot Run path and recorded playback remain separate.
 
 Start Python as documented in [continuous-api.md](continuous-api.md), then start
 Next.js from `frontend/`. `LBSIM_API_URL` remains server-only and defaults to
-`http://127.0.0.1:8000`. Open `http://127.0.0.1:3000/simulator`.
+`http://127.0.0.1:8000`. Open `http://127.0.0.1:3000/setup`.
 
 ## Controls
 
-- Topology and Execution are separate shadcn Select controls. Single pool and
-  Regions each support One-shot and Continuous execution. Regional presets,
-  capacity/compute and source/client/matrix RTT editors use the A-09 contract.
-- Choose Continuous. Its setup omits the one-shot arrival-window field. Start
-  continuous simulation sends the current configuration without `duration`.
-- Pause/Resume affect the worker clock. Simulation speed uses the API's 0.25–10×
-  control. Simulation time and reported catch-up lag remain visible.
-- Apply traffic changes the active rate. Drain traffic sets rate to zero; work
-  drains while running, whereas Pause freezes processing.
-- Stop deletes the session. Restart with current settings stops it first, then
-  starts a new session with the editable sidebar configuration.
-- Switching topology or returning to One-shot stops an active session before changing the view. A
-  failed stop leaves the continuous view available rather than hiding the worker.
+- Configure topology, workload, policy and execution on the dedicated Setup page.
+  Regions and single pools support both one-shot and continuous execution.
+- Start continuous simulation opens Lab, where Pause/Resume, Stop, traffic and
+  Drain affect the active worker. Speed and Restart session live under Session
+  options. Restart uses the active configuration.
+- Edit configuration returns to Setup without stopping the session. Draft edits
+  affect the next run. Replace continuous session explicitly stops the current
+  worker and creates a new session from the draft.
 
 Editable settings are distinct from the active configuration shown below the
 live view. Setup edits do not silently reconfigure an existing worker. Browser
@@ -34,10 +29,10 @@ worker, its history, or execution mode.
 The opaque active ID is stored under the versioned per-tab sessionStorage key
 `lbsim.active-session.v1`. Reloading the lab reconnects to it and selects
 Continuous. If no template/save/draft is being loaded, its active configuration
-also restores the setup form. A new successful session closes mobile settings;
-reconnecting does not override a deliberately opened setup Sheet.
+also restores the setup form. A new successful session opens Lab on desktop and mobile. Setup and Lab share
+workspace state, so navigating between them preserves the current results.
 
-Leaving the page cancels polling but does not delete a worker. The API continues
+Leaving the workspace cancels polling but does not delete a worker. The API continues
 until explicit Stop, idle/absolute expiry, process restart, or failure. API
 session IDs are not authentication; this remains a local service.
 

@@ -13,8 +13,10 @@ sampling, completion handling and queues remain engine responsibilities.
 | `least_active_requests` | Single pool | Fewest running requests, then lowest server ID. Waiting work is excluded; no fallback on rejection. |
 | `least_loaded` | Regions | Minimum `(running + queued + outbound in transit) / slots`, then client RTT, then region index. |
 | `nearest` | Regions | Minimum client RTT, then region index. |
+| `least_outstanding` | Single pool | Fewest running + CPU-queued + I/O-waiting requests, then lowest ID. |
+| `power_of_two` | Single pool and CPU/I/O research | Sample two distinct targets; fewer CPU-active requests, first sampled on ties. |
 
-Least-active owns a bounded indexed minimum tree: O(log n) running-count updates
+Least-active and least-outstanding own bounded indexed minimum trees: O(log n) running-count updates
 and O(1) selection. Round robin and regional strategies do not allocate that
 index. The regional model still represents aggregate pools, not independent
 per-server schedules. These are the existing policies, not new routing semantics.
@@ -52,3 +54,7 @@ include exact metrics and event/state data, not just outcome counts. Existing
 policy, saved-run/replay, API and engine tests remain intact. Registry tests also
 compare indexed selection with a simple minimum oracle after 1,000 seeded load
 updates, verify per-run isolation and reject policies from the wrong topology.
+
+The main Lab supports staged CPU/I/O requests in single-pool one-shot and live
+runs. See [the integration guide](cpu-io-lab.md) for admission, stage accounting
+and model-specific UI and recording contracts.

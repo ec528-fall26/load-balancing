@@ -30,6 +30,7 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Slider } from "@/components/ui/slider";
 import { Play, Pause, RotateCcw } from "lucide-react";
+import { ResourcePressure } from "./resource-pressure";
 import { RackView } from "./datacenter/rack-view";
 import { TaskPool } from "./datacenter/task-pool";
 import { ServerInspector } from "./datacenter/server-inspector";
@@ -78,21 +79,21 @@ export function Datacenter({ run }: { run: Run }) {
       ),
     [summary.per_server_utilization],
   );
-  const states: Record<string, [number, number]> = {};
-  servers.forEach(([sid]) => (states[sid] = [0, 0]));
+  const states: Record<string, [number, number,number,number,number,number]> = {};
+  servers.forEach(([sid]) => (states[sid] = [0, 0,0,0,0,0]));
   let completed = 0,
     rejected = 0,
     latest;
   for (const event of events) {
     if (event[0] > now) break;
-    states[event[1]] = [event[2], event[3]];
+    states[event[1]] = [event[2], event[3],event[6]??0,event[7]??event[2]+event[3],event[8]??event[6]??0,event[9]??0];
     completed += Number(event[4] === "completed");
     rejected += Number(event[4] === "rejected");
     latest = event;
   }
   if (run.run_id && remote) {
     for (const row of remote.servers.items)
-      states[String(row.id)] = [row.running, row.waiting];
+      states[String(row.id)] = [row.running, row.waiting,row.io_waiting??0,row.outstanding??row.running+row.waiting,row.io_active??row.io_waiting??0,row.io_queued??0];
     completed = remote.totals.completed;
     rejected = remote.totals.rejected;
     latest = remote.latest_event ?? undefined;
@@ -108,7 +109,8 @@ export function Datacenter({ run }: { run: Run }) {
     total =
       run.playback?.total_requests ??
       Math.floor(config.arrival_rate * config.duration),
-    arrived = running + waiting + completed + rejected;
+    ioWaiting = run.run_id&&remote ? remote.totals.io_waiting??0 : Object.values(states).reduce((n,s)=>n+s[2],0),
+    arrived = running + waiting + completed + rejected + ioWaiting;
   const visible = servers.slice(page * 32, (page + 1) * 32);
   const snapshot = ([id, utilization]: [string, number]): ServerSnapshot => ({
     id,
@@ -118,6 +120,7 @@ export function Datacenter({ run }: { run: Run }) {
     slots: config.concurrency,
     queueLimit: config.queue_limit,
     processingRate: config.processing_rates?.[Number(id)] ?? 1,
+    ...(config.request_model==="cpu_io" ? {ioWaiting:states[id]?.[2]??0,outstanding:states[id]?.[3]??0,ioActive:states[id]?.[4]??0,ioQueued:states[id]?.[5]??0,outstandingLimit:config.outstanding_limit,queueLimit:config.outstanding_limit!}:{}),
   });
   const displayed = visible.map(snapshot);
   const inspected =
@@ -131,6 +134,7 @@ export function Datacenter({ run }: { run: Run }) {
           or network topology.
         </p>
       </div>
+      {config.request_model==="cpu_io"&&mode==="Playback"&&<ResourcePressure cpuActive={running} cpuSlots={config.server_count*config.concurrency} cpuQueued={waiting} outstanding={running+waiting+ioWaiting} admissionSlots={config.server_count*(config.outstanding_limit??1)} ioActive={remote?.io_resource?.active??Object.values(states).reduce((n,s)=>n+s[4],0)} ioQueued={remote?.io_resource?.queued??Object.values(states).reduce((n,s)=>n+s[5],0)} ioCapacity={config.io_capacity??64}/>}
       {recorded.error && (
         <Notice error>
           {recorded.error} Summary metrics remain available. Rerun to recreate
@@ -273,7 +277,7 @@ export function Datacenter({ run }: { run: Run }) {
             {latest && (
               <p className="caption">
                 Latest event · {latest[0].toFixed(3)} s · Request {latest[5]}{" "}
-                {latest[4]} on server {latest[1]}
+                {config.request_model==="cpu_io"?({cpu_to_io:"finished CPU stage 1",io_started:"started shared I/O",io_to_cpu:"returned from I/O",started:"started CPU work",queued:"joined the CPU queue",completed:"completed",rejected:"was rejected"} as Record<string,string>)[latest[4]]??latest[4]:latest[4]} on server {latest[1]}
               </p>
             )}
             <p className="caption">
@@ -289,17 +293,18 @@ export function Datacenter({ run }: { run: Run }) {
             <Badge variant="executing">
               {running.toLocaleString()} executing
             </Badge>
-            <Badge variant="waiting">{waiting.toLocaleString()} waiting</Badge>
+            <Badge variant="waiting">{waiting.toLocaleString()} {config.request_model==="cpu_io"?"CPU queued":"waiting"}</Badge>
+            {config.request_model==="cpu_io"&&<Badge variant="outline">{ioWaiting} I/O waiting</Badge>}
             <Badge variant="secondary">
               {run.run_id && remote
                 ? remote.idle_servers
-                : servers.filter(([id]) => !states[id][0] && !states[id][1])
+                : servers.filter(([id]) => !states[id][3])
                     .length}{" "}
               idle servers
             </Badge>
           </div>
           <p className="caption">
-            Teal: executing · Orange: waiting · Empty cells: available
+            Teal: CPU execution · Orange: CPU queue · I/O wait and admission are separate
           </p>
         </div>
       )}
@@ -341,6 +346,9 @@ export function Datacenter({ run }: { run: Run }) {
         {mode === "Playback" && (
           <TaskPool
             total={total}
+            ioActive={config.request_model==="cpu_io" ? remote?.io_resource?.active??Object.values(states).reduce((n,s)=>n+s[4],0) : undefined}
+            ioQueued={config.request_model==="cpu_io" ? remote?.io_resource?.queued??Object.values(states).reduce((n,s)=>n+s[5],0) : undefined}
+            ioWaiting={config.request_model==="cpu_io" ? ioWaiting : undefined}
             running={running}
             waiting={waiting}
             completed={completed}

@@ -196,7 +196,7 @@ export default function ComparePage() {
     <div className="min-h-screen bg-background">
       <AppHeader
         section="compare"
-        labHref={draftBaseline ? "/simulator?compareDraft=1" : "/simulator"}
+        setupHref={draftBaseline ? "/setup?compareDraft=1" : "/setup"}
       />
       <main className="mx-auto flex max-w-7xl flex-col gap-7 px-5 py-8 md:px-8 md:py-10">
         <div>
@@ -483,9 +483,9 @@ export default function ComparePage() {
         {results && <ComparisonResults cases={results} />}
         <Button asChild variant="outline" className="self-start">
           <Link
-            href={draftBaseline ? "/simulator?compareDraft=1" : "/simulator"}
+            href={draftBaseline ? "/setup?compareDraft=1" : "/setup"}
           >
-            Back to Lab
+            Back to Setup
           </Link>
         </Button>
       </main>

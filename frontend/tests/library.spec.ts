@@ -21,7 +21,9 @@ test("home lists templates, filters them, and opens the configured simulator", a
   await expect(
     page.getByRole("spinbutton", { name: "Server count", exact: true }),
   ).toHaveValue("6");
-  await expect(page.getByLabel("Routing policy", { exact: true })).toContainText("Least active requests");
+  await expect(
+    page.getByLabel("Routing policy", { exact: true }),
+  ).toContainText("Least active requests");
   await page
     .getByRole("link", { name: "Load balancing lab home", exact: true })
     .click();
@@ -33,6 +35,7 @@ test("home lists templates, filters them, and opens the configured simulator", a
   await expect(
     page.getByRole("spinbutton", { name: "Server count", exact: true }),
   ).toHaveValue("1000");
+
   await expect(
     page.getByRole("spinbutton", { name: "Slots per server", exact: true }),
   ).toHaveValue("4");
@@ -41,7 +44,7 @@ test("home lists templates, filters them, and opens the configured simulator", a
 test("named saves survive reload, update, copy, reopen and deletion", async ({
   page,
 }) => {
-  await page.goto("/simulator?template=queue-pressure");
+  await page.goto("/setup?template=queue-pressure");
   await expect(
     page.getByRole("spinbutton", { name: "Server count", exact: true }),
   ).toHaveValue("4");
@@ -56,7 +59,9 @@ test("named saves survive reload, update, copy, reopen and deletion", async ({
   await page
     .getByRole("link", { name: "Load balancing lab home", exact: true })
     .click();
-  await expect(page).toHaveURL(new URL("/", test.info().project.use.baseURL).toString());
+  await expect(page).toHaveURL(
+    new URL("/", test.info().project.use.baseURL).toString(),
+  );
   await page.reload();
   await expect(
     page.getByRole("link", { name: "Overload experiment", exact: true }),

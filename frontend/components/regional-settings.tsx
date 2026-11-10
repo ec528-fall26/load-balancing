@@ -66,10 +66,12 @@ export function RegionalSettings({
   onChange,
   policy,
   onPolicyChange,
+  hidePolicy=false,
 }: {
   value: RegionalTopology;
   onChange: (v: RegionalTopology) => void;
   policy: string;
+  hidePolicy?: boolean;
   onPolicyChange: (v: string) => void;
 }) {
   const [presets, setPresets] = useState<RegionPreset[]>([]),
@@ -125,6 +127,7 @@ export function RegionalSettings({
           Illustrative RTTs, not measured cloud-provider latency.
         </FieldDescription>
       </Field>
+      {!hidePolicy&&<>
       <Field>
         <FieldLabel htmlFor="region-policy">Regional routing policy</FieldLabel>
         <Select value={policy} onValueChange={onPolicyChange}>
@@ -145,6 +148,7 @@ export function RegionalSettings({
           only running requests.
         </FieldDescription>
       </Field>
+      </>}
       <Field>
         <FieldLabel htmlFor="source-region">Source region</FieldLabel>
         <Select

@@ -31,6 +31,7 @@ export function SetupCard({
   config,
   updatedAt,
   onDelete,
+  execution,
 }: {
   id: string;
   name: string;
@@ -38,9 +39,10 @@ export function SetupCard({
   config: Config;
   updatedAt?: string;
   onDelete?: (id: string) => void;
+  execution?: "one_shot" | "continuous";
 }) {
   const isTemplate = !updatedAt;
-  const href = `/simulator?${isTemplate ? "template" : "save"}=${encodeURIComponent(id)}`;
+  const href = `/setup?${isTemplate ? "template" : "save"}=${encodeURIComponent(id)}${execution==="continuous"?"&mode=continuous":""}`;
   return (
     <Card className="min-w-0">
       <CardHeader>
@@ -70,7 +72,7 @@ export function SetupCard({
                 config.arrival_rate * config.duration,
               ).toLocaleString(),
             ],
-            ["Queue / server", config.queue_limit.toLocaleString()],
+            [config.request_model==="cpu_io"?"Outstanding cap / server":"Queue / server", (config.request_model==="cpu_io"?config.outstanding_limit!:config.queue_limit).toLocaleString()],
           ].map(([label, value]) => (
             <div key={label}>
               <dt className="text-xs text-muted-foreground">{label}</dt>
@@ -80,6 +82,9 @@ export function SetupCard({
         </dl>
         <div className="flex flex-wrap gap-2">
           <Badge variant="outline">{policies[config.policy]}</Badge>
+          {config.request_model==="cpu_io"&&<Badge variant="outline">{config.io_capacity??64} shared I/O slots</Badge>}
+          {execution==="continuous"&&<Badge variant="outline">Continuous</Badge>}
+          {config.request_model==="cpu_io"&&<Badge variant="outline">CPU / I/O · {config.io_heavy_probability!==undefined?"Mixed requests":`${((config.io_fraction??0)*100).toFixed(0)}% I/O`}</Badge>}
           {config.processing_rates && (
             <Badge variant="outline">Mixed speeds</Badge>
           )}

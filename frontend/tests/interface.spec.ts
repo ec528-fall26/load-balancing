@@ -19,9 +19,9 @@ test("initial UI and unavailable backend feedback", async ({ page }) => {
       }),
     }),
   );
-  await page.goto("/simulator");
+  await page.goto("/setup");
   await expect(
-    page.getByRole("heading", { name: "Load balancing simulator" }),
+    page.getByRole("heading", { name: "Set up a simulation" }),
   ).toBeVisible();
   await expect(
     page.getByRole("spinbutton", { name: "Server count", exact: true }),
@@ -155,7 +155,7 @@ test("future API results retain the completed configuration after form edits", a
   await page.route("**/api/engine/run", (route) =>
     route.fulfill({ json: fixture }),
   );
-  await page.goto("/simulator");
+  await page.goto("/setup");
   await page
     .getByRole("button", { name: "Run simulation", exact: true })
     .click();
@@ -163,23 +163,30 @@ test("future API results retain the completed configuration after form edits", a
     page.getByRole("tab", { name: "Overview", exact: true }),
   ).toBeVisible();
   await page
+    .getByRole("link", { name: "Edit configuration", exact: true })
+    .click();
+  await page
     .getByRole("spinbutton", { name: "Server count", exact: true })
     .fill("5");
-  await page.getByText("Run configuration", { exact: true }).click();
-  await expect(page.locator("main pre")).toContainText('"server_count": 2');
   await page
     .getByRole("button", { name: "Increase Server count", exact: true })
     .click();
   await expect(
     page.getByRole("spinbutton", { name: "Server count", exact: true }),
   ).toHaveValue("6");
+  await page.getByRole("link", { name: "Return to Lab", exact: true }).click();
+  await page.getByText("Run configuration", { exact: true }).click();
+  await expect(page.locator("main pre")).toContainText('"server_count": 2');
 });
 test("replay and comparison send uploaded files to the engine boundary", async ({
   page,
 }) => {
-  await page.goto("/simulator");
-  await page.getByText("Replay a saved run", { exact: true }).click();
-  await page
+  await page.goto("/setup");
+  const replayTrigger = page.getByRole("button", { name: "Replay a saved run" });
+  await replayTrigger.click();
+  const replay = page.getByRole("dialog", { name: "Replay a saved run" });
+  await expect(replay).toBeVisible();
+  await replay
     .getByLabel("Configuration export (JSON)", { exact: true })
     .setInputFiles({
       name: "config.json",
@@ -188,10 +195,13 @@ test("replay and comparison send uploaded files to the engine boundary", async (
         JSON.stringify({ schema_version: 1, config: fixture.config }),
       ),
     });
-  await page
+  await replay
     .getByRole("button", { name: "Replay saved configuration", exact: true })
     .click();
-  await expect(page.getByRole("status")).toContainText("not connected");
+  await expect(replay.getByRole("status")).toContainText("not connected");
+  await page.keyboard.press("Escape");
+  await expect(replay).toBeHidden();
+  await expect(replayTrigger).toBeFocused();
   await page.route("**/api/engine/compare", (route) => {
     expect(route.request().postDataJSON().results).toEqual([
       "Run A payload",
@@ -199,7 +209,10 @@ test("replay and comparison send uploaded files to the engine boundary", async (
     ]);
     return route.fulfill({ json: [fixture, fixture] });
   });
-  await page.getByText("Compare saved results", { exact: true }).click();
+  await page.getByRole("button", { name: "Compare saved results" }).click();
+  await expect(
+    page.getByRole("dialog", { name: "Compare saved results" }),
+  ).toBeVisible();
   await Promise.all(
     ["Run A results (CSV)", "Run B results (CSV)"].map((label, index) =>
       page.getByLabel(label, { exact: true }).setInputFiles({
@@ -224,7 +237,8 @@ test("replay and comparison send uploaded files to the engine boundary", async (
 test("real Run updates the UI and preserves results after validation failure", async ({
   page,
 }) => {
-  await page.goto("/simulator");
+  await page.goto("/setup");
+
   for (const [name, value] of [
     ["Server count", "1"],
     ["Slots per server", "1"],
@@ -248,52 +262,45 @@ test("real Run updates the UI and preserves results after validation failure", a
     page.locator(".recharts-bar-rectangle path").first(),
   ).toBeVisible();
   await page
+    .getByRole("link", { name: "Edit configuration", exact: true })
+    .click();
+  await page
     .getByRole("spinbutton", { name: "Server count", exact: true })
     .fill("0");
   await page
     .getByRole("button", { name: "Run simulation", exact: true })
     .click();
   await expect(page.getByRole("status")).toContainText("server_count");
+  await page.getByRole("link", { name: "Return to Lab", exact: true }).click();
   await expect(page.locator("dl").first()).toContainText(
     "Completed requests1Rejected requests9",
   );
 });
 
-test("setup uses a mobile sheet and preserves settings when reopened", async ({
+test("dedicated mobile setup preserves edits when returning from Lab", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/simulator");
-  await page.getByRole("button", { name: "Show setup", exact: true }).click();
-  const sheet = page.getByRole("dialog");
-  await expect(sheet).toBeVisible();
-  const count = sheet.getByRole("spinbutton", {
-    name: "Server count",
-    exact: true,
-  });
-  await count.fill("7");
-  await page.keyboard.press("Escape");
-  await expect(sheet).not.toBeVisible();
+  await page.goto("/setup");
+  await page
+    .getByRole("spinbutton", { name: "Server count", exact: true })
+    .fill("7");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.getByRole("link", { name: "Return to Lab", exact: true }).click();
   await expect(
-    page.getByRole("button", { name: "Show setup", exact: true }),
-  ).toBeFocused();
-  await page.getByRole("button", { name: "Show setup", exact: true }).click();
+    page.getByRole("spinbutton", { name: "Server count", exact: true }),
+  ).toHaveCount(0);
+  await page
+    .getByRole("link", { name: "Edit configuration", exact: true })
+    .click();
   await expect(
-    sheet.getByRole("spinbutton", { name: "Server count", exact: true }),
+    page.getByRole("spinbutton", { name: "Server count", exact: true }),
   ).toHaveValue("7");
-  await expect(
-    sheet.getByRole("button", { name: "Hide setup", exact: true }),
-  ).toBeVisible();
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBeTruthy();
-  await sheet.evaluate(async (element) => {
-    await Promise.all(
-      element.getAnimations().map((animation) => animation.finished),
-    );
-  });
   await page.screenshot({
     path: "test-results/next-mobile-setup.png",
     fullPage: true,
@@ -320,7 +327,7 @@ test("large rack view bounds cells, paginates, and shows queue saturation", asyn
   await page.route("**/api/engine/run", (route) =>
     route.fulfill({ json: run }),
   );
-  await page.goto("/simulator");
+  await page.goto("/setup");
   await page
     .getByRole("button", { name: "Run simulation", exact: true })
     .click();

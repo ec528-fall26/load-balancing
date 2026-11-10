@@ -3,7 +3,8 @@ import { test, expect } from "@playwright/test";
 test("lab draft comparison runs baseline and two variants, retaining results on failure", async ({
   page,
 }) => {
-  await page.goto("/simulator");
+  await page.goto("/setup");
+
   for (const [name, value] of [
     ["Server count", "1"],
     ["Slots per server", "1"],
@@ -96,7 +97,7 @@ test("lab draft comparison runs baseline and two variants, retaining results on 
     page.getByRole("alert").filter({ hasText: "Variant A failed" }),
   ).toBeVisible();
   await expect(row.getByRole("cell").nth(3)).toContainText("Δ +2");
-  await page.getByRole("link", { name: "Lab", exact: true }).click();
+  await page.getByRole("link", { name: "Setup", exact: true }).click();
   await expect(
     page.getByRole("spinbutton", { name: "Server count", exact: true }),
   ).toHaveValue("1");
@@ -105,7 +106,7 @@ test("lab draft comparison runs baseline and two variants, retaining results on 
   ).toHaveValue("10.00");
 });
 
-test("mobile template opens setup automatically and closes it after a successful run", async ({
+test("mobile bottom navigation connects Library, Setup, Lab and Compare", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -114,33 +115,28 @@ test("mobile template opens setup automatically and closes it after a successful
     .getByRole("textbox", { name: "Search setups" })
     .fill("Light traffic");
   await page.getByRole("link", { name: "Use template", exact: true }).click();
-  const sheet = page.getByRole("dialog", {
-    name: "Run configuration",
-    exact: true,
-  });
-  await expect(sheet).toBeVisible();
-  await sheet
+  await expect(
+    page.getByRole("heading", { name: "Set up a simulation", exact: true }),
+  ).toBeVisible();
+  await page
     .getByRole("spinbutton", { name: "Arrival window (seconds)", exact: true })
     .fill("2");
-  await sheet
+  await page
     .getByRole("button", { name: "Run simulation", exact: true })
     .click();
-  await expect(sheet).not.toBeVisible();
+  await expect(page).toHaveURL(/\/simulator$/);
   await expect(
     page.getByRole("tab", { name: "Overview", exact: true }),
   ).toBeVisible();
+  const navigation = page.getByRole("navigation", { name: "Main navigation" });
   await expect(
-    page.getByRole("button", { name: "Page navigation", exact: true }),
-  ).toContainText("Lab");
-  expect(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth <= innerWidth,
-    ),
-  ).toBeTruthy();
-  await page
-    .getByRole("button", { name: "Page navigation", exact: true })
-    .click();
-  await page.getByRole("menuitem", { name: "Compare", exact: true }).click();
+    navigation.getByRole("link", { name: "Lab", exact: true }),
+  ).toHaveAttribute("aria-current", "page");
+  await expect(navigation.getByRole("link")).toHaveCount(4);
+  await navigation.getByRole("link", { name: "Compare", exact: true }).click();
+  await expect(
+    navigation.getByRole("link", { name: "Compare", exact: true }),
+  ).toHaveAttribute("aria-current", "page");
   await expect(
     page.getByRole("heading", { name: "Compare configurations" }),
   ).toBeVisible();
@@ -149,10 +145,26 @@ test("mobile template opens setup automatically and closes it after a successful
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBeTruthy();
-  await page.screenshot({
-    path: "test-results/comparison-mobile.png",
-    fullPage: true,
-  });
+  await page.screenshot({ path: "test-results/mobile-navigation.png" });
+  const backToSetup = page.getByRole("link", { name: "Back to Setup" });
+  await backToSetup.scrollIntoViewIfNeeded();
+  const bar = await navigation.boundingBox();
+  const lastControl = await backToSetup.boundingBox();
+  expect(bar!.y + bar!.height).toBeCloseTo(844);
+  expect(lastControl!.y + lastControl!.height).toBeLessThanOrEqual(bar!.y);
+  await navigation.getByRole("link", { name: "Setup", exact: true }).click();
+  await expect(
+    page.getByRole("spinbutton", { name: "Arrival window (seconds)" }),
+  ).toHaveValue("2.00");
+  await navigation.getByRole("link", { name: "Lab", exact: true }).click();
+  await expect(
+    page.getByRole("tab", { name: "Overview", exact: true }),
+  ).toBeVisible();
+  await navigation.getByRole("link", { name: "Library", exact: true }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(
+    navigation.getByRole("link", { name: "Library", exact: true }),
+  ).toHaveAttribute("aria-current", "page");
 });
 
 test("comparison rejects unchanged variants before requesting work", async ({
@@ -233,7 +245,8 @@ test("regional live setup transfers through navigation and compares only the sel
 }) => {
   let sid = "";
   try {
-    await page.goto("/simulator");
+    await page.goto("/setup");
+
     await page.getByLabel("Topology", { exact: true }).click();
     await page.getByRole("option", { name: "Regions", exact: true }).click();
     await page
@@ -313,11 +326,14 @@ test("regional live setup transfers through navigation and compares only the sel
       fullPage: true,
     });
     await page
-      .getByRole("link", { name: "Back to Lab", exact: true })
+      .getByRole("link", { name: "Back to Setup", exact: true })
       .click();
     await expect(page.getByLabel("Topology", { exact: true })).toContainText(
       "Regions",
     );
+    await page
+      .getByRole("link", { name: "Return to Lab", exact: true })
+      .click();
     await expect(
       page.getByRole("button", { name: "Resume session", exact: true }),
     ).toBeVisible();

@@ -82,7 +82,7 @@ export default function Home() {
       <AppHeader
         actions={
           <Button asChild size="sm">
-            <Link href="/simulator">
+            <Link href="/setup?new=1">
               <Plus data-icon="inline-start" />
               New simulation
             </Link>

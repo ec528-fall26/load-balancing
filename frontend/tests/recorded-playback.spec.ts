@@ -28,7 +28,7 @@ test("100k bounded run loads its histogram, seeks to the drained state and pagin
       if (r.url().includes("/api/runs/") && r.url().includes("/snapshot"))
         snapshots.push(r.url());
     });
-    await page.goto("/simulator");
+    await page.goto("/setup");
     await page
       .getByRole("button", { name: "Run simulation", exact: true })
       .click();

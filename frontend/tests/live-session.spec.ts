@@ -28,7 +28,8 @@ async function continuousMode(page: Page) {
 test("real continuous session starts, polls, pauses, reconnects, drains, paginates and stops", async ({
   page,
 }) => {
-  await page.goto("/simulator");
+  await page.goto("/setup");
+
   await page
     .getByRole("spinbutton", { name: "Server count", exact: true })
     .fill("40");
@@ -72,9 +73,13 @@ test("real continuous session starts, polls, pauses, reconnects, drains, paginat
     page.getByRole("button", { name: "Resume session", exact: true }),
   ).toBeVisible();
   await expect(page.getByText(/^Simulated time:/)).toHaveText(paused);
+  await page
+    .getByRole("link", { name: "Edit configuration", exact: true })
+    .click();
   await expect(
     page.getByRole("spinbutton", { name: "Server count", exact: true }),
   ).toHaveValue("40");
+  await page.getByRole("link", { name: "Return to Lab", exact: true }).click();
   await expect(page.getByRole("article")).toHaveCount(32);
   await page.getByLabel("Live server page", { exact: true }).click();
   await page
@@ -84,6 +89,9 @@ test("real continuous session starts, polls, pauses, reconnects, drains, paginat
   await expect(
     page.getByRole("button", { name: "Inspect server 32", exact: true }),
   ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Session options", exact: true })
+    .click();
   await page.getByLabel("Simulation speed", { exact: true }).click();
   await page.getByRole("option", { name: "10×", exact: true }).click();
   await expect(
@@ -122,16 +130,13 @@ test("real continuous session starts, polls, pauses, reconnects, drains, paginat
   ).toBeVisible();
   await page.getByRole("button", { name: "Stop session", exact: true }).click();
   await expect(
-    page.getByRole("button", {
-      name: "Start continuous simulation",
-      exact: true,
-    }),
-  ).toBeEnabled();
-  expect(
-    await page.evaluate(() =>
-      sessionStorage.getItem("lbsim.active-session.v1"),
-    ),
-  ).toBeNull();
+    page.getByRole("link", { name: "Edit configuration", exact: true }),
+  ).toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(() => sessionStorage.getItem("lbsim.active-session.v1")),
+    )
+    .toBeNull();
   await expect(
     page.getByText("Last retained snapshot; no longer live.", { exact: true }),
   ).toBeVisible();
@@ -216,22 +221,18 @@ test("polling is serialized, stale snapshots cannot undo commands, and expired s
     page.getByRole("alert").filter({ hasText: "Session expired" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", {
-      name: "Start continuous simulation",
-      exact: true,
-    }),
-  ).toBeEnabled();
+    page.getByRole("link", { name: "Edit configuration", exact: true }),
+  ).toBeVisible();
   const stoppedAt = completed;
   await page.waitForTimeout(1100);
   expect(completed).toBe(stoppedAt);
 });
 
-test("mobile start closes setup and switching execution stops the live session", async ({
+test("mobile run opens Lab and draft execution edits preserve the live session", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/simulator");
-  await page.getByRole("button", { name: "Show setup", exact: true }).click();
+  await page.goto("/setup");
   await continuousMode(page);
   await page
     .getByRole("button", { name: "Start continuous simulation", exact: true })
@@ -251,7 +252,9 @@ test("mobile start closes setup and switching execution stops the live session",
     path: "test-results/live-session-mobile.png",
     fullPage: true,
   });
-  await page.getByRole("button", { name: "Show setup", exact: true }).click();
+  await page
+    .getByRole("link", { name: "Edit configuration", exact: true })
+    .click();
   await page.getByLabel("Execution", { exact: true }).click();
   await page.getByRole("option", { name: "One-shot", exact: true }).click();
   await expect(
@@ -261,5 +264,9 @@ test("mobile start closes setup and switching execution stops the live session",
     await page.evaluate(() =>
       sessionStorage.getItem("lbsim.active-session.v1"),
     ),
-  ).toBeNull();
+  ).not.toBeNull();
+  await page.getByRole("link", { name: "Return to Lab", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Pause session", exact: true }),
+  ).toBeVisible();
 });

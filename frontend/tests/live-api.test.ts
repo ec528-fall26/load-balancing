@@ -192,3 +192,17 @@ test("regional snapshots validate travel accounting, bounded telemetry and regio
     false,
   );
 });
+
+test("CPU/I/O snapshot validation includes I/O in conservation and admission bounds",()=>{
+  const s=structuredClone(liveFixture) as import('../lib/live-session').SinglePoolSnapshot;
+  s.config={...s.config,request_model:'cpu_io',io_fraction:.9,outstanding_limit:2,io_capacity:2};
+  s.totals={offered:2,completed:0,rejected:0,running:0,waiting:0,io_waiting:2,io_active:2,io_queued:0,outstanding:2};
+  s.history=[{simulation_time:0,...s.totals}];
+  s.servers.items=s.servers.items.map((row,i)=>({...row,io_waiting:i===0?2:0,io_active:i===0?2:0,io_queued:0,outstanding:i===0?2:0,outstanding_limit:2}));
+  s.io_resource={capacity:2,active:2,queued:0,utilization:0};
+  assert.ok(acceptSnapshot(s));
+  assert.ok(!acceptSnapshot({...s,totals:{...s.totals,io_waiting:undefined}}));
+  assert.ok(!acceptSnapshot({...s,totals:{...s.totals,outstanding:0}}));
+  const broken=structuredClone(s);broken.servers.items[0].outstanding_limit=1;
+  assert.ok(!acceptSnapshot(broken));
+});

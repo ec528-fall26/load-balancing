@@ -1,4 +1,5 @@
 "use client";
+import { RequestModelFields } from "./request-model-fields";
 import type { Config } from "@/lib/engine";
 import { policies } from "@/lib/engine";
 import { NumberField } from "@/components/number-field";
@@ -39,6 +40,7 @@ export function ConfigFields({
   const [rates, setRates] = useState<string | null>(null);
   return (
     <FieldGroup>
+      <RequestModelFields config={config} onChange={onChange} disabled={disabled}/>
       <FieldGroup className="grid grid-cols-2 gap-4">
         {labels.map(([key, label, step]) => (
           <NumberField

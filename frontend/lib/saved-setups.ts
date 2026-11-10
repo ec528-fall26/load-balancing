@@ -1,4 +1,4 @@
-import { defaults, type Config } from "./engine";
+import { defaults, policies, type Config } from "./engine";
 export type SavedSetup = {
   id: string;
   name: string;
@@ -6,6 +6,7 @@ export type SavedSetup = {
   updatedAt: string;
 };
 export type Template = {
+  execution?: "one_shot" | "continuous";
   id: string;
   name: string;
   description: string;
@@ -13,6 +14,15 @@ export type Template = {
 };
 export const LIBRARY_KEY = "lbsim.saved-setups.v1";
 export const templates: Template[] = [
+  {id:"shared-io-bottleneck",name:"Shared I/O bottleneck",description:"One shared dependency slot creates I/O queueing even while server CPUs are idle.",config:{...defaults,server_count:8,concurrency:1,queue_limit:8,arrival_rate:100,duration:5,service_min:.08,service_max:.12,request_model:"cpu_io",io_fraction:.9,outstanding_limit:8,io_capacity:1,policy:"least_outstanding"}},
+  {id:"mixed-cpu-io",name:"Mixed CPU and I/O requests",description:"An identical seeded mix of CPU-heavy and I/O-heavy requests, with a finite shared dependency.",config:{...defaults,server_count:8,concurrency:1,queue_limit:8,arrival_rate:100,duration:5,service_min:.08,service_max:.12,request_model:"cpu_io",io_fraction:.9,outstanding_limit:8,io_capacity:4,io_heavy_probability:.5,policy:"power_of_two"}},
+
+  {id:"cpu-io-walkthrough",name:"CPU to I/O, step by step",description:"Two requests share one CPU. Watch I/O release CPU while admission stays occupied.",config:{...defaults,server_count:1,concurrency:1,queue_limit:1,arrival_rate:10,duration:.2,service_min:4,service_max:4,request_model:"cpu_io",io_fraction:.5,outstanding_limit:2,io_capacity:2}},
+  {id:"io-heavy-routing",name:"I/O-heavy routing",description:"Compare CPU-active and outstanding load signals while requests spend 90% of service time on I/O.",config:{...defaults,server_count:8,concurrency:1,queue_limit:8,arrival_rate:400,duration:2,service_min:.08,service_max:.12,request_model:"cpu_io",io_fraction:.9,outstanding_limit:8,io_capacity:8,policy:"least_outstanding"}},
+  {id:"cpu-heavy-routing",name:"CPU-heavy routing",description:"Put CPU capacity under pressure and compare rejection and latency with staged requests.",config:{...defaults,server_count:8,concurrency:1,queue_limit:8,arrival_rate:100,duration:2,service_min:.08,service_max:.12,request_model:"cpu_io",io_fraction:.1,outstanding_limit:8,io_capacity:64}},
+
+  {id:"io-heavy-live",name:"Live I/O-heavy traffic",execution:"continuous",description:"Watch CPU, I/O wait and outstanding admission pressure in a continuous run.",config:{...defaults,server_count:8,concurrency:1,queue_limit:8,arrival_rate:400,duration:2,service_min:.08,service_max:.12,request_model:"cpu_io",io_fraction:.9,outstanding_limit:8,io_capacity:8,policy:"least_outstanding"}},
+  {id:"cpu-heavy-live",name:"Live CPU-heavy traffic",execution:"continuous",description:"Watch CPU queues form, then change the offered traffic and observe draining.",config:{...defaults,server_count:8,concurrency:1,queue_limit:8,arrival_rate:100,duration:2,service_min:.08,service_max:.12,request_model:"cpu_io",io_fraction:.1,outstanding_limit:8,io_capacity:64,policy:"power_of_two"}},
   {
     id: "light-traffic",
     name: "Light traffic",
@@ -132,8 +142,14 @@ export function validConfig(value: unknown): value is Config {
     Math.floor(c.arrival_rate * c.duration) > 100000
   )
     return false;
-  if (c.policy !== "round_robin" && c.policy !== "least_active_requests")
+  if (!Object.hasOwn(policies,c.policy))
     return false;
+  if(c.request_model!==undefined && !["simple","cpu_io"].includes(c.request_model)) return false;
+  if(c.request_model==="cpu_io") {
+    if(typeof c.io_fraction!=="number" || !Number.isFinite(c.io_fraction) || c.io_fraction<0 || c.io_fraction>.99 || !Number.isSafeInteger(c.outstanding_limit) || c.outstanding_limit!<1 || c.server_count*c.outstanding_limit!>100000) return false;
+    if(c.io_capacity!==undefined && (!Number.isSafeInteger(c.io_capacity)||c.io_capacity<1||c.io_capacity>4096)) return false;
+    if(c.io_heavy_probability!==undefined && (typeof c.io_heavy_probability!=="number"||!Number.isFinite(c.io_heavy_probability)||c.io_heavy_probability<0||c.io_heavy_probability>1))return false;
+  } else if(c.io_fraction!==undefined || c.outstanding_limit!==undefined || c.io_capacity!==undefined || c.io_heavy_probability!==undefined) return false;
   return (
     c.processing_rates === undefined ||
     (Array.isArray(c.processing_rates) &&

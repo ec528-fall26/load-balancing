@@ -1,8 +1,8 @@
 # CPU/I/O routing research (A-24)
 
 This is a small standalone experiment prompted by the professor's feedback.
-It is not wired into the web app, API or saved-run formats and does not change
-existing single-pool/regional routing. It is advanced research; no new Demo 3
+The experiment keeps its original routing and workload model. The web app also
+provides a standalone preview of that model. It is advanced research; no new Demo 3
 commitment or mentor agreement is implied.
 
 ```mermaid
@@ -86,3 +86,11 @@ P2C is not universally better: with CPU-heavy work at 100 requests/s, round robi
 rejects 7.27% versus P2C's 11.17%. These workload-specific outcomes motivate a
 future comparison with an outstanding-request signal; that fourth policy is not
 part of this small slice. Adding CPU/I/O stages does not establish fault tolerance.
+
+## Main Lab extension
+
+The standalone A-24 experiments above retain their original unlimited I/O-delay
+model so the checked-in results stay reproducible. The main Lab now offers finite
+shared I/O concurrency, FIFO dependency queueing, mixed request types and
+least-outstanding routing. See [CPU/I/O Lab](cpu-io-lab.md). The earlier results
+should not be presented as measurements of this extended model.

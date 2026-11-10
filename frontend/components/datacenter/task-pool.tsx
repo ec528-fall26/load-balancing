@@ -16,15 +16,21 @@ export function TaskPool({
   completed,
   rejected,
   continuous = false,
+  ioWaiting,
+  ioActive,
+  ioQueued,
 }: {
   continuous?: boolean;
+  ioWaiting?: number;
+  ioActive?: number;
+  ioQueued?: number;
   total: number;
   running: number;
   waiting: number;
   completed: number;
   rejected: number;
 }) {
-  const arrived = running + waiting + completed + rejected;
+  const arrived = running + waiting + completed + rejected + (ioWaiting??0);
   const rows = [
     {
       label: "Not arrived",
@@ -33,17 +39,18 @@ export function TaskPool({
       variant: "secondary" as const,
     },
     {
-      label: "Running",
+      label: ioWaiting!==undefined ? "CPU active" : "Running",
       value: running,
       color: "bg-executing",
       variant: "executing" as const,
     },
     {
-      label: "Waiting",
+      label: ioWaiting!==undefined ? "CPU queue" : "Waiting",
       value: waiting,
       color: "bg-waiting",
       variant: "waiting" as const,
     },
+    ...(ioActive!==undefined&&ioQueued!==undefined ? [{label:"I/O in service",value:ioActive,color:"bg-chart-3",variant:"secondary" as const},{label:"I/O queue",value:ioQueued,color:"bg-chart-4",variant:"waiting" as const}] : ioWaiting!==undefined ? [{label:"I/O waiting",value:ioWaiting,color:"bg-chart-2",variant:"waiting" as const}] : []),
     {
       label: "Completed",
       value: completed,
@@ -69,7 +76,7 @@ export function TaskPool({
       <CardContent className="flex flex-col gap-5">
         <div
           role="img"
-          aria-label={`${continuous ? `${total} requests offered so far` : `${arrived} of ${total} requests arrived`}; ${running} running, ${waiting} waiting, ${completed} completed, ${rejected} rejected`}
+          aria-label={`${continuous ? `${total} requests offered so far` : `${arrived} of ${total} requests arrived`}; ${running} running, ${waiting} waiting${ioWaiting!==undefined?`, ${ioWaiting} I/O waiting`:""}, ${completed} completed, ${rejected} rejected`}
           className="flex h-3 overflow-hidden rounded-sm bg-muted"
         >
           {rows

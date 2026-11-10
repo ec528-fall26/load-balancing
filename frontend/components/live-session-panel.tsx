@@ -40,6 +40,8 @@ import {
 import { NumberField } from "@/components/number-field";
 import { Notice, Panel } from "@/components/surface";
 import { ResponseChart } from "@/components/chart";
+import { ResourcePressure } from "./resource-pressure";
+import { LatencyBreakdown } from "./latency-breakdown";
 import { RackView } from "@/components/datacenter/rack-view";
 import { TaskPool } from "@/components/datacenter/task-pool";
 import { ServerInspector } from "@/components/datacenter/server-inspector";
@@ -69,6 +71,11 @@ export function LiveSessionPanel({
         queueLimit: server.queue_limit,
         utilization: server.mean_slot_utilization,
         processingRate: server.processing_rate,
+        ioWaiting: server.io_waiting,
+        ioActive: server.io_active,
+        ioQueued: server.io_queued,
+        outstanding: server.outstanding,
+        outstandingLimit: server.outstanding_limit,
       }),
     ) ?? [];
   const active = !!live.id;
@@ -129,7 +136,7 @@ export function LiveSessionPanel({
           <CardHeader>
             <CardTitle>Live controls</CardTitle>
             <CardDescription>
-              These controls affect the active session. Sidebar edits apply on
+              These controls affect the active session. Setup edits apply on
               the next start.
             </CardDescription>
           </CardHeader>
@@ -150,38 +157,6 @@ export function LiveSessionPanel({
               >
                 Stop session
               </Button>
-              <Button
-                variant="outline"
-                disabled={live.busy}
-                onClick={async () => {
-                  if (await live.stop()) await live.create(config);
-                }}
-              >
-                Restart with current settings
-              </Button>
-              <Field className="w-40">
-                <FieldLabel htmlFor="live-speed">Simulation speed</FieldLabel>
-                <Select
-                  disabled={live.busy || !s}
-                  value={String(s?.speed ?? 1)}
-                  onValueChange={(value) =>
-                    live.command("set_speed", Number(value))
-                  }
-                >
-                  <SelectTrigger id="live-speed">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      {[0.25, 0.5, 1, 2, 5, 10].map((value) => (
-                        <SelectItem key={value} value={String(value)}>
-                          {value}×
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </Field>
             </div>
             <div className="flex flex-wrap items-end gap-3">
               <div className="w-52">
@@ -207,6 +182,40 @@ export function LiveSessionPanel({
                 Drain traffic
               </Button>
             </div>
+            <Panel title="Session options"><div className="flex flex-wrap items-end gap-3">
+              <Button
+                variant="outline"
+                disabled={live.busy}
+                onClick={async () => {
+                  if (await live.stop()) await live.create(config);
+                }}
+              >
+                Restart session
+              </Button>
+              <Field className="w-40">
+                <FieldLabel htmlFor="live-speed">Simulation speed</FieldLabel>
+                <Select
+                  disabled={live.busy || !s}
+                  value={String(s?.speed ?? 1)}
+                  onValueChange={(value) =>
+                    live.command("set_speed", Number(value))
+                  }
+                >
+                  <SelectTrigger id="live-speed">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {[0.25, 0.5, 1, 2, 5, 10].map((value) => (
+                        <SelectItem key={value} value={String(value)}>
+                          {value}×
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </Field>
+            </div></Panel>
             <p className="caption">
               Zero traffic drains outstanding work while running. Pause freezes
               processing. Current traffic:{" "}
@@ -245,7 +254,7 @@ export function LiveSessionPanel({
             <p className="caption">
               Active pool: {s.config.server_count.toLocaleString()} servers ×{" "}
               {s.config.concurrency.toLocaleString()} slots;{" "}
-              {s.config.queue_limit.toLocaleString()} queue places per server.
+              {s.config.request_model==="cpu_io" ? `${s.config.outstanding_limit} outstanding places per server · CPU → I/O → CPU` : `${s.config.queue_limit.toLocaleString()} queue places per server.`}
             </p>
             <div role="status" className="flex flex-wrap items-center gap-3">
               <strong className="tabular-nums">
@@ -266,6 +275,9 @@ export function LiveSessionPanel({
                 </span>
               )}
             </div>
+            {s.config.request_model==="cpu_io"&&s.io_resource&&<ResourcePressure cpuActive={s.totals.running} cpuSlots={s.config.server_count*s.config.concurrency} cpuQueued={s.totals.waiting} outstanding={s.totals.outstanding??0} admissionSlots={s.config.server_count*(s.config.outstanding_limit??1)} ioActive={s.io_resource.active} ioQueued={s.io_resource.queued} ioCapacity={s.io_resource.capacity}/>}
+            {s.config.request_model==="cpu_io"&&<p className="caption">CPU active: {s.totals.running} · I/O waiting: {s.totals.io_waiting} · CPU queue: {s.totals.waiting} · Outstanding: {s.totals.outstanding} · Mean CPU queue delay: {seconds(s.metrics.mean_cpu_queue_wait??null)}</p>}
+            {s.config.request_model==="cpu_io"&&<LatencyBreakdown metrics={s.metrics}/>}
             <dl className="grid grid-cols-2 gap-5 border-y py-4 lg:grid-cols-4">
               {[
                 ["Offered", s.totals.offered.toLocaleString()],
@@ -295,7 +307,7 @@ export function LiveSessionPanel({
                 <CardHeader>
                   <CardTitle>Live load</CardTitle>
                   <CardDescription>
-                    Bounded history of executing and waiting requests.
+                    Bounded history of CPU execution, CPU queue and I/O wait.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -305,7 +317,8 @@ export function LiveSessionPanel({
                         label: "Executing",
                         color: "var(--executing)",
                       },
-                      waiting: { label: "Waiting", color: "var(--waiting)" },
+                      waiting: { label: "CPU queue", color: "var(--waiting)" },
+                      io_waiting: { label: "I/O wait", color: "var(--chart-3)" },
                     }}
                     className="h-52 w-full"
                   >
@@ -332,6 +345,7 @@ export function LiveSessionPanel({
                         dot={false}
                         isAnimationActive={false}
                       />
+                      {s.config.request_model==="cpu_io"&&<Line type="stepAfter" dataKey="io_waiting" stroke="var(--color-io_waiting)" dot={false} isAnimationActive={false}/>}
                     </LineChart>
                   </ChartContainer>
                 </CardContent>
@@ -421,6 +435,9 @@ export function LiveSessionPanel({
               <TaskPool
                 continuous
                 total={s.totals.offered}
+                ioActive={s.config.request_model==="cpu_io"?s.totals.io_active:undefined}
+                ioQueued={s.config.request_model==="cpu_io"?s.totals.io_queued:undefined}
+                ioWaiting={s.config.request_model==="cpu_io"?s.totals.io_waiting:undefined}
                 running={s.totals.running}
                 waiting={s.totals.waiting}
                 completed={s.totals.completed}

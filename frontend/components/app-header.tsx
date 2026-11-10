@@ -1,138 +1,70 @@
 "use client";
 import Link from "next/link";
-import type { RefObject, ReactNode } from "react";
-import {
-  PanelLeftClose,
-  PanelLeftOpen,
-  Server,
-  ChevronDown,
-  Check,
-} from "lucide-react";
+import type { ReactNode } from "react";
+import { FlaskConical, Library, Server, Settings2, Split } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-} from "@/components/ui/dropdown-menu";
-import { useSidebar } from "@/components/ui/sidebar";
-export function SetupToggle({
-  buttonRef,
-  compact = false,
-}: {
-  buttonRef?: RefObject<HTMLButtonElement | null>;
-  compact?: boolean;
-}) {
-  const { isMobile, open, openMobile, toggleSidebar } = useSidebar();
-  const expanded = isMobile ? openMobile : open;
-  return (
-    <Button
-      variant="ghost"
-      size={compact ? "icon-sm" : "sm"}
-      aria-label={expanded ? "Hide setup" : "Show setup"}
-      ref={buttonRef}
-      onClick={toggleSidebar}
-      aria-expanded={expanded}
-    >
-      {expanded ? (
-        <PanelLeftClose data-icon="inline-start" />
-      ) : (
-        <PanelLeftOpen data-icon="inline-start" />
-      )}
-      {!compact && (expanded ? "Hide setup" : "Show setup")}
-    </Button>
-  );
-}
-export type PageSection = "library" | "lab" | "compare";
+
 const pages = [
-  { id: "library", label: "Library", href: "/" },
-  { id: "lab", label: "Lab", href: "/simulator" },
-  { id: "compare", label: "Compare", href: "/compare" },
+  { id: "library", label: "Library", icon: Library },
+  { id: "setup", label: "Setup", icon: Settings2 },
+  { id: "lab", label: "Lab", icon: FlaskConical },
+  { id: "compare", label: "Compare", icon: Split },
 ] as const;
+export type PageSection = (typeof pages)[number]["id"];
+
 export function AppHeader({
-  triggerRef,
   actions,
   section = "library",
   labHref = "/simulator",
+  setupHref = "/setup",
   compareHref = "/compare",
 }: {
-  triggerRef?: RefObject<HTMLButtonElement | null>;
   actions?: ReactNode;
   section?: PageSection;
   labHref?: string;
+  setupHref?: string;
   compareHref?: string;
 }) {
+  const hrefs = {
+    library: "/",
+    setup: setupHref,
+    lab: labHref,
+    compare: compareHref,
+  };
   return (
     <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-3 md:gap-4 md:px-6">
-      {triggerRef && <SetupToggle buttonRef={triggerRef} compact />}
       <Link
         href="/"
         aria-label="Load balancing lab home"
         className="flex shrink-0 items-center gap-2"
       >
         <Server className="size-5" />
-        <span className="hidden font-semibold sm:inline">
+        <span className="text-sm font-semibold sm:text-base">
           Load balancing lab
         </span>
       </Link>
       <nav
         aria-label="Main navigation"
-        className="hidden items-center gap-1 md:flex"
+        className="app-navigation fixed inset-x-0 bottom-0 grid grid-cols-4 items-center gap-1 border-t bg-background px-2 md:static md:flex md:border-0 md:bg-transparent md:p-0"
       >
-        {pages.map((page) => (
+        {pages.map(({ id, label, icon: Icon }) => (
           <Button
-            key={page.id}
+            key={id}
             asChild
-            variant={section === page.id ? "secondary" : "ghost"}
+            variant={section === id ? "secondary" : "ghost"}
             size="sm"
+            className="h-12 min-w-0 flex-col gap-1 px-1 md:h-7 md:flex-row md:px-2.5"
           >
             <Link
-              href={
-                page.id === "lab"
-                  ? labHref
-                  : page.id === "compare"
-                    ? compareHref
-                    : page.href
-              }
-              aria-current={section === page.id ? "page" : undefined}
+              href={hrefs[id]}
+              aria-current={section === id ? "page" : undefined}
             >
-              {page.label}
+              <Icon aria-hidden="true" className="size-4 md:hidden" />
+              {label}
             </Link>
           </Button>
         ))}
       </nav>
-      <div className="md:hidden">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" aria-label="Page navigation">
-              {pages.find((page) => page.id === section)?.label}
-              <ChevronDown data-icon="inline-end" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start">
-            <DropdownMenuGroup>
-              {pages.map((page) => (
-                <DropdownMenuItem key={page.id} asChild>
-                  <Link
-                    href={
-                      page.id === "lab"
-                        ? labHref
-                        : page.id === "compare"
-                          ? compareHref
-                          : page.href
-                    }
-                    aria-current={section === page.id ? "page" : undefined}
-                  >
-                    {page.label}
-                    {section === page.id && <Check className="ml-auto" />}
-                  </Link>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
       {actions && (
         <div className="ml-auto flex shrink-0 items-center gap-2">
           {actions}

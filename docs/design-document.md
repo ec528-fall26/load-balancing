@@ -13,6 +13,10 @@ or review status on the board is separate from the implementation described here
 
 ## 1. Architecture
 
+The main Lab now supports CPU/I/O stages for single-pool one-shot and continuous
+runs, with least-outstanding routing and bounded playback/live telemetry. See
+[the model, contracts and verification guide](cpu-io-lab.md).
+
 Routing selection now uses per-run strategies from a single topology-aware
 registry. See [routing policies](routing-policies.md) for selection/tie rules,
 frontend metadata generation and exact before/after compatibility checks.

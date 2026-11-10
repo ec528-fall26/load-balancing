@@ -10,9 +10,22 @@ export type Config = {
   service_max: number;
   seed: number;
   processing_rates?: number[];
+  request_model?: "simple" | "cpu_io";
+  io_fraction?: number;
+  outstanding_limit?: number;
+  io_capacity?: number;
+  io_heavy_probability?: number;
 };
-export type Event = [number, number, number, number, string, number];
+export type Event = [number, number, number, number, string, number, number?, number?, number?, number?];
 export type Summary = {
+  request_model?: "cpu_io";
+  mean_cpu_queue_wait?: number | null;
+  mean_io_queue_wait?: number|null;
+  mean_cpu_service_time?: number|null;
+  mean_io_service_time?: number|null;
+  io_resource?: {capacity:number;utilization:number;peak_queue:number};
+  per_server_mean_io_waiting?: Record<string,number>;
+  per_server_mean_cpu_queued?: Record<string,number>;
   histogram?: {
     scope: "all_completed_responses";
     bins: { start: number; end: number; count: number }[];

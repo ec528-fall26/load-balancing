@@ -18,12 +18,17 @@ export type SinglePoolSnapshot = {
   lag_simulation_seconds: number;
   arrival_rate: number;
   config: LiveConfig;
+  io_resource?: {capacity:number;active:number;queued:number;utilization:number};
   totals: {
     offered: number;
     completed: number;
     rejected: number;
     running: number;
     waiting: number;
+    io_waiting?: number;
+    io_active?: number;
+    io_queued?: number;
+    outstanding?: number;
   };
   metrics: {
     mean_response_time: number | null;
@@ -31,6 +36,10 @@ export type SinglePoolSnapshot = {
     response_window_count: number;
     response_window_limit: number;
     mean_slot_utilization: number;
+    mean_cpu_queue_wait?: number|null;
+    mean_io_queue_wait?: number|null;
+    mean_cpu_service_time?: number|null;
+    mean_io_service_time?: number|null;
   };
   histogram: {
     scope: "recent_completed_responses";
@@ -44,6 +53,11 @@ export type SinglePoolSnapshot = {
       id: number;
       running: number;
       waiting: number;
+      io_waiting?: number;
+    io_active?: number;
+    io_queued?: number;
+      outstanding?: number;
+      outstanding_limit?: number;
       free_slots: number;
       slots: number;
       queue_limit: number;
@@ -58,6 +72,10 @@ export type SinglePoolSnapshot = {
     rejected: number;
     running: number;
     waiting: number;
+    io_waiting?: number;
+    io_active?: number;
+    io_queued?: number;
+    outstanding?: number;
   }[];
 };
 export const ACTIVE_SESSION_KEY = "lbsim.active-session.v1";
@@ -108,7 +126,8 @@ export function acceptSnapshot(
     ["offered", "completed", "rejected", "running", "waiting"].every((key) =>
       count(t[key as keyof typeof t]),
     ) &&
-    t.offered === t.completed + t.rejected + t.running + t.waiting;
+    t.offered === t.completed + t.rejected + t.running + t.waiting + (t.io_waiting??0) &&
+    (s.config?.request_model!=="cpu_io" || (count(t.io_waiting) && count(t.io_active) && count(t.io_queued) && t.io_waiting===t.io_active+t.io_queued && count(t.outstanding) && t.outstanding===t.running+t.waiting+t.io_waiting));
   return (
     s.api_version === "1" &&
     SESSION_ID.test(s.session_id) &&
@@ -127,6 +146,7 @@ export function acceptSnapshot(
     count(s.config.server_count) &&
     s.config.server_count > 0 &&
     s.config.server_count <= 1000 &&
+    (s.config.request_model!=="cpu_io" || (!!s.io_resource && count(s.io_resource.capacity) && s.io_resource.capacity>0 && s.io_resource.capacity<=4096 && s.io_resource.capacity===(s.config.io_capacity??64) && count(s.io_resource.active) && s.io_resource.active<=s.io_resource.capacity && count(s.io_resource.queued) && s.io_resource.active===s.totals.io_active && s.io_resource.queued===s.totals.io_queued)) &&
     !!s.metrics &&
     latency(s.metrics.mean_response_time) &&
     latency(s.metrics.recent_p95_response_time) &&
@@ -147,6 +167,7 @@ export function acceptSnapshot(
         row.id === s.servers.offset + index &&
         count(row.running) &&
         count(row.waiting) &&
+        (s.config.request_model!=="cpu_io" || (count(row.io_waiting) && count(row.io_active) && count(row.io_queued) && row.io_waiting===row.io_active+row.io_queued && count(row.outstanding) && count(row.outstanding_limit) && row.outstanding===row.running+row.waiting+row.io_waiting && row.outstanding<=row.outstanding_limit && row.outstanding_limit===s.config.outstanding_limit)) &&
         count(row.slots) &&
         row.slots > 0 &&
         count(row.queue_limit) &&

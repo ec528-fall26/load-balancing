@@ -69,6 +69,7 @@ export function ServerInspector({
                 />
               </>
             )}
+            {server.ioWaiting!==undefined&&!averages&&<div className="flex flex-col gap-2"><p>{server.ioActive??server.ioWaiting} I/O calls in service · {server.ioQueued??0} in the shared I/O queue</p><p>{server.outstanding} / {server.outstandingLimit} outstanding</p><p className="text-sm text-muted-foreground">I/O wait releases CPU, but retains admission capacity.</p></div>}
             <dl className="flex flex-col gap-4">
               {[
                 [
@@ -76,7 +77,7 @@ export function ServerInspector({
                   `${server.slots.toLocaleString()} slots`,
                 ],
                 [
-                  "Queue capacity",
+                  server.ioWaiting!==undefined ? "Outstanding admission cap" : "Queue capacity",
                   `${server.queueLimit.toLocaleString()} places`,
                 ],
                 ["Processing rate", `${server.processingRate}× baseline`],

@@ -11,7 +11,12 @@ export type RecordedState = {
     rejected: number;
     running: number;
     waiting: number;
+    io_waiting?: number;
+    io_active?: number;
+    io_queued?: number;
+    outstanding?: number;
   };
+  io_resource?: {capacity:number;active:number;queued:number};
   idle_servers: number;
   latest_event: Event | null;
   servers: {
@@ -25,6 +30,11 @@ export type RecordedState = {
       slots: number;
       queue_limit: number;
       processing_rate: number;
+      io_waiting?: number;
+    io_active?: number;
+    io_queued?: number;
+      outstanding?: number;
+      outstanding_limit?: number;
     }[];
   };
 };
@@ -68,7 +78,7 @@ export function useRecordedPlayback(
               data.totals.completed +
                 data.totals.rejected +
                 data.totals.running +
-                data.totals.waiting
+                data.totals.waiting + (data.totals.io_waiting ?? 0)
           )
             throw new Error("Invalid recorded snapshot.");
           if (!cancelled) {

@@ -76,3 +76,14 @@ test("templates are valid; invalid setups cannot be saved", () => {
   assert.throws(() => saveSetup(" ", defaults));
   assert.equal(values.size, 0);
 });
+
+test("CPU/I/O saves preserve stages and reject invalid admission or I/O settings",()=>{
+  const template=templates.find(t=>t.id==='io-heavy-routing')!;
+  const saved=saveSetup('Staged run',template.config);
+  assert.deepEqual(readSetups()[0].config,saved.config);
+  assert.equal(saved.config.request_model,'cpu_io');
+  assert.equal(saved.config.io_fraction,.9);
+  assert.equal(saved.config.outstanding_limit,8);
+  for(const changes of [{io_fraction:1},{outstanding_limit:0},{request_model:'simple'},{outstanding_limit:1000000}])
+    assert.ok(!validConfig({...saved.config,...changes}));
+});

@@ -195,3 +195,19 @@
     --cell-color: var(--waiting);
   }
 }
+
+@media (width < 48rem) {
+  html:has(.app-navigation) {
+    --app-navigation-height: calc(4rem + env(safe-area-inset-bottom, 0px));
+    scroll-padding-bottom: var(--app-navigation-height);
+  }
+
+  body:has(.app-navigation) {
+    padding-bottom: var(--app-navigation-height);
+  }
+
+  .app-navigation {
+    min-height: var(--app-navigation-height);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
