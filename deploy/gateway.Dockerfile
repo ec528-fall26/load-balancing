@@ -1,2 +1,3 @@
 FROM nginx:1.28-alpine
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+ENV NGINX_ENTRYPOINT_LOCAL_RESOLVERS=1 LBSIM_SERVICE_SUFFIX=""
+COPY nginx.conf /etc/nginx/templates/default.conf.template
