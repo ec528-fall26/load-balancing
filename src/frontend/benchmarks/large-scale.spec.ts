@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
-const out = path.resolve(__dirname, "../../experiments/results/a-11");
+const out = path.resolve(__dirname, "../../../experiments/results/a-11");
 test("1000-server bounded playback renders 32 servers and seeks to its last page", async ({
   page,
   request,

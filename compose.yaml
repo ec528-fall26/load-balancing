@@ -31,7 +31,7 @@ services:
       retries: 12
 
   web:
-    build: ./frontend
+    build: ./src/frontend
     environment:
       LBSIM_API_URL: http://gateway:8081
     healthcheck:

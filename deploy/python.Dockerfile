@@ -10,7 +10,7 @@ ENV UV_PYTHON_DOWNLOADS=never \
 
 COPY pyproject.toml uv.lock ./
 RUN uv sync --locked --no-dev --no-install-project
-COPY src ./src
+COPY src/lbsim ./src/lbsim
 RUN uv sync --locked --no-dev --no-editable \
     && useradd --system --create-home lbsim
 

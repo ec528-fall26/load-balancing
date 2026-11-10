@@ -16,17 +16,32 @@ outcomes, response times, and server utilization.
 
 The Demo 2 prototype runs locally with round-robin routing, bounded FIFO queues,
 repeatable seeded workloads, result charts, and recorded-event playback.
-Least-active-requests and saved-run comparison are planned for Demo 3.
+This branch adds least-active-requests, saved-run comparison in Streamlit,
+and a Next.js frontend connected to the Python run API.
 
 ## Quick start
 
-### Next.js interface (Python API connection pending)
+### Next.js interface
 
-The replacement frontend is in [`frontend/`](frontend/README.md). Run `npm ci`
-and `npm run dev` from that directory, then open `http://localhost:3000`.
-Use `http://localhost:3000/?preview=1` to review all result screens with a
-recorded example. Start the Python API to run new simulations. The replay and
-CSV comparison controls currently show an explicit API placeholder.
+Install Git, uv, and Node.js 20.9 or later. From a checkout of this branch,
+start the Python API at the repository root:
+
+```sh
+uv sync --locked
+PYTHONPATH=src uv run uvicorn lbsim.api:app --host 127.0.0.1 --port 8000 --workers 1
+```
+
+In a second terminal at the repository root:
+
+```sh
+npm --prefix src/frontend ci
+npm --prefix src/frontend run dev
+```
+
+Open `http://localhost:3000/setup` to configure and run a simulation. The Next.js app
+calls the Python API. Saved-run upload, comparison, and export are available
+in the Streamlit app below. See the [frontend guide](src/frontend/README.md)
+and [Python API contract](docs/python-api.md).
 
 The current frontend flow is **Library → Setup → Lab → Compare**. Templates and
 browser saves open editable settings on `/setup`. Run to open `/simulator`, where
@@ -39,8 +54,6 @@ Install [Git](https://git-scm.com/downloads) and
 [uv](https://docs.astral.sh/uv/getting-started/installation/), then run:
 
 ```sh
-git clone --branch demo-2 https://github.com/ec528-fall26/load-balancing.git
-cd load-balancing
 uv sync --locked
 uv run streamlit run src/lbsim/app.py
 ```
@@ -59,17 +72,6 @@ uv run python -m unittest discover -s tests -v
 For ongoing development, use the `dev` branch. Keep `pyproject.toml`, `uv.lock`,
 and `.python-version` in Git; each teammate creates their own local environment.
 
-### Python API development
-
-The local seeded-run API can be started with:
-
-```sh
-PYTHONPATH=src uv run uvicorn lbsim.api:app --host 127.0.0.1 --port 8000 --workers 1
-```
-
-See [the API contract and limits](docs/python-api.md). This exposes health and
-`POST /v1/run`; connecting the Next.js interface is tracked separately in A-06.
-
 ## Demo 1 materials
 
 - [Design proposal](docs/design-proposal.md) and [original PDF](docs/design-proposal.pdf).
@@ -85,7 +87,8 @@ The PDF is the original proposal; the Markdown includes the added architecture d
 | --- | --- |
 | `docs/` | Design proposal, implemented design document, and simulation contract |
 | `slides/` | Demo slides (`demo-1.pdf`, `demo-2.pdf`, ...) |
-| `src/` | Simulation engine, server model, metrics, and Streamlit interface |
+| `src/lbsim/` | Python simulation engine, API, and Streamlit interface |
+| `src/frontend/` | Next.js interface and browser tests |
 | `experiments/` | Reproduction scripts and saved benchmark results |
 | `tests/` | Simulator, metrics, interface, and playback checks |
 

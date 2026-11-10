@@ -21,7 +21,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--check', action='store_true')
     args = parser.parse_args()
-    target = Path(__file__).resolve().parents[1] / 'frontend/lib/policy-metadata.ts'
+    target = Path(__file__).resolve().parents[1] / 'src/frontend/lib/policy-metadata.ts'
     expected = render()
     if args.check:
         if not target.exists() or target.read_text() != expected:
