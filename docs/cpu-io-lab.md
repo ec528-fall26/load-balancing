@@ -103,15 +103,15 @@ than dropping settings. No silent schema migration is introduced.
 ```sh
 uv sync --locked
 PYTHONPATH=src uv run python -m unittest discover -s tests -q
-npm --prefix frontend ci
-npm --prefix frontend run typecheck
-npm --prefix frontend run test:library
-npm --prefix frontend run test:live
-npm --prefix frontend run test:comparison
+npm --prefix src/frontend ci
+npm --prefix src/frontend run typecheck
+npm --prefix src/frontend run test:library
+npm --prefix src/frontend run test:live
+npm --prefix src/frontend run test:comparison
 ```
 
 Start the Python API and Next.js using the existing API/frontend setup guides.
-Browser tests in `frontend/tests/cpu-io-templates.spec.ts` exercise the actual API,
+Browser tests in `src/frontend/tests/cpu-io-templates.spec.ts` exercise the actual API,
 exact one-shot I/O state, save/reload, live controls and zero-traffic drain.
 `tests/test_staged.py` checks hand-derived traces, parity with the standalone
 CPU/I/O experiment, compute multipliers, FIFO, minimum-policy load signals,
