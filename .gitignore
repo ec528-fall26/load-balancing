@@ -7,6 +7,10 @@ target/
 *.pyc
 __pycache__/
 
+# Local experiment reruns
+/experiments/results/*-rerun/
+/experiments/results/*-rerun.json
+
 # Environments
 .venv/
 venv/

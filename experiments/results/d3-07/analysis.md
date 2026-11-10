@@ -29,11 +29,7 @@ Three unprofiled fresh-process timings per case, same machine/configuration/Pyth
 
 ## Reproduce
 
-```sh
-PYTHONPATH=src uv run python experiments/profile_engine.py --output experiments/results/d3-07-rerun
-PYTHONPATH=src uv run python experiments/compare_profiles.py experiments/results/d3-06/report.json experiments/results/d3-07-rerun/report.json --output experiments/results/d3-07-rerun/comparison.json
-PYTHONPATH=src uv run python -m unittest discover -s tests
-```
+[Reproduction instructions](../../README.md#d3-07-deque-beforeafter-comparison) cover both the saved calculation and a fresh same-machine capture.
 
 The comparison command rejects mismatched environments, configurations or outputs. It compares unprofiled medians only; profiler timings are not used as a speedup estimate. report.json records exact source hashes because the engine change is currently uncommitted. Raw profiles remain available for inspection.
 
