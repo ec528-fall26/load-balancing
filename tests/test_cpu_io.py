@@ -73,7 +73,7 @@ class CPUIOTests(unittest.TestCase):
             self.assertEqual(routing.choose(), a if loads[a] <= loads[b] else b)
         one = create_policy('power_of_two', RoutingContext(1, lambda i: 0), 'cpu_io')
         self.assertEqual([one.choose() for _ in range(3)], [0, 0, 0])
-        self.assertFalse(supports_policy('power_of_two', 'single_pool'))
+        self.assertTrue(supports_policy('power_of_two', 'single_pool'))
         self.assertFalse(supports_policy('power_of_two', 'regions'))
 
     def test_invalid_and_empty_workloads(self):

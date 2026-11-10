@@ -30,7 +30,9 @@ def route(server_count: int, concurrency: int, queue_limit: int, policy: str, ar
     rejected = []
 
     routing = create_policy(policy, RoutingContext(
-        server_count, lambda i: len(server_map[i].running)))
+        server_count, lambda i: len(server_map[i].running),
+        demand=lambda i: len(server_map[i].running)+len(server_map[i].waiting),
+        routing_rng=random.Random(seed + 1000000)))
 
     # Continue until there are no more requests or pending completions
     while requests or pending:

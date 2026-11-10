@@ -69,6 +69,13 @@ class LeastActiveRequestsPolicy(RoutingPolicy):
         return self.tree[1][1]
 
 
+class LeastOutstandingPolicy(LeastActiveRequestsPolicy):
+    """Fewest unfinished admitted requests, including CPU queue and I/O wait."""
+    def __init__(self, context):
+        demand_context = RoutingContext(context.count, context.demand)
+        super().__init__(demand_context)
+
+
 class PowerOfTwoChoicesPolicy(RoutingPolicy):
     """Sample two distinct targets; choose fewer CPU-active requests.
 
@@ -119,8 +126,11 @@ POLICY_REGISTRY = MappingProxyType({
         ('cpu_io', 'Least CPU-active requests'))),
     'least_loaded': PolicyDefinition(LeastLoadedRegionPolicy, (
         ('regions', 'Least loaded region'),), order=-1),
+    'least_outstanding': PolicyDefinition(LeastOutstandingPolicy, (
+        ('single_pool', 'Least outstanding requests'),)),
     'power_of_two': PolicyDefinition(PowerOfTwoChoicesPolicy, (
-        ('cpu_io', 'Power of two (CPU active)'),)),
+        ('cpu_io', 'Power of two (CPU active)'),
+        ('single_pool', 'Power of two choices')),),
     'nearest': PolicyDefinition(NearestRegionPolicy, (
         ('regions', 'Nearest region'),)),
 })

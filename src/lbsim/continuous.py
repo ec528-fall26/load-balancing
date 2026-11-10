@@ -30,7 +30,9 @@ class ContinuousSimulation:
         ]
         self.rng = Random(config["seed"])
         self.routing = create_policy(config["policy"], RoutingContext(
-            count, lambda i: len(self.servers[i].running)))
+            count, lambda i: len(self.servers[i].running),
+            demand=lambda i: len(self.servers[i].running)+len(self.servers[i].waiting),
+            routing_rng=Random(config["seed"] + 1000000)))
         self.active = [0] * count
         self.queued = [0] * count
         self.areas = [0.0] * count
@@ -129,6 +131,7 @@ class ContinuousSimulation:
                 elif admission.status == "queued":
                     self.queued[sid] += 1
                     self.waiting += 1
+                    self.routing.update(sid)
                 else:
                     self.rejected += 1
                 self.arrival_index += 1

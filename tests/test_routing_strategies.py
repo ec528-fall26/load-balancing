@@ -45,5 +45,5 @@ class PolicyTests(unittest.TestCase):
     def test_frontend_metadata_is_generated_from_registry(self):
         root = Path(__file__).resolve().parents[1]
         subprocess.run([sys.executable, str(root / 'scripts/generate_policy_metadata.py'), '--check'], cwd=root, check=True)
-        self.assertEqual(list(policy_options()), ['round_robin', 'least_active_requests'])
+        self.assertEqual(list(policy_options()), ['round_robin', 'least_active_requests', 'least_outstanding', 'power_of_two'])
         self.assertEqual(list(policy_options('regions')), ['least_loaded', 'round_robin', 'nearest'])

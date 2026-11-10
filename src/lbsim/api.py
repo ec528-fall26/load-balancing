@@ -14,6 +14,7 @@ from pydantic import BaseModel, ConfigDict, StrictBool, StrictFloat, StrictInt
 from starlette.concurrency import run_in_threadpool
 from starlette.exceptions import HTTPException
 
+from lbsim.cpu_io_preview import preview as cpu_io_preview
 from lbsim.runs import RunStore
 from lbsim.settings import validate_config
 from lbsim.regional import RegionalSimulation, run_regional, presets
@@ -79,7 +80,8 @@ class RunRequest(BaseModel):
 
 def checked_config(values, limits):
     allowed = {'server_count', 'concurrency', 'queue_limit', 'arrival_rate', 'duration',
-               'service_min', 'service_max', 'seed', 'policy', 'processing_rates'}
+               'service_min', 'service_max', 'seed', 'policy', 'processing_rates',
+               'request_model', 'io_fraction', 'outstanding_limit', 'io_capacity', 'io_heavy_probability'}
     extra = sorted(set(values) - allowed)
     if extra:
         raise APIError(422, 'INVALID_CONFIG', 'Unknown configuration fields.',
@@ -93,6 +95,13 @@ def checked_config(values, limits):
             fields.append({'field': f'config.{key}' if sep else 'config',
                            'message': message if sep else part})
         raise APIError(422, 'INVALID_CONFIG', 'Configuration validation failed.', fields) from error
+    if config.get('request_model') == 'cpu_io':
+        fraction = .9 if 'io_heavy_probability' in config else config['io_fraction']
+        for speed in config.get('processing_rates', (1.,)):
+            low = config['service_min']*(1-fraction)/2/speed
+            high = config['service_max']*(1-fraction)/2/speed
+            if not isfinite(high) or not 1e-9 <= low <= high <= 3600 or config['service_max']*fraction > 3600:
+                raise APIError(422, 'INVALID_CONFIG', 'CPU stages must be 1 ns–3,600 s and I/O delay at most 3,600 s.')
     product = config['arrival_rate'] * config['duration']
     exceeded = []
     if not isfinite(product) or product > limits.generated_requests:
@@ -101,6 +110,7 @@ def checked_config(values, limits):
         (config['server_count'], limits.servers, 'server_count'),
         (config['server_count'] * config['concurrency'], limits.slots, 'concurrency'),
         (config['server_count'] * config['queue_limit'], limits.waiting_places, 'queue_limit'),
+        (config['server_count'] * config.get('outstanding_limit', 0), limits.waiting_places, 'outstanding_limit'),
     ):
         if value > maximum:
             exceeded.append((key, f'Total {key} capacity exceeds the API limit of {maximum:,}.'))
@@ -307,6 +317,17 @@ def create_app(*, limits=None, runner=isolated_run, session_limits=None, session
         return {'api_version': '1', 'status': 'ok', 'limits': {
             **vars(limits), 'concurrent_runs': 1}, 'live_limits': vars(session_limits), 'recorded_run_limits': vars(recordings.limits)}
 
+    @app.post('/v1/research/cpu-io')
+    async def research_cpu_io(request: RunRequest):
+        if not gate.acquire(blocking=False):
+            raise APIError(429, 'RUN_BUSY', 'Another simulation is running. Retry after it finishes.')
+        try:
+            return await run_in_threadpool(cpu_io_preview, request.config)
+        except ValueError as error:
+            raise APIError(422, 'INVALID_CONFIG', str(error)) from error
+        finally:
+            gate.release()
+
     @app.post('/v1/run')
     async def run(request: RunRequest):
         config = checked_config(request.config, limits)
@@ -335,7 +356,7 @@ def create_app(*, limits=None, runner=isolated_run, session_limits=None, session
         return await run_in_threadpool(recordings.get,run_id)
 
     @app.get('/v1/runs/{run_id}/events')
-    async def recorded_events(run_id: str,offset: int=Query(0,ge=0,le=2*limits.generated_requests),limit: int=Query(min(500,recordings.limits.event_page),ge=1,le=recordings.limits.event_page)):
+    async def recorded_events(run_id: str,offset: int=Query(0,ge=0,le=5*limits.generated_requests),limit: int=Query(min(500,recordings.limits.event_page),ge=1,le=recordings.limits.event_page)):
         return await run_in_threadpool(recordings.events,run_id,offset,limit)
 
     @app.get('/v1/runs/{run_id}/snapshot')
