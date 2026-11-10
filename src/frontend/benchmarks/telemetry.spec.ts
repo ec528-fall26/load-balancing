@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { test, expect, type Page } from "@playwright/test";
 import { writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
-const out = path.resolve(__dirname, "../../experiments/results/a-11");
+const out = path.resolve(__dirname, "../../../experiments/results/a-11");
 const ids = new WeakMap<Page, Set<string>>();
 test.beforeEach(async ({ page }) => {
   const created = new Set<string>();
@@ -293,7 +293,7 @@ for (const topology of ["single_pool", "regions"])
         const record = {
           recorded_at_utc: new Date().toISOString(),
           git_head: execFileSync("git", ["rev-parse", "HEAD"], {
-            cwd: path.resolve(__dirname, "../.."),
+            cwd: path.resolve(__dirname, "../../.."),
             encoding: "utf8",
           }).trim(),
           benchmark_source_sha256: createHash("sha256")
