@@ -15,7 +15,7 @@ CONFIG = dict(server_count=2, concurrency=1, queue_limit=1, arrival_rate=8.0,
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path,
-                        default=Path("experiments/results/d3-04-05"))
+                        default=Path("experiments/results/d3-04-05-rerun"))
     args = parser.parse_args()
     report = []
     for name, policy in (("run-a", "round_robin"), ("run-b", "least_active_requests")):

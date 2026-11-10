@@ -17,6 +17,9 @@ Routing selection now uses per-run strategies from a single topology-aware
 registry. See [routing policies](routing-policies.md) for selection/tie rules,
 frontend metadata generation and exact before/after compatibility checks.
 
+The [Next.js interface](../src/frontend/README.md) also runs the Python engine
+through the [HTTP API](python-api.md). The Streamlit interface below supports
+exporting and reopening saved runs.
 
 The product is a local Streamlit app backed by an importable Python simulation
 package. A simulation finishes before results are displayed. The modeled
@@ -553,6 +556,15 @@ descriptive variation, not statistical significance. No CPU-runtime comparison
 between policies, bursty traffic, continuous execution, failures or retries is
 measured here. Historical study metadata records macOS arm64 and Python 3.12.12;
 deterministic results can be checked separately from machine-dependent timings.
+
+### Experiment 7: A-02 routing on mixed-speed servers
+
+| | |
+| --- | --- |
+| Supports | Routing outcomes on uniform and mixed-speed fleets with equal total capacity. |
+| Command | `uv run python experiments/compare_speeds.py --output experiments/results/a-02-rerun` |
+| Expected runtime | A few seconds on a local CPU. |
+| Expected output | `Validated 54 runs on 9 shared traces.` See the [reference analysis](../experiments/results/a-02/analysis.md). |
 
 ## 5. Claims and limitations
 
