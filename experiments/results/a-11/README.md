@@ -13,7 +13,7 @@ Use isolated ports to preserve the interactive demo. Run phases sequentially on 
 2. Build the frontend and start a production server in another terminal:
 
    ```sh
-   cd frontend
+   cd src/frontend
    npm run build
    LBSIM_API_URL=http://127.0.0.1:8001 npm run start -- --hostname 127.0.0.1 --port 3001
    ```
@@ -29,7 +29,7 @@ Use isolated ports to preserve the interactive demo. Run phases sequentially on 
 4. After that completes, run browser measurements:
 
    ```sh
-   cd frontend
+   cd src/frontend
    npm test -- --config benchmarks/playwright.config.ts
    ```
 
