@@ -1,7 +1,7 @@
 # Simulator UI conventions
 
 This is an operating interface for configuring seeded simulations and inspecting
-Python results. Keep the white canvas, quiet neutral surfaces, and compact
+Python results. Keep the neutral surfaces and compact
 controls consistent across setup, results, saved-run workflows, and playback.
 
 - Use shadcn/ui components from `components/ui/`. Application components compose
@@ -9,7 +9,8 @@ controls consistent across setup, results, saved-run workflows, and playback.
   descriptive text. Do not introduce another UI kit.
 - Theme source: `app/globals.css`. Shared neutral tokens cover foreground,
   background, primary, borders, input, focus, secondary, muted, and destructive
-  states. Source Sans is self-hosted. Data uses tabular numerals.
+  states. The palette follows the system through `prefers-color-scheme`.
+  Source Sans is self-hosted. Data uses tabular numerals.
 - The shared `components/app-header.tsx` composes shadcn controls into a 64px sticky header. Library, Setup, Lab and Compare use text links in the desktop header and a fixed bottom bar with labeled icons on mobile. There is no settings sidebar or opener.
 - Setup lives at `/setup`: three Card sections for Infrastructure, Traffic and routing, and Execution, with a sticky summary/run action on desktop and a linear form on mobile. Templates prefill editable settings without a preset/custom mode. Secondary I/O fields use a focused Accordion.
 - Forms use Field, FieldGroup, FieldSet, and FieldLegend. Numeric controls use
