@@ -27,7 +27,7 @@ METRICS = ('rejection_fraction', 'mean_response_time_seconds', 'p95_response_tim
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--output', type=Path, default=ROOT/'experiments/results/a-02')
+    parser.add_argument('--output', type=Path, default=ROOT/'experiments/results/a-02-rerun')
     output = parser.parse_args().output.resolve()
     output.mkdir(parents=True, exist_ok=True)
     capacity = BASE['server_count'] * BASE['concurrency'] / ((BASE['service_min']+BASE['service_max'])/2)

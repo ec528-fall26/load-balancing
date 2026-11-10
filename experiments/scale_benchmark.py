@@ -111,7 +111,7 @@ def worker(server_count):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", type=Path, default=ROOT / "experiments/results/d2-13")
+    parser.add_argument("--output", type=Path, default=ROOT / "experiments/results/d2-13-rerun")
     parser.add_argument("--repeats", type=int, default=3)
     parser.add_argument("--worker", type=int, choices=SERVER_COUNTS, help=argparse.SUPPRESS)
     args = parser.parse_args()
