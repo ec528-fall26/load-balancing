@@ -22,6 +22,18 @@ The model omits link contention, retry, replication and packet loss. The
 slow condition multiplies CPU service time on the configured shard while
 preserving its nominal demand and I/O time.
 
+## Parallel and serial calls
+
+Setup can send all required shard calls together or send them one at a time.
+Both modes assign the same pieces to the same shards. Serial waits for a
+successful reply before sending the next call and leaves later calls unsent
+if the parent fails or reaches its deadline. Each sent call pays its own
+network round trip. Other parents can still make progress while one waits.
+
+Compare can isolate call order at two or four shards with the same workload,
+CPU settings and deadline. If an outage is configured, each order runs once
+with the outage and once with all shards online.
+
 ## Seeded outages
 
 Set the outage duration to a value from 1 to 1,000 ms to take one shard offline

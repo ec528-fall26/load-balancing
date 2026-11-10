@@ -31,6 +31,7 @@ import {
 import {
   fanoutFields,
   type FanoutSettings,
+  type FanoutFieldName,
   type ShardedConfig,
 } from "@/lib/fanout";
 
@@ -52,7 +53,7 @@ const help = {
   inspect:
     "Pick the parent whose timeline is shown in the results. Request 0 is the first arrival.",
   width:
-    "Split the same work into one, two, or four parallel shard calls. The coordinator waits for every required reply.",
+    "Split the same work into one, two, or four required shard calls. The coordinator waits for every required reply.",
 };
 
 export function ParameterHelp({
@@ -84,7 +85,7 @@ export function ParameterHelp({
   );
 }
 
-function ShardChoices({
+function ShardChoices<T extends string | number>({
   label,
   description,
   options,
@@ -94,9 +95,9 @@ function ShardChoices({
 }: {
   label: string;
   description: string;
-  options: readonly { value: number; label: string }[];
-  value: number;
-  onChange: (value: number) => void;
+  options: readonly { value: T; label: string }[];
+  value: T;
+  onChange: (value: T) => void;
   disabled?: boolean;
 }) {
   const id = useId();
@@ -111,7 +112,10 @@ function ShardChoices({
         className="flex flex-wrap gap-x-1 gap-y-2 py-1"
         disabled={disabled}
         value={String(value)}
-        onValueChange={(next) => onChange(Number(next))}
+        onValueChange={(next) => {
+          const option = options.find(({ value }) => String(value) === next);
+          if (option) onChange(option.value);
+        }}
       >
         {options.map((option) => (
           <FieldLabel
@@ -154,7 +158,31 @@ export function FanoutWidth({
   );
 }
 
-type FieldName = keyof FanoutSettings;
+export function FanoutDispatchMode<T extends FanoutSettings>({
+  config,
+  onChange,
+  disabled,
+}: {
+  config: T;
+  onChange: (config: T) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <ShardChoices
+      label="Shard call order"
+      description="Parallel sends all required calls together. Serial waits for a successful reply before sending the next call."
+      options={[
+        { value: "parallel", label: "Parallel" },
+        { value: "serial", label: "Serial" },
+      ]}
+      value={config.dispatch_mode}
+      onChange={(dispatch_mode) => onChange({ ...config, dispatch_mode })}
+      disabled={disabled}
+    />
+  );
+}
+
+type FieldName = FanoutFieldName;
 const sliderUnits = { rate: "/s", duration: "s", slowdown: "×" } as const;
 const shardOptions = [0, 1, 2, 3].map((value) => ({
   value,

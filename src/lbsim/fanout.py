@@ -47,6 +47,7 @@ class Outage:
 @dataclass(frozen=True)
 class Config:
     width: int = 4
+    dispatch_mode: str = "parallel"
     deadline_us: int = 200_000
     slowdown: int = 1
     slow_shard: int = 0
@@ -65,6 +66,8 @@ class Parent:
     status: str = "pending"
     finished_us: int | None = None
     remaining: set[int] = field(default_factory=set)
+    queued_calls: deque[tuple[int, int, int]] = field(default_factory=deque)
+    unsent_shards: tuple[int, ...] = ()
     unanswered_shards: tuple[int, ...] = ()
     critical_shard: int | None = None
     backend_service_us: int = 0
@@ -171,6 +174,8 @@ class Simulation:
         parent.status = status
         parent.finished_us = self.clock.now
         parent.unanswered_shards = tuple(sorted(parent.remaining))
+        parent.unsent_shards = tuple(shard for shard, _, _ in parent.queued_calls)
+        parent.queued_calls.clear()
         self.active_parents -= 1
         self.event(parent, status)
 
@@ -217,18 +222,29 @@ class Simulation:
             (sum(cpu for cpu, _ in group), sum(io for _, io in group))
             for group in groups
         )
-        # Placement is fixed by parent/shard ID and shared by all conditions.
-        for offset, (cpu_us, io_us) in enumerate(calls):
-            shard = (parent.id + offset) % SHARD_COUNT
-            parent.remaining.add(shard)
-            self.sent[shard] += 1
-            self.event(parent, "request_sent", shard)
-            arrival = self.clock.now + self.config.rtt_us // 2
-            self.in_flight[shard][parent.id] = (parent, arrival)
-            if self.offline == shard:
-                self.fail_call(parent, shard, arrival)
-            else:
-                self.clock.schedule(arrival, partial(self.shard_arrival, parent, shard, cpu_us, io_us))
+        # Both modes assign the same work to the same shards.
+        parent.queued_calls.extend(
+            ((parent.id + offset) % SHARD_COUNT, cpu_us, io_us)
+            for offset, (cpu_us, io_us) in enumerate(calls)
+        )
+        if self.config.dispatch_mode == "serial":
+            if self.clock.now < parent.arrival_us + self.config.deadline_us:
+                self.send_next_call(parent)
+            return
+        while parent.queued_calls:
+            self.send_next_call(parent)
+
+    def send_next_call(self, parent: Parent):
+        shard, cpu_us, io_us = parent.queued_calls.popleft()
+        parent.remaining.add(shard)
+        self.sent[shard] += 1
+        self.event(parent, "request_sent", shard)
+        arrival = self.clock.now + self.config.rtt_us // 2
+        self.in_flight[shard][parent.id] = (parent, arrival)
+        if self.offline == shard:
+            self.fail_call(parent, shard, arrival)
+        else:
+            self.clock.schedule(arrival, partial(self.shard_arrival, parent, shard, cpu_us, io_us))
 
     def shard_arrival(self, parent: Parent, shard: int, cpu_us: int, io_us: int):
         if parent.id not in self.in_flight[shard]:
@@ -311,6 +327,9 @@ class Simulation:
             self.finish_parent(parent, "shard_rejected")
         elif outcome == "outage":
             self.finish_parent(parent, "outage_failed")
+        elif parent.queued_calls:
+            if self.clock.now < parent.arrival_us + self.config.deadline_us:
+                self.send_next_call(parent)
         elif not parent.remaining:
             parent.critical_shard = shard
             self.coordinator_stage(parent, "join_cpu", self.config.join_us,
@@ -328,7 +347,7 @@ class Simulation:
             self.clock.schedule(request.arrival_us, partial(self.arrive, parent, request), priority=2)
         self.clock.run()
         assert self.active_parents == 0 and not any(self.outstanding)
-        assert not any(parent.remaining for parent in self.parents)
+        assert not any(parent.remaining or parent.queued_calls for parent in self.parents)
         assert not any(self.in_flight)
         assert all(sent == done + rejected + failed for sent, done, rejected, failed in
                    zip(self.sent, self.completed, self.rejected, self.outage_failed))
@@ -362,7 +381,8 @@ class Simulation:
             outage=(dict(shard=self.config.outage.shard, start_ms=self.config.outage.start_us / 1000,
                          end_ms=self.config.outage.end_us / 1000) if self.config.outage else None),
             inspected=dict(id=selected.id, status=selected.status, critical_shard=selected.critical_shard,
-                           unanswered_shards=selected.unanswered_shards, events=self.trace),
+                           unanswered_shards=selected.unanswered_shards, unsent_shards=selected.unsent_shards,
+                           events=self.trace),
         )
 
 
@@ -375,9 +395,18 @@ def checked_settings(values, *, single_run=False):
     }
     if single_run:
         limits["width"] = (1, SHARD_COUNT, 4)
-    if set(values) - limits.keys():
+    choices = {"dispatch_mode": ("parallel", "serial")}
+    if not single_run:
+        choices["comparison"] = ("width", "order")
+        choices["order_width"] = (4, 2)
+    if set(values) - limits.keys() - choices.keys():
         raise ValueError("Unknown fan-out settings.")
     settings = {}
+    for key, options in choices.items():
+        value = values.get(key, options[0])
+        if type(value) is not type(options[0]) or value not in options:
+            raise ValueError(f"{key} must be one of {', '.join(map(str, options))}.")
+        settings[key] = value
     for key, (low, high, default) in limits.items():
         value = values.get(key, default)
         if type(value) is not int or not low <= value <= high:
@@ -411,11 +440,12 @@ def seeded_outage(settings):
 
 def run_case(settings, trace, width, slowdown, outage=None):
     config = Config(
-        width=width, slowdown=slowdown, slow_shard=settings["slow_shard"], outage=outage,
+        width=width, dispatch_mode=settings["dispatch_mode"], slowdown=slowdown,
+        slow_shard=settings["slow_shard"], outage=outage,
         deadline_us=settings["deadline_ms"] * 1000, rtt_us=settings["rtt_ms"] * 1000,
     )
     condition = "normal" if slowdown == 1 else f"slow shard {config.slow_shard}"
-    return dict(width=width, condition=condition, **Simulation(config, settings["inspect"]).run(trace))
+    return dict(width=width, dispatch_mode=config.dispatch_mode, condition=condition, **Simulation(config, settings["inspect"]).run(trace))
 
 
 def run_fanout(values):
@@ -429,6 +459,14 @@ def experiment(values):
     settings = checked_settings(values)
     trace, metadata = paired_workload(settings)
     outage = seeded_outage(settings)
+    if settings["comparison"] == "order":
+        faults = (("no outage", None), ("seeded outage", outage)) if outage else (("same CPU settings", None),)
+        return dict(**metadata, cases=[
+            {**run_case({**settings, "dispatch_mode": mode}, trace, settings["order_width"], settings["slowdown"], fault),
+             "condition": label}
+            for mode in ("parallel", "serial")
+            for label, fault in faults
+        ])
     if outage is not None:
         return dict(**metadata, cases=[
             {**run_case(settings, trace, width, settings["slowdown"], fault), "condition": label}

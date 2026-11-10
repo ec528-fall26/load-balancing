@@ -19,9 +19,11 @@ import {
 } from "@/components/ui/table";
 import type { FanoutCase } from "@/lib/fanout";
 
-function caseName(row: FanoutCase) {
+function caseName(row: FanoutCase, showOrder: boolean) {
   const shards = `${row.width} ${row.width === 1 ? "shard" : "shards"}`;
-  return `${shards} · ${row.condition}`;
+  return showOrder
+    ? `${row.dispatch_mode === "serial" ? "Serial" : "Parallel"} · ${shards} · ${row.condition}`
+    : `${shards} · ${row.condition}`;
 }
 
 function ms(value: number | null) {
@@ -36,7 +38,8 @@ export function FanoutResults({
   demandMs: number;
 }) {
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const selected = cases[selectedIndex];
+  const selected = cases[Math.min(selectedIndex, cases.length - 1)];
+  const showOrder = cases.some((row) => row.dispatch_mode === "serial");
   const outage = cases.find((row) => row.outage)?.outage;
   return (
     <>
@@ -68,25 +71,25 @@ export function FanoutResults({
             <TableBody className="tabular-nums">
               {cases.map((row, index) => (
                 <TableRow
-                  key={caseName(row)}
+                  key={caseName(row, showOrder)}
                   data-state={
-                    cases.length > 1 && selectedIndex === index
+                    cases.length > 1 && selected === row
                       ? "selected"
                       : undefined
                   }
                 >
                   <TableCell>
                     {cases.length === 1 ? (
-                      caseName(row)
+                      caseName(row, showOrder)
                     ) : (
                       <Button
                         type="button"
                         size="sm"
                         variant="ghost"
-                        aria-pressed={selectedIndex === index}
+                        aria-pressed={selected === row}
                         onClick={() => setSelectedIndex(index)}
                       >
-                        {caseName(row)}
+                        {caseName(row, showOrder)}
                       </Button>
                     )}
                   </TableCell>
@@ -112,7 +115,7 @@ export function FanoutResults({
         <>
           <Card>
             <CardHeader>
-              <CardTitle>Queues · {caseName(selected)}</CardTitle>
+              <CardTitle>Queues · {caseName(selected, showOrder)}</CardTitle>
               <CardDescription>
                 Peak coordinator CPU queue was {selected.coordinator_peak_queue}
                 . Each shard has separate CPU and I/O queues.
@@ -156,6 +159,8 @@ export function FanoutResults({
                   ` Shard ${selected.inspected.critical_shard} supplied the last reply before the join.`}
                 {selected.inspected.unanswered_shards.length > 0 &&
                   ` Pending replies when the parent ended: ${selected.inspected.unanswered_shards.join(", ")}.`}
+                {(selected.inspected.unsent_shards?.length ?? 0) > 0 &&
+                  ` Calls never sent to shards ${selected.inspected.unsent_shards.join(", ")}.`}
               </CardDescription>
             </CardHeader>
             <CardContent>

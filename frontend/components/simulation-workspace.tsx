@@ -309,8 +309,8 @@ export default function SimulationWorkspace({
             "The comparison's lab setup is unavailable in this tab.",
           );
         const draft = JSON.parse(raw);
-        if (draft.config?.topology === "sharded" && draft.config.outage_ms === undefined) {
-          draft.config.outage_ms = shardedDefaults.outage_ms;
+        if (draft.config?.topology === "sharded") {
+          draft.config = {outage_ms: shardedDefaults.outage_ms, dispatch_mode: shardedDefaults.dispatch_mode, ...draft.config};
         }
         if (
           draft.version !== 1 ||

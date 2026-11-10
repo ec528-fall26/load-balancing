@@ -5,6 +5,7 @@ import { Play, LoaderCircle } from "lucide-react";
 import { policies, type Config } from "@/lib/engine";
 import { regionalPolicies } from "@/lib/policy-metadata";
 import {
+  FanoutDispatchMode,
   FanoutFields,
   FanoutTraceOptions,
   FanoutWidth,
@@ -149,6 +150,7 @@ export function LabControls(p: Props) {
                       onChange={p.onSharded}
                       disabled={p.busy}
                     />
+                    <FanoutDispatchMode config={p.sharded} onChange={p.onSharded} disabled={p.busy} />
                     <FieldDescription>
                       One coordinator and four shard servers. Calls use fixed
                       placement and split the same total work across the

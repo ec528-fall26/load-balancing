@@ -46,16 +46,24 @@ export const fanoutFields = [
   },
 ] as const;
 
-type FieldName = (typeof fanoutFields)[number]["name"];
-export type FanoutSettings = Record<FieldName, number>;
+export type FanoutFieldName = (typeof fanoutFields)[number]["name"];
+export type DispatchMode = "parallel" | "serial";
+export type FanoutSettings = Record<FanoutFieldName, number> & {
+  dispatch_mode: DispatchMode;
+};
+export type FanoutComparisonSettings = FanoutSettings & {
+  comparison: "width" | "order";
+  order_width: 2 | 4;
+};
 export type ShardedConfig = FanoutSettings & {
   topology: "sharded";
   width: 1 | 2 | 4;
 };
 
-export const fanoutDefaults = Object.fromEntries(
-  fanoutFields.map(({ name, initial }) => [name, initial]),
-) as FanoutSettings;
+export const fanoutDefaults = Object.fromEntries([
+  ...fanoutFields.map(({ name, initial }) => [name, initial]),
+  ["dispatch_mode", "parallel"],
+]) as FanoutSettings;
 
 export const shardedDefaults: ShardedConfig = {
   ...fanoutDefaults,
@@ -68,6 +76,8 @@ export function isShardedConfig(value: unknown): value is ShardedConfig {
   const config = value as ShardedConfig;
   return (
     config.topology === "sharded" &&
+    (config.dispatch_mode === "parallel" ||
+      config.dispatch_mode === "serial") &&
     [1, 2, 4].includes(config.width) &&
     fanoutFields.every(
       ({ name, min, max }) =>
@@ -79,16 +89,20 @@ export function isShardedConfig(value: unknown): value is ShardedConfig {
   );
 }
 
-export function fanoutCompareHref(config: FanoutSettings) {
-  const query = new URLSearchParams({ fanout: "1" });
+export function fanoutCompareHref(config: ShardedConfig) {
+  const query = new URLSearchParams({
+    fanout: "1",
+    dispatch_mode: config.dispatch_mode,
+    order_width: config.width === 2 ? "2" : "4",
+  });
   for (const { name } of fanoutFields) query.set(name, String(config[name]));
   return `/compare?${query}`;
 }
 
 export function fanoutSettingsFromQuery(
   query: Pick<URLSearchParams, "get">,
-): FanoutSettings {
-  return Object.fromEntries(
+): FanoutComparisonSettings {
+  const numeric = Object.fromEntries(
     fanoutFields.map(({ name, min, max, initial }) => {
       const raw = query.get(name);
       const value = raw === null ? initial : Number(raw);
@@ -99,11 +113,20 @@ export function fanoutSettingsFromQuery(
           : initial,
       ];
     }),
-  ) as FanoutSettings;
+  ) as Record<FanoutFieldName, number>;
+  const dispatch_mode =
+    query.get("dispatch_mode") === "serial" ? "serial" : "parallel";
+  return {
+    ...numeric,
+    dispatch_mode,
+    comparison: dispatch_mode === "serial" ? "order" : "width",
+    order_width: query.get("order_width") === "2" ? 2 : 4,
+  };
 }
 
 export type FanoutCase = {
   width: number;
+  dispatch_mode: DispatchMode;
   condition: string;
   offered: number;
   completed: number;
@@ -131,6 +154,7 @@ export type FanoutCase = {
     status: string;
     critical_shard: number | null;
     unanswered_shards: number[];
+    unsent_shards: number[];
     events: { at_us: number; phase: string; shard: number | null }[];
   };
 };

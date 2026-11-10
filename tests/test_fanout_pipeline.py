@@ -29,6 +29,38 @@ class FanoutPipelineTest(unittest.TestCase):
         self.assertEqual(events["join_cpu_started", None], 27)
         self.assertEqual(events["completed", None], 30)
 
+    def test_serial_dispatch_waits_for_each_successful_reply(self):
+        result = self.run_trace(dispatch_mode="serial")
+        events = result["inspected"]["events"]
+        self.assertEqual(
+            [(e["shard"], e["at_us"]) for e in events if e["phase"] == "request_sent"],
+            [(0, 2), (1, 27), (2, 40), (3, 53)],
+        )
+        self.assertEqual(result["p95_ms"], 0.069)
+        self.assertEqual(result["backend_service_ms"], self.run_trace()["backend_service_ms"])
+
+    def test_serial_stops_dispatching_on_deadline_or_failed_call(self):
+        before_first = self.run_trace(dispatch_mode="serial", deadline_us=2)
+        self.assertEqual(before_first["inspected"]["unsent_shards"], (0, 1, 2, 3))
+        deadline = self.run_trace(dispatch_mode="serial", deadline_us=27)
+        outage = self.run_trace(dispatch_mode="serial", outage=Outage(0, 6, 12))
+        self.assertEqual(deadline["timed_out"], 1)
+        self.assertEqual(outage["outage_failed"], 1)
+        for result in (deadline, outage):
+            self.assertEqual(result["inspected"]["unsent_shards"], (1, 2, 3))
+            self.assertEqual(sum(shard["sent"] for shard in result["shards"]), 1)
+
+    def test_order_comparison_shares_width_and_seeded_outage(self):
+        paired = experiment({"comparison": "order", "order_width": 2, "outage_ms": 500})
+        cases = paired["cases"]
+        self.assertEqual([(row["dispatch_mode"], row["width"]) for row in cases],
+                         [("parallel", 2), ("parallel", 2), ("serial", 2), ("serial", 2)])
+        self.assertIsNone(cases[0]["outage"])
+        self.assertIsNone(cases[2]["outage"])
+        self.assertEqual(cases[1]["outage"], cases[3]["outage"])
+        with self.assertRaisesRegex(ValueError, "order_width"):
+            experiment({"order_width": 3})
+
     def test_width_changes_placement_but_preserves_backend_work(self):
         one = self.run_trace(width=1)
         two = self.run_trace(width=2)

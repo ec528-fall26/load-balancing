@@ -76,8 +76,10 @@ export function ShardedRunResults({
           <Badge variant="secondary">One-shot run</Badge>
           <p className="caption">
             {config.width} {config.width === 1 ? "shard call" : "shard calls"}{" "}
-            per request · {config.rate} requests/s for {config.duration}s ·{" "}
-            {config.rtt_ms} ms network round trip · seed {config.seed}
+            per request ·{" "}
+            {config.dispatch_mode === "serial" ? "Serial" : "Parallel"} ·{" "}
+            {config.rate} requests/s for {config.duration}s · {config.rtt_ms} ms
+            network round trip · seed {config.seed}
           </p>
         </div>
         <h2 id="sharded-outcomes" className="text-lg font-semibold">
@@ -165,6 +167,8 @@ export function ShardedRunResults({
               ` Shard ${trace.critical_shard} provided the last required reply.`}
             {trace.unanswered_shards.length > 0 &&
               ` Still waiting on ${trace.unanswered_shards.map((shard) => `shard ${shard}`).join(", ")} when the request ended.`}
+            {(trace.unsent_shards?.length ?? 0) > 0 &&
+              ` Calls never sent to shards ${trace.unsent_shards.join(", ")}.`}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">

@@ -3,10 +3,24 @@
 import { useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { AppHeader } from "@/components/app-header";
-import { FanoutFields, FanoutTraceOptions } from "@/components/fanout-fields";
+import {
+  FanoutDispatchMode,
+  FanoutFields,
+  FanoutTraceOptions,
+} from "@/components/fanout-fields";
 import { FanoutResults } from "@/components/fanout-results";
 import { Notice } from "@/components/surface";
-import { FieldGroup, FieldLegend, FieldSet } from "@/components/ui/field";
+import {
+  Field,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+} from "@/components/ui/field";
+import {
+  NativeSelect,
+  NativeSelectOption,
+} from "@/components/ui/native-select";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,14 +33,14 @@ import {
 import {
   fanoutRequest,
   type FanoutExperiment,
-  type FanoutSettings,
+  type FanoutComparisonSettings,
 } from "@/lib/fanout";
 
 export function FanoutComparison({
   initial,
   href,
 }: {
-  initial: FanoutSettings;
+  initial: FanoutComparisonSettings;
   href: string;
 }) {
   const [config, setConfig] = useState(initial);
@@ -65,9 +79,8 @@ export function FanoutComparison({
               Compare fan-out
             </h1>
             <p className="mt-2 max-w-2xl text-muted-foreground">
-              Compare one and four shards with the same seeded arrivals and
-              backend work. Set an outage duration to compare both widths with
-              and without the same outage.
+              Compare shard counts or call order with the same seeded arrivals
+              and backend work.
             </p>
           </div>
           <Button asChild variant="outline">
@@ -78,15 +91,74 @@ export function FanoutComparison({
           <CardHeader>
             <CardTitle>Paired experiment</CardTitle>
             <CardDescription>
-              {config.outage_ms > 0
-                ? "All four cases use the same CPU slowdown. Both outage cases take the same shard offline at the same time."
-                : "With outages off, each width runs with normal CPU speed and with the configured slow shard."}
+              {config.comparison === "order"
+                ? "Both modes use the same shard count and CPU settings. If an outage is set, each mode runs with and without that outage."
+                : config.outage_ms > 0
+                  ? "All four cases use the same CPU slowdown. Both outage cases take the same shard offline at the same time."
+                  : "With outages off, each width runs with normal CPU speed and with the configured slow shard."}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={run}>
               <fieldset disabled={busy} className="flex flex-col gap-4">
                 <FieldGroup>
+                  <FieldGroup className="grid gap-4 sm:grid-cols-2">
+                    <Field>
+                      <FieldLabel htmlFor="fanout-comparison">
+                        Compare
+                      </FieldLabel>
+                      <NativeSelect
+                        id="fanout-comparison"
+                        value={config.comparison}
+                        onChange={(event) =>
+                          setConfig({
+                            ...config,
+                            comparison:
+                              event.target.value === "order"
+                                ? "order"
+                                : "width",
+                          })
+                        }
+                      >
+                        <NativeSelectOption value="width">
+                          One vs. four shards
+                        </NativeSelectOption>
+                        <NativeSelectOption value="order">
+                          Parallel vs. serial
+                        </NativeSelectOption>
+                      </NativeSelect>
+                    </Field>
+                    {config.comparison === "order" ? (
+                      <Field>
+                        <FieldLabel htmlFor="fanout-order-width">
+                          Shards per request
+                        </FieldLabel>
+                        <NativeSelect
+                          id="fanout-order-width"
+                          value={config.order_width}
+                          onChange={(event) =>
+                            setConfig({
+                              ...config,
+                              order_width: event.target.value === "2" ? 2 : 4,
+                            })
+                          }
+                        >
+                          <NativeSelectOption value="2">
+                            2 shards
+                          </NativeSelectOption>
+                          <NativeSelectOption value="4">
+                            4 shards
+                          </NativeSelectOption>
+                        </NativeSelect>
+                      </Field>
+                    ) : (
+                      <FanoutDispatchMode
+                        config={config}
+                        onChange={setConfig}
+                        disabled={busy}
+                      />
+                    )}
+                  </FieldGroup>
                   <FieldSet>
                     <FieldLegend>Workload and timing</FieldLegend>
                     <FanoutFields
