@@ -37,6 +37,7 @@ export function FanoutResults({
 }) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const selected = cases[selectedIndex];
+  const outage = cases.find((row) => row.outage)?.outage;
   return (
     <>
       <Card>
@@ -49,7 +50,8 @@ export function FanoutResults({
             failed parents.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col gap-3">
+          {outage && <ShardOutageSummary outage={outage} />}
           <Table>
             <TableHeader>
               <TableRow>
@@ -57,6 +59,7 @@ export function FanoutResults({
                 <TableHead>On time</TableHead>
                 <TableHead>Timed out</TableHead>
                 <TableHead>Rejected</TableHead>
+                {outage && <TableHead>Outage failures</TableHead>}
                 <TableHead>P95 (ms)</TableHead>
                 <TableHead>Backend ms / success</TableHead>
                 <TableHead>Failed-parent work (ms)</TableHead>
@@ -95,6 +98,7 @@ export function FanoutResults({
                   <TableCell>
                     {row.shard_rejected + row.coordinator_rejected}
                   </TableCell>
+                  {outage && <TableCell>{row.outage_failed}</TableCell>}
                   <TableCell>{ms(row.p95_ms)}</TableCell>
                   <TableCell>{ms(row.backend_ms_per_success)}</TableCell>
                   <TableCell>{ms(row.wasted_backend_ms)}</TableCell>
@@ -122,6 +126,7 @@ export function FanoutResults({
                     <TableHead>Calls</TableHead>
                     <TableHead>Completed</TableHead>
                     <TableHead>Rejected</TableHead>
+                    {outage && <TableHead>Outage failures</TableHead>}
                     <TableHead>Peak CPU queue</TableHead>
                     <TableHead>Peak I/O queue</TableHead>
                   </TableRow>
@@ -133,6 +138,7 @@ export function FanoutResults({
                       <TableCell>{shard.sent}</TableCell>
                       <TableCell>{shard.completed}</TableCell>
                       <TableCell>{shard.rejected}</TableCell>
+                      {outage && <TableCell>{shard.outage_failed}</TableCell>}
                       <TableCell>{shard.peak_cpu_queue}</TableCell>
                       <TableCell>{shard.peak_io_queue}</TableCell>
                     </TableRow>
@@ -202,5 +208,20 @@ export function FanoutEventTable({
         </TableBody>
       </Table>
     </div>
+  );
+}
+
+export function ShardOutageSummary({
+  outage,
+}: {
+  outage: NonNullable<FanoutCase["outage"]>;
+}) {
+  return (
+    <p className="text-sm tabular-nums">
+      <strong>Shard {outage.shard} went offline</strong> at{" "}
+      {(outage.start_ms / 1000).toFixed(3)} s and recovered at{" "}
+      {(outage.end_ms / 1000).toFixed(3)} s. Times are measured from the start
+      of the run.
+    </p>
   );
 }

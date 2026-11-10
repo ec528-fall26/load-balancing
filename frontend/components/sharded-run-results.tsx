@@ -9,6 +9,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import {
   FanoutEventTable,
+  ShardOutageSummary,
 } from "@/components/fanout-results";
 import { Panel } from "@/components/surface";
 import type { FanoutRun, ShardedConfig } from "@/lib/fanout";
@@ -16,6 +17,7 @@ import type { FanoutRun, ShardedConfig } from "@/lib/fanout";
 const outcomes: Record<string, string> = {
   completed: "Completed on time",
   timed_out: "Missed the deadline",
+  outage_failed: "Failed because a shard went offline",
   coordinator_rejected: "Rejected by the coordinator",
   shard_rejected: "Rejected by a shard",
 };
@@ -58,6 +60,9 @@ export function ShardedRunResults({
       "Rejected",
       (result.shard_rejected + result.coordinator_rejected).toLocaleString(),
     ],
+    ...(result.outage
+      ? [["Outage failures", result.outage_failed.toLocaleString()]]
+      : []),
     ["P95 response time", elapsed(result.p95_ms)],
   ];
 
@@ -96,6 +101,7 @@ export function ShardedRunResults({
             : "No requests completed on time, so response times are unavailable."}{" "}
           The deadline was {config.deadline_ms} ms per request.
         </p>
+        {result.outage && <ShardOutageSummary outage={result.outage} />}
       </section>
 
       <Card>
@@ -139,6 +145,8 @@ export function ShardedRunResults({
                 <p className="caption tabular-nums">
                   {shard.completed.toLocaleString()} finished ·{" "}
                   {shard.rejected.toLocaleString()} rejected
+                  {result.outage &&
+                    ` · ${shard.outage_failed.toLocaleString()} outage failures`}
                 </p>
               </section>
             );

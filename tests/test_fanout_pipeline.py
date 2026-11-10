@@ -3,7 +3,7 @@ import unittest
 from fastapi.testclient import TestClient
 
 from lbsim.api import create_app
-from lbsim.fanout import Config, Request, Simulation, experiment
+from lbsim.fanout import Config, Outage, Request, Simulation, experiment, run_fanout
 
 
 PIECES = ((8, 12), (4, 4), (4, 4), (4, 4))
@@ -82,6 +82,48 @@ class FanoutPipelineTest(unittest.TestCase):
         expired = self.run_trace(inspect=1, arrivals=(0, 0), deadline_us=2)
         self.assertEqual(expired["timed_out"], 2)
         self.assertFalse(any(e["phase"] == "request_sent" for e in expired["inspected"]["events"]))
+
+    def test_outage_cancels_running_and_queued_work_and_then_recovers(self):
+        result = self.run_trace(arrivals=(0, 0, 20), outage=Outage(0, 7, 15))
+        shard = result["shards"][0]
+        self.assertEqual((shard["sent"], shard["completed"], shard["outage_failed"]), (3, 1, 2))
+        self.assertEqual((result["completed"], result["outage_failed"]), (1, 2))
+        self.assertEqual(result["outage"], {"shard": 0, "start_ms": .007, "end_ms": .015})
+        self.assertEqual(result["wasted_backend_ms"], .063)
+        shard_events = [event["phase"] for event in result["inspected"]["events"] if event["shard"] == 0]
+        self.assertIn("outage_error_received", shard_events)
+        self.assertNotIn("cpu_first_finished", shard_events)
+
+    def test_outage_interrupts_io_and_preserves_already_sent_replies(self):
+        interrupted = self.run_trace(outage=Outage(0, 10, 12))
+        self.assertEqual(interrupted["wasted_backend_ms"], .030)
+        self.assertEqual(interrupted["outage_failed"], 1)
+        self.assertEqual(self.run_trace(outage=Outage(0, 25, 26))["completed"], 1)
+
+    def test_outage_fails_outbound_and_new_calls_even_if_recovered_on_arrival(self):
+        for start, end in ((3, 4), (1, 3)):
+            with self.subTest(start=start):
+                result = self.run_trace(width=1, outage=Outage(0, start, end))
+                self.assertEqual(result["outage_failed"], 1)
+                self.assertEqual(result["wasted_backend_ms"], 0)
+                events = result["inspected"]["events"]
+                self.assertEqual(events[-1]["at_us"], 7)
+                self.assertFalse(any(e["phase"] == "request_received" for e in events))
+
+    def test_outage_cases_share_a_seeded_schedule_without_changing_traffic(self):
+        settings = {"outage_ms": 500, "slowdown": 1}
+        paired = experiment(settings)
+        self.assertEqual(paired, experiment(settings))
+        self.assertEqual(paired["workload_sha256"], experiment({})["workload_sha256"])
+        one_baseline, one_outage, four_baseline, four_outage = paired["cases"]
+        self.assertIsNone(one_baseline["outage"])
+        self.assertIsNone(four_baseline["outage"])
+        self.assertEqual(one_outage["outage"], four_outage["outage"])
+        self.assertGreater(four_outage["outage_failed"], one_outage["outage_failed"])
+        self.assertEqual(run_fanout({**settings, "width": 4})["result"]["outage"], four_outage["outage"])
+        for case in paired["cases"]:
+            self.assertEqual(case["offered"], sum(case[key] for key in
+                ("completed", "timed_out", "outage_failed", "coordinator_rejected", "shard_rejected")))
 
     def test_seeded_experiment_and_api_validation(self):
         first = experiment({"rate": 10, "duration": 1})

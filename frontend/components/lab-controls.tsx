@@ -157,7 +157,7 @@ export function LabControls(p: Props) {
                     <FanoutFields
                       config={p.sharded}
                       onChange={p.onSharded}
-                      names={["rtt_ms"]}
+                      names={["rtt_ms", "outage_ms"]}
                       disabled={p.busy}
                     />
                     <Separator />

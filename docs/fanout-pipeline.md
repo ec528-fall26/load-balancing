@@ -2,7 +2,8 @@
 
 Sharded service models a fixed amount of useful work per parent. The Lab runs
 one, two, or four shard calls per parent in one-shot mode. Compare runs one
-versus four calls with and without a slow shard on the same seeded workload.
+versus four calls on the same seeded workload, with and without either a CPU
+slowdown or a shard outage.
 The earlier A-04 probe increased work with fan-out and answers a different
 workload question.
 
@@ -16,10 +17,31 @@ CPU queue. The coordinator queues for CPU again after the last reply.
 The configured round trip is divided between send and reply. A rejection
 reaches the parent after the reply leg. A parent succeeds if its join finishes
 at or before the deadline. Requests already sent continue to drain after parent
-failure. Consumed service is counted.
+failure unless the shard itself goes offline. Consumed service is counted.
 The model omits link contention, retry, replication and packet loss. The
 slow condition multiplies CPU service time on the configured shard while
 preserving its nominal demand and I/O time.
+
+## Seeded outages
+
+Set the outage duration to a value from 1 to 1,000 ms to take one shard offline
+during the arrival window. Zero keeps all shards online. The seed chooses the
+shard and start time independently of the workload. At the start of the outage,
+the shard drops queued, executing and outbound calls to it. New calls to that
+shard fail during the outage. Replies already sent can still arrive, and other
+shards continue processing. The shard accepts new work at recovery. Work on
+the interrupted CPU and I/O slots is counted only up to the interruption.
+
+A parent records an outage failure if an outage error reaches it before a
+different terminal outcome. The per-shard outage count includes affected calls
+from parents that already timed out or failed elsewhere. Compare holds arrivals,
+work, CPU slowdown and outage schedule fixed across the applicable cases. It
+tests one and four calls per parent, each with and without the outage.
+
+For example, at 50 parents/s over four seconds, seed 42 and normal CPU speed,
+a 500 ms outage takes shard 0 offline around 3.238 s. Seven parents fail with
+one required shard call and 25 fail with four required calls. Both no-outage
+baselines complete all 200 parents.
 
 ## Reproduce
 

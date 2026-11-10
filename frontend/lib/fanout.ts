@@ -29,6 +29,13 @@ export const fanoutFields = [
     max: 20,
     initial: 4,
   },
+  {
+    name: "outage_ms",
+    label: "Seeded outage duration (ms)",
+    min: 0,
+    max: 1000,
+    initial: 0,
+  },
   { name: "seed", label: "Seed", min: 0, max: 1_000_000, initial: 42 },
   {
     name: "inspect",
@@ -101,6 +108,8 @@ export type FanoutCase = {
   offered: number;
   completed: number;
   timed_out: number;
+  outage_failed: number;
+  outage: { shard: number; start_ms: number; end_ms: number } | null;
   shard_rejected: number;
   coordinator_rejected: number;
   mean_ms: number | null;
@@ -113,7 +122,8 @@ export type FanoutCase = {
     sent: number;
     completed: number;
     rejected: number;
-      peak_cpu_queue: number;
+    outage_failed: number;
+    peak_cpu_queue: number;
     peak_io_queue: number;
   }[];
   inspected: {

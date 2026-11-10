@@ -66,8 +66,8 @@ export function FanoutComparison({
             </h1>
             <p className="mt-2 max-w-2xl text-muted-foreground">
               Compare one and four shards with the same seeded arrivals and
-              backend work. Each width runs with healthy shards and with your
-              chosen CPU slowdown.
+              backend work. Set an outage duration to compare both widths with
+              and without the same outage.
             </p>
           </div>
           <Button asChild variant="outline">
@@ -78,8 +78,9 @@ export function FanoutComparison({
           <CardHeader>
             <CardTitle>Paired experiment</CardTitle>
             <CardDescription>
-              Set the workload, deadline, and slow-shard condition shared by the
-              four cases.
+              {config.outage_ms > 0
+                ? "All four cases use the same CPU slowdown. Both outage cases take the same shard offline at the same time."
+                : "With outages off, each width runs with normal CPU speed and with the configured slow shard."}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -96,6 +97,7 @@ export function FanoutComparison({
                         "duration",
                         "deadline_ms",
                         "rtt_ms",
+                        "outage_ms",
                       ]}
                       disabled={busy}
                     />

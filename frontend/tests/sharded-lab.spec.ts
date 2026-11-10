@@ -115,3 +115,53 @@ test("Sharded service runs in the Lab and Compare reuses the completed workload"
   await page.goto("/fan-out");
   await expect(page).toHaveURL(/\/compare\?fanout=1$/);
 });
+
+test("Lab and Compare show the same seeded shard outage", async ({ page }) => {
+  await page.goto("/setup");
+  await page.getByRole("combobox", { name: "Topology", exact: true }).click();
+  await page
+    .getByRole("option", { name: "Sharded service", exact: true })
+    .click();
+  const duration = page.getByRole("spinbutton", {
+    name: "Seeded outage duration (ms)",
+    exact: true,
+  });
+  await duration.fill("500");
+  await page
+    .getByRole("spinbutton", { name: "Shard CPU slowdown (×)" })
+    .fill("1");
+  const runResponse = page.waitForResponse(
+    (r) => r.url().endsWith("/api/fan-out/run") && r.ok(),
+  );
+  await page
+    .getByRole("button", { name: "Run simulation", exact: true })
+    .click();
+  const run = await (await runResponse).json();
+  const outage = run.result.outage;
+  await expect(
+    page.getByText(`Shard ${outage.shard} went offline`, { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Outage failures", { exact: true }),
+  ).toBeVisible();
+  expect(run.result.outage_failed).toBeGreaterThan(0);
+
+  await page
+    .getByRole("button", { name: "Compare this run", exact: true })
+    .click();
+  await expect(duration).toHaveValue("500");
+  const compareResponse = page.waitForResponse(
+    (r) => r.url().endsWith("/api/research/fan-out") && r.ok(),
+  );
+  await page
+    .getByRole("button", { name: "Run experiment", exact: true })
+    .click();
+  const compare = await (await compareResponse).json();
+  expect(compare.workload_sha256).toBe(run.workload_sha256);
+  expect(compare.cases.map((item: { outage: unknown }) => item.outage)).toEqual(
+    [null, outage, null, outage],
+  );
+  await expect(
+    page.getByRole("button", { name: "4 shards · seeded outage", exact: true }),
+  ).toBeVisible();
+});

@@ -46,6 +46,8 @@ const help = {
     "Choose which of the four shard servers has slower CPU service. Placement rotates across the fleet.",
   slowdown:
     "Multiplies CPU time on the selected shard. At 1× all four shards run at normal speed. I/O and network time stay the same.",
+  outage_ms:
+    "Take one shard offline for this long. The seed picks the shard and start time. Set 0 to keep all shards online.",
   seed: "Repeat the same arrivals and work per request by keeping the seed and arrival settings fixed.",
   inspect:
     "Pick the parent whose timeline is shown in the results. Request 0 is the first arrival.",
