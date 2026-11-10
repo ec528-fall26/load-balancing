@@ -115,7 +115,7 @@ def sample(config, expected_trace):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--output', type=Path, default=ROOT/'experiments/results/d3-02')
+    parser.add_argument('--output', type=Path, default=ROOT/'experiments/results/d3-02-rerun')
     args = parser.parse_args()
     output = args.output.resolve()
     (output/'traces').mkdir(parents=True, exist_ok=True)
