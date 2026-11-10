@@ -14,7 +14,7 @@ CONFIG = dict(server_count=1, concurrency=1, queue_limit=1, arrival_rate=4.0,
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path,
-                        default=Path("experiments/results/d3-03"))
+                        default=Path("experiments/results/d3-03-rerun"))
     args = parser.parse_args()
     summary = run_simulation(CONFIG)
     export = build_exports(CONFIG, summary)
