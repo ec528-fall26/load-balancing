@@ -41,8 +41,8 @@ does not automatically implement it for a different target model.
 
 ```sh
 PYTHONPATH=src uv run python -m unittest discover -s tests -q
-npm run typecheck --prefix frontend
-npm run test:api --prefix frontend
+npm run typecheck --prefix src/frontend
+npm run test:api --prefix src/frontend
 ```
 
 `tests/test_policy_parity.py` checks 171 snapshots against SHA-256 fingerprints
