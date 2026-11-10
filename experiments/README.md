@@ -1,5 +1,9 @@
 # Experiments
 
+Run `uv sync --locked` from the repository root before starting. Checked-in
+outputs under `results/` are reference captures. Rerun commands write to separate
+directories so the original captures stay available for comparison.
+
 ## A-02: policies on uniform and mixed-speed servers
 
 From the repository root after installing dependencies:
@@ -57,7 +61,7 @@ From the repository root (PowerShell, Bash, or another terminal):
 
 ```sh
 uv sync --locked
-uv run python experiments/scale_benchmark.py --repeats 3 --output experiments/results/d2-13
+uv run python experiments/scale_benchmark.py --repeats 3 --output experiments/results/d2-13-rerun
 ```
 
 The command overwrites that output directory's three generated files. Choose a
@@ -107,8 +111,7 @@ Python 3.12.13 and Streamlit 1.65.0, against simulation commit `ecfedc5`:
 | 1,000 | 0.1275 | 38.66 | 10,000 | 0 |
 
 All nine samples passed validation and used the same workload hash. These
-numbers describe this saved run; a rerun replaces the raw files, so update this
-table if replacing the reference results.
+numbers describe the saved run. Reruns produce their own reports.
 
 - [Reference trace](results/d2-13/trace.csv): all 10,000 request IDs, arrivals, and service durations; decimal float values round-trip to Python floats.
 - [Raw samples](results/d2-13/samples.csv): runtime seconds, peak process bytes, workload hash, outcomes, latency metrics, draining time, and validation status for each sample.
@@ -130,10 +133,10 @@ lists; selecting or implementing an optimization belongs to later profiling work
 ## D3-06: profile the engine
 
 ```sh
-PYTHONPATH=src uv run python experiments/profile_engine.py --output experiments/results/d3-06
+PYTHONPATH=src uv run python experiments/profile_engine.py --output experiments/results/d3-06-rerun
 ```
 
-This profiles `run_simulation` for the round-robin baseline (10,000 requests on
+This profiles the checked-out engine with round-robin (10,000 requests on
 10, 100 and 1,000 servers), then repeats those fleet sizes with 100,000 requests.
 The longer workload extends the arrival window from 100 to 1,000 simulated
 seconds; arrival rate, service distribution, seed, slots and queue limits stay
@@ -169,16 +172,36 @@ The pending-arrival container now uses a deque. The saved before capture is in
 results/d3-06 and the after capture in results/d3-07. See
 [the results](results/d3-07/analysis.md) for all six timings and limitations.
 
+To recalculate the published ratios from the two saved captures:
+
 ```sh
-PYTHONPATH=src uv run python experiments/profile_engine.py --output experiments/results/d3-07-rerun
-PYTHONPATH=src uv run python experiments/compare_profiles.py experiments/results/d3-06/report.json experiments/results/d3-07-rerun/report.json --output experiments/results/d3-07-rerun/comparison.json
+uv run python -X utf8 experiments/compare_profiles.py \
+  experiments/results/d3-06/report.json experiments/results/d3-07/report.json \
+  --output experiments/results/d3-07-comparison-rerun.json
 ```
 
-The profiling command takes roughly 30 seconds locally; comparison takes under a
-second and prints six ratios plus exact-output checks, then saves comparison.json.
-The comparison script requires matching environment/configuration and complete
-summary fingerprints. It compares unprofiled medians, preserving profiled timing
-as diagnostic evidence only. Choose a new output directory to retain prior runs.
+To collect new timings, run the same profiling script on both historical
+revisions on one machine. The pre-deque revision predates the harness, so copy
+the harness from the post-deque revision. Run these commands in a POSIX shell
+from the repository root:
+
+```sh
+run_dir=$(mktemp -d)
+git worktree add --detach "$run_dir/before" 2ae52ee
+git worktree add --detach "$run_dir/after" 9b95fdc
+cp "$run_dir/after/experiments/profile_engine.py" "$run_dir/before/experiments/"
+(cd "$run_dir/before" && uv sync --locked && uv run python experiments/profile_engine.py --output "$run_dir/results-before")
+(cd "$run_dir/after" && uv sync --locked && uv run python experiments/profile_engine.py --output "$run_dir/results-after")
+uv run python -X utf8 experiments/compare_profiles.py \
+  "$run_dir/results-before/report.json" "$run_dir/results-after/report.json" \
+  --output "$run_dir/comparison.json"
+```
+
+Allow roughly a minute for both profiling runs. The comparison prints six
+ratios and checks exact summary fingerprints. Timing ratios vary by machine.
+Keep the Python version and environment the same for both runs. The saved
+captures were taken together, so compare them to each other when checking the
+published ratios.
 
 ## D3-02: paired routing-policy comparison
 

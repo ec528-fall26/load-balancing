@@ -66,7 +66,7 @@ def worker(args):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--output', type=Path, default=ROOT / 'experiments/results/d3-06')
+    parser.add_argument('--output', type=Path, default=ROOT / 'experiments/results/d3-06-rerun')
     parser.add_argument('--request-counts', nargs='+', type=int, default=[10000, 100000])
     parser.add_argument('--server-counts', nargs='+', type=int, default=[10, 100, 1000])
     parser.add_argument('--repeats', type=int, default=3)
