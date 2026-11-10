@@ -34,4 +34,15 @@ The regional preset **Scale · 1,000 servers / 12 datacenters** exposes the supp
 
 See `experiments/results/a-11/pagination-scale.json`, `pagination-before-batch.json` and the browser captures. The worker event-count ceiling was increased from 2,000 to 20,000 events per tick while retaining the 10 ms processing-time budget. The old event cap throttled high offered rates before the CPU budget was used. Very high rates can still lag under that CPU budget; reported lag is not hidden or treated as dropped/rejected work. Controls apply at processed simulation time, matching the existing session contract.
 
-Saved-run replay/export integration remains A-07. The implementation does not claim that those placeholder routes are connected.
+## Compare and saved files
+
+The Compare page sends each single-pool case to `POST /v1/run-summary`. It
+returns the exact summary metrics without creating a recording or returning
+the event trace.
+
+For a recorded simple single-pool run, **Download run** exports the version-one
+JSON configuration and CSV results. **Replay a saved run** verifies the
+configuration against its saved results fingerprint before creating new
+playback. **Compare saved results** verifies both CSV files without rerunning
+either case. Version one supports uniform processing rates and the simple
+request model.

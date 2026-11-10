@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 test("lab draft comparison runs baseline and two variants, retaining results on failure", async ({
-  page,
+  page, request,
 }) => {
   await page.goto("/setup");
 
@@ -15,6 +15,11 @@ test("lab draft comparison runs baseline and two variants, retaining results on 
     ["Max service (s)", "1"],
   ])
     await page.getByRole("spinbutton", { name, exact: true }).fill(value);
+  const recorded = page.waitForResponse((r) => r.url().endsWith("/api/engine/run"));
+  await page.getByRole("button", { name: "Run simulation", exact: true }).click();
+  const { run_id: labRunId } = await (await recorded).json();
+  expect(labRunId).toBeTruthy();
+  await page.getByRole("link", { name: "Edit configuration" }).click();
   await page
     .getByRole("button", { name: "Compare current setup", exact: true })
     .click();
@@ -80,8 +85,12 @@ test("lab draft comparison runs baseline and two variants, retaining results on 
     path: "test-results/comparison-desktop.png",
     fullPage: true,
   });
+  await page.getByRole("button", { name: "Run comparison", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("Comparison complete.");
+  const snapshot = await request.get(`/api/runs/${labRunId}/snapshot?time=0`);
+  expect(snapshot.status()).toBe(200);
   let requests = 0;
-  await page.route("**/api/engine/run", (route) => {
+  await page.route("**/api/engine/summarize", (route) => {
     requests++;
     return requests === 2
       ? route.fulfill({
@@ -171,7 +180,7 @@ test("comparison rejects unchanged variants before requesting work", async ({
   page,
 }) => {
   let calls = 0;
-  await page.route("**/api/engine/run", (route) => {
+  await page.route("**/api/engine/summarize", (route) => {
     calls++;
     return route.abort();
   });

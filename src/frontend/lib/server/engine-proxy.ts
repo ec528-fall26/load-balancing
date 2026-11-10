@@ -1,4 +1,5 @@
 const MAX_BODY_BYTES = 65_536;
+const SAVED_COMPARISON_BODY_BYTES = 12 * 1024 * 1024;
 
 function failure(status: number, code: string, message: string) {
   return Response.json(
@@ -34,6 +35,7 @@ export async function proxyPython(
     );
   }
 
+  const maximum = path === "saved/compare" ? SAVED_COMPARISON_BODY_BYTES : MAX_BODY_BYTES;
   const reader = request.body?.getReader();
   const chunks: Uint8Array[] = [];
   let size = 0;
@@ -43,12 +45,12 @@ export async function proxyPython(
         const { done, value } = await reader.read();
         if (done) break;
         size += value.byteLength;
-        if (size > MAX_BODY_BYTES) {
+        if (size > maximum) {
           await reader.cancel();
           return failure(
             413,
             "BODY_TOO_LARGE",
-            `Request body exceeds ${MAX_BODY_BYTES} bytes.`,
+            `Request body exceeds ${maximum} bytes.`,
           );
         }
         chunks.push(value);

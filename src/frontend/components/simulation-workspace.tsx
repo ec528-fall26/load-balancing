@@ -78,10 +78,12 @@ import { Server } from "lucide-react";
 function Upload({
   label,
   accept,
+  limit,
   onFile,
 }: {
   label: string;
   accept: string;
+  limit: string;
   onFile: (file: File) => void;
 }) {
   return (
@@ -97,7 +99,7 @@ function Upload({
         }}
       />
       <FieldDescription>
-        Choose an original {accept.slice(1).toUpperCase()} export. Limit 200 MB.
+        Choose an original {accept.slice(1).toUpperCase()} export. Limit {limit}.
       </FieldDescription>
     </Field>
   );
@@ -250,7 +252,7 @@ export default function SimulationWorkspace({
     [preview, setPreview] = useState(false),
     [feedback, setFeedback] = useState(""),
     [busy, setBusy] = useState(false),
-    [saved, setSaved] = useState<unknown>(null),
+    [saved, setSaved] = useState<{ text: string; config: Config } | null>(null),
     [savedName, setSavedName] = useState(""),
     [replayError, setReplayError] = useState(""),
     [comparison, setComparison] = useState<[Run, Run] | null>(null),
@@ -497,7 +499,7 @@ export default function SimulationWorkspace({
     try {
       const result = await engineRequest<Run>(
         operation,
-        operation === "run" ? { config } : { configuration: saved },
+        operation === "run" ? { config } : { configuration: saved?.text },
       );
       setRun(result);
       setPreview(false);
@@ -516,13 +518,14 @@ export default function SimulationWorkspace({
   }
   async function readConfig(file: File) {
     try {
-      if (file.size > 200 * 1024 * 1024) throw new Error("File exceeds 200MB.");
-      const data = JSON.parse(await file.text());
+      if (file.size > 60 * 1024) throw new Error("Configuration exceeds 60 KiB.");
+      const text = await file.text();
+      const data = JSON.parse(text);
       if (!data.config || typeof data.config !== "object")
         throw new Error(
           "Choose a configuration export containing a config object.",
         );
-      setSaved(data);
+      setSaved({ text, config: data.config });
       setSavedName(file.name);
       setReplayError("");
     } catch (error) {
@@ -544,7 +547,7 @@ export default function SimulationWorkspace({
       return names;
     });
     try {
-      if (file.size > 200 * 1024 * 1024) throw new Error("File exceeds 200MB.");
+      if (file.size > 5 * 1024 * 1024) throw new Error("Results exceed 5 MiB.");
       const text = await file.text();
       if (uploadVersion !== uploadVersions.current[index]) return;
       // File reads may finish together before React rerenders the other handler.
@@ -576,12 +579,13 @@ export default function SimulationWorkspace({
     }
   }
   async function download(kind: "configuration" | "results") {
+    if (!run?.run_id) return;
     try {
       const data = await engineRequest<{
         config_json: string;
         results_csv: string;
         run_id: string;
-      }>("exports", run);
+      }>("exports", { run_id: run.run_id });
       const blob = new Blob(
         [kind === "configuration" ? data.config_json : data.results_csv],
         { type: kind === "configuration" ? "application/json" : "text/csv" },
@@ -750,6 +754,7 @@ export default function SimulationWorkspace({
                         <Upload
                           label="Configuration export (JSON)"
                           accept=".json"
+                          limit="60 KiB"
                           onFile={readConfig}
                         />
                         {replayError && (
@@ -760,7 +765,7 @@ export default function SimulationWorkspace({
                             <p className="caption">{savedName}</p>
                             <pre>
                               {JSON.stringify(
-                                (saved as { config: Config }).config,
+                                saved.config,
                                 null,
                                 2,
                               )}
@@ -801,6 +806,7 @@ export default function SimulationWorkspace({
                               <Upload
                                 label={`Run ${i ? "B" : "A"} results (CSV)`}
                                 accept=".csv"
+                            limit="5 MiB"
                                 onFile={(file) => readCsv(file, i)}
                               />
                               {fileNames[i] && (
@@ -944,27 +950,31 @@ export default function SimulationWorkspace({
                 <Panel title="Run configuration">
                   <pre>{JSON.stringify(run.config, null, 2)}</pre>
                 </Panel>
-                <Panel title="Download run">
-                  <p className="caption mb-4">
-                    Download the last completed run&apos;s configuration and
-                    results. CSV includes summary metrics and per-server
-                    utilization.
-                  </p>
-                  <div className="flex flex-wrap gap-3">
-                    <Button
-                      variant="outline"
-                      onClick={() => download("configuration")}
-                    >
-                      Download configuration (JSON)
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => download("results")}
-                    >
-                      Download results (CSV)
-                    </Button>
-                  </div>
-                </Panel>
+                {run.run_id &&
+                  run.config.request_model !== "cpu_io" &&
+                  !run.config.processing_rates?.some((rate) => rate !== 1) && (
+                    <Panel title="Download run">
+                      <p className="caption mb-4">
+                        Download the last completed run&apos;s configuration and
+                        results. CSV includes summary metrics and per-server
+                        utilization.
+                      </p>
+                      <div className="flex flex-wrap gap-3">
+                        <Button
+                          variant="outline"
+                          onClick={() => download("configuration")}
+                        >
+                          Download configuration (JSON)
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => download("results")}
+                        >
+                          Download results (CSV)
+                        </Button>
+                      </div>
+                    </Panel>
+                  )}
               </>
             ) : (
               <Empty className="min-h-80 border border-dashed">

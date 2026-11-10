@@ -215,6 +215,22 @@ test("regional continuous sessions reconnect, preserve active settings, drain, r
   await page
     .getByRole("button", { name: "Session options", exact: true })
     .click();
+  await page.getByRole("spinbutton", { name: "Live requests per second" }).fill("30");
+  await page.getByRole("button", { name: "Apply traffic", exact: true }).click();
+  await expect(page.getByText(/Current traffic:/)).toContainText("30 requests/s");
+  const restarted = page.waitForResponse((r) =>
+    r.url().endsWith("/api/sessions") && r.request().method() === "POST",
+  );
+  await page.getByRole("button", { name: "Restart session", exact: true }).click();
+  const restartedResponse = await restarted;
+  expect(restartedResponse.status()).toBe(201);
+  expect((await restartedResponse.json()).arrival_rate).toBe(30);
+  await expect(page.getByText(/Current traffic:/)).toContainText("30 requests/s");
+  await expect(page.getByRole("button", { name: "Pause session", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Pause session", exact: true }).click();
+  const options = page.getByRole("button", { name: "Session options", exact: true });
+  await expect(options).toHaveAttribute("aria-expanded", "false");
+  await options.click();
   await select(page, "Simulation speed", "10×");
   await page
     .getByRole("button", { name: "Drain traffic", exact: true })

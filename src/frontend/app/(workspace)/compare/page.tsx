@@ -192,7 +192,7 @@ function RoutingComparison() {
               }),
             )
           : compactRun(
-              await engineRequest<Run>("run", { config: item.config }),
+              await engineRequest<Run>("summarize", { config: item.config }),
             );
         completed.push({ label: item.label, run });
       }

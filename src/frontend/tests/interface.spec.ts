@@ -34,7 +34,7 @@ test("initial UI and unavailable backend feedback", async ({ page }) => {
   );
   await expect(page.getByRole("tab")).toHaveCount(0);
 });
-test("recorded results, playback, tables and downloads", async ({ page }) => {
+test("preview results, playback and tables", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/simulator?preview=1");
@@ -84,9 +84,7 @@ test("recorded results, playback, tables and downloads", async ({ page }) => {
   await expect(
     page.getByRole("columnheader", { name: "Slot utilization (%)" }),
   ).toBeVisible();
-  await page.getByText("Download run", { exact: true }).click();
-  await page.getByRole("button", { name: "Download results (CSV)" }).click();
-  await expect(page.getByRole("status")).toContainText("not connected");
+  await expect(page.getByText("Download run", { exact: true })).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 test("mobile layout stays within the viewport", async ({ page }) => {
@@ -115,8 +113,8 @@ test("API boundary never fabricates engine results", async ({ request }) => {
     const response = await request.post(`/api/engine/${operation}`, {
       data: {},
     });
-    expect(response.status()).toBe(501);
-    expect((await response.json()).code).toBe("ENGINE_NOT_CONNECTED");
+    expect(response.status()).toBe(422);
+    expect((await response.json()).code).toBe("INVALID_REQUEST");
   }
   const invalid = await request.post("/api/engine/run", { data: {} });
   expect(invalid.status()).toBe(422);
@@ -198,7 +196,7 @@ test("replay and comparison send uploaded files to the engine boundary", async (
   await replay
     .getByRole("button", { name: "Replay saved configuration", exact: true })
     .click();
-  await expect(replay.getByRole("status")).toContainText("not connected");
+  await expect(replay.getByRole("status")).toContainText("run_id");
   await page.keyboard.press("Escape");
   await expect(replay).toBeHidden();
   await expect(replayTrigger).toBeFocused();
@@ -232,6 +230,38 @@ test("replay and comparison send uploaded files to the engine boundary", async (
     path: "test-results/next-comparison.png",
     fullPage: true,
   });
+});
+
+test("the Lab downloads, compares and replays real version-one exports", async ({
+  page,
+}) => {
+  await page.goto("/setup");
+  await page.getByRole("button", { name: "Run simulation", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Simulation Lab" })).toBeVisible();
+  await page.getByText("Download run", { exact: true }).click();
+  const configDownload = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download configuration (JSON)" }).click();
+  const config = (await (await configDownload).path())!;
+  const resultsDownload = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download results (CSV)" }).click();
+  const csv = (await (await resultsDownload).path())!;
+
+  await page.getByRole("link", { name: "Edit configuration" }).click();
+  await page.getByRole("button", { name: "Compare saved results" }).click();
+  for (const label of ["Run A results (CSV)", "Run B results (CSV)"]) {
+    await page.getByLabel(label, { exact: true }).setInputFiles(csv);
+  }
+  await expect(page.getByText("Both files have the same configuration.")).toBeVisible();
+  await page.keyboard.press("Escape");
+
+  await page.getByRole("button", { name: "Replay a saved run" }).click();
+  await page.getByLabel("Configuration export (JSON)").setInputFiles(config);
+  const response = page.waitForResponse((r) => r.url().endsWith("/api/engine/replay"));
+  await page.getByRole("button", { name: "Replay saved configuration" }).click();
+  expect((await response).status()).toBe(201);
+  await expect(page.getByRole("heading", { name: "Simulation Lab" })).toBeVisible();
+  await page.getByRole("tab", { name: "Datacenter", exact: true }).click();
+  await expect(page.getByText("Server 0", { exact: true })).toBeVisible();
 });
 
 test("real Run updates the UI and preserves results after validation failure", async ({

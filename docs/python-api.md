@@ -53,7 +53,7 @@ Defaults, also returned by `/health`:
 
 | Limit | Value |
 | --- | ---: |
-| Actual request body, including chunked uploads | 65,536 bytes |
+| Actual request body, including chunked uploads | 65,536 bytes (saved CSV comparison: 12 MiB total, 5 MiB per CSV) |
 | Arrival rate × duration | 100,000 |
 | Servers | 1,000 |
 | Total processing slots | 4,096 |

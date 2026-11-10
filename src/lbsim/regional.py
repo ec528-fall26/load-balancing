@@ -44,7 +44,8 @@ class RegionalSimulation(LiveSimulation):
             client_rtt_ms=r['Network RTT (ms)'], completed=r['Completed'], rejected=r['Rejected'],
             recent_p95_response_time=self.p95(p.responses) if p.responses else None,
             response_window_count=len(p.responses)) for r,p in zip(rows,self.pools)]
-        return dict(topology='regions', model='aggregate_regional_pools', config=self.config,
+        return dict(topology='regions', model='aggregate_regional_pools',
+            config={**self.config, 'arrival_rate': self.arrival_rate},
             simulation_time=self.now, arrival_rate=self.arrival_rate,
             totals=dict(offered=self.offered, completed=self.completed, rejected=self.rejected,
                         running=running, waiting=waiting, in_transit=in_transit),

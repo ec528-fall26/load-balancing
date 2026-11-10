@@ -16,6 +16,8 @@ from starlette.concurrency import run_in_threadpool
 from starlette.exceptions import HTTPException
 
 from lbsim.cpu_io_preview import preview as cpu_io_preview
+from lbsim.exports import build_exports
+from lbsim.saved_runs import load_configuration, load_results, verify_replay
 from lbsim.fanout import experiment as fanout_experiment, run_fanout
 from lbsim.runs import RunStore
 from lbsim.settings import validate_config
@@ -47,6 +49,9 @@ def error_response(status, code, message, fields=None):
         'field_errors': fields or []})
 
 
+SAVED_COMPARISON_BODY_BYTES = 12 * 1024 * 1024
+
+
 class BodyLimit:
     """Bound the actual streamed body, even without Content-Length."""
     def __init__(self, app, maximum):
@@ -55,15 +60,18 @@ class BodyLimit:
     async def __call__(self, scope, receive, send):
         if scope['type'] != 'http':
             return await self.app(scope, receive, send)
+        maximum = (SAVED_COMPARISON_BODY_BYTES
+                   if scope['path'] == '/v1/saved/compare' and scope['method'] == 'POST'
+                   else self.maximum)
         size, messages = 0, []
         while True:
             message = await receive()
             if message['type'] == 'http.disconnect':
                 return
             size += len(message.get('body', b''))
-            if size > self.maximum:
+            if size > maximum:
                 return await error_response(413, 'BODY_TOO_LARGE',
-                    f'Request body exceeds {self.maximum} bytes.')(scope, receive, send)
+                    f'Request body exceeds {maximum} bytes.')(scope, receive, send)
             messages.append(message)
             if not message.get('more_body', False):
                 break
@@ -78,6 +86,21 @@ class BodyLimit:
 class RunRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
     config: dict[str, Any]
+
+
+class ReplayRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    configuration: str
+
+
+class SavedComparisonRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    results: tuple[str, str]
+
+
+class ExportRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    run_id: str
 
 
 def checked_config(values, limits):
@@ -350,28 +373,68 @@ def create_app(*, limits=None, runner=isolated_run, session_limits=None, session
         finally:
             gate.release()
 
-    @app.post('/v1/run')
-    async def run(request: RunRequest):
-        config = checked_config(request.config, limits)
+    async def execute_single_pool(config, *, record=False, saved=None, compact=False):
         if not gate.acquire(blocking=False):
             raise APIError(429, 'RUN_BUSY', 'Another simulation is running. Retry after it finishes.')
         try:
             summary = await run_in_threadpool(runner, config, limits)
+            if saved is not None:
+                try:
+                    await run_in_threadpool(verify_replay, saved, summary)
+                except ValueError as error:
+                    raise APIError(422, 'INVALID_EXPORT', str(error)) from error
+            if record:
+                return await run_in_threadpool(recordings.add, config, summary)
         finally:
             gate.release()
+        if compact:
+            summary = {**summary, 'events': [], 'response_times': []}
         return {'api_version': '1', 'config': config, 'summary': summary}
 
+    @app.post('/v1/run')
+    async def run(request: RunRequest):
+        return await execute_single_pool(checked_config(request.config, limits))
+
+    @app.post('/v1/run-summary')
+    async def run_summary(request: RunRequest):
+        return await execute_single_pool(checked_config(request.config, limits), compact=True)
 
     @app.post('/v1/runs', status_code=201)
     async def recorded_run(request: RunRequest):
-        config=checked_config(request.config,limits)
-        if not gate.acquire(blocking=False):
-            raise APIError(429,'RUN_BUSY','Another simulation is running. Retry after it finishes.')
+        return await execute_single_pool(checked_config(request.config, limits), record=True)
+
+    @app.post('/v1/saved/replay', status_code=201)
+    async def replay(request: ReplayRequest):
         try:
-            summary=await run_in_threadpool(runner,config,limits)
-            return await run_in_threadpool(recordings.add,config,summary)
-        finally:
-            gate.release()
+            saved = load_configuration(request.configuration.encode('utf-8'))
+        except ValueError as error:
+            raise APIError(422, 'INVALID_EXPORT', str(error)) from error
+        return await execute_single_pool(checked_config(saved.config, limits), record=True, saved=saved)
+
+    @app.post('/v1/saved/compare')
+    async def compare_saved(request: SavedComparisonRequest):
+        def read_exports():
+            runs = []
+            for csv in request.results:
+                saved = load_results(csv.encode('utf-8'))
+                runs.append(dict(config=saved.config,
+                                 summary={**saved.summary, 'events': [], 'response_times': []}))
+            return runs
+
+        try:
+            return await run_in_threadpool(read_exports)
+        except ValueError as error:
+            raise APIError(422, 'INVALID_EXPORT', str(error)) from error
+
+    @app.post('/v1/saved/exports')
+    async def export_run(request: ExportRequest):
+        run = await run_in_threadpool(recordings.get, request.run_id)
+        try:
+            exported = build_exports(run['config'], run['summary'])
+        except ValueError as error:
+            raise APIError(422, 'UNSUPPORTED_EXPORT', str(error)) from error
+        return dict(run_id=exported.run_id, config_json=exported.config_json.decode('utf-8'),
+                    results_csv=exported.results_csv.decode('utf-8'))
 
     @app.get('/v1/runs/{run_id}')
     async def recorded_summary(run_id: str):

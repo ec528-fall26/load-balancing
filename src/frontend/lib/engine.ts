@@ -73,7 +73,7 @@ export class EngineError extends Error {
 }
 // All browser calls stay same-origin; only the server knows the Python URL.
 export async function engineRequest<T>(
-  operation: "run" | "replay" | "compare" | "exports",
+  operation: "run" | "summarize" | "replay" | "compare" | "exports",
   payload: unknown,
 ): Promise<T> {
   const response = await fetch(`/api/engine/${operation}`, {
