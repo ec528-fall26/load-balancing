@@ -205,6 +205,11 @@ published ratios.
 
 ## D3-02: paired routing-policy comparison
 
+Add `--include-least-outstanding` to the command below for the three-policy
+Demo 3 comparison. It validates 36 runs and replays on the same 12 seeded
+traces. See the [Demo 3 experiment table](../docs/design-document.md#demo-3-experiments)
+for the near-capacity results shown on the slide.
+
 ```sh
 PYTHONPATH=src uv run python experiments/compare_policies.py --output experiments/results/d3-02-rerun
 ```

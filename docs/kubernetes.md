@@ -7,7 +7,7 @@ compute or state service. Kubernetes Services route connections to ready pods.
 ## Start a local cluster
 
 From the repository root, with Docker, [kind](https://kind.sigs.k8s.io/docs/user/quick-start/)
-and `kubectl` installed:
+and `kubectl` installed. Verified with kind v0.33.0 and Kubernetes v1.37.0.
 
 ```sh
 docker build -t lbsim-web:local src/frontend

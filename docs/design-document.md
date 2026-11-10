@@ -1,79 +1,53 @@
 # Demo 3 design document: load balancing simulator
 
-This document covers the implemented D3-01 through D3-07 feature set: two routing
-policies, paired policy experiments, saved-run export/replay/comparison, and the
-profiled deque improvement. It completes the D3-08 design-document scope using
-recorded evidence rather than assumed future outcomes. The submitted Demo 2
-snapshot remains on `demo-2`; it does not contain the full Demo 3 feature set.
-
-The implemented source and policy-study artifacts used for this document are
-available at revision `9af5b0c8ba7db6f01da4a4a38d05f789e198d78c`.
-Earlier captures identify their own source hashes and environments. Publication
-or review status on the board is separate from the implementation described here.
+The [Next.js Lab](../src/frontend/README.md) runs repeatable experiments on the
+Python simulator. Since Demo 2 we added queue-aware routing and paired policy
+comparisons, live sessions, regional and staged workloads, sharded dependencies
+with seeded outages, and a paginated playback API. The [PDF](../slides/demo-3.pdf)
+and [video](../videos/demo-3.mp4) show the current implementation. The
+`demo-2` branch preserves the previous submission.
 
 ## 1. Architecture
 
-The main Lab now supports CPU/I/O stages for single-pool one-shot and continuous
-runs, with least-outstanding routing and bounded playback/live telemetry. See
-[the model, contracts and verification guide](cpu-io-lab.md).
-
-Routing selection now uses per-run strategies from a single topology-aware
-registry. See [routing policies](routing-policies.md) for selection/tie rules,
-frontend metadata generation and exact before/after compatibility checks.
-
-The [Next.js interface](../src/frontend/README.md) also runs the Python engine
-through the [HTTP API](python-api.md). The Streamlit interface below supports
-exporting and reopening saved runs.
-
-The product is a local Streamlit app backed by an importable Python simulation
-package. A simulation finishes before results are displayed. The modeled
-workload uses no real HTTP requests, external workers, databases or cloud services.
-
 ```mermaid
-flowchart TD
-    User[Browser settings] --> App[app.py: Streamlit session]
-    App --> Validation[settings.py: validate configuration]
-    Validation --> Simulation[simulation.py: run_simulation]
-    Script[Experiment or Python caller] --> Simulation
-    Simulation --> Engine[utils/generate_seed.py: workload and event loop]
-    Engine <--> Server[server.py: slots and FIFO queues]
-    Engine --> Records[Completed executions, rejected IDs and events]
-    Records --> Metrics[metrics.py: summarize]
-    Metrics --> Summary[Summary, response times and events]
-    Summary --> App
-    App --> Results[results.py: metrics and charts]
-    Results --> Replay[datacenter.py and playback.py: recorded-event display]
-    App --> Export[exports.py: versioned JSON and CSV]
-    Upload[Uploaded configuration JSON] --> Saved[saved_runs.py: validate and verify]
-    Saved --> Simulation
-    Saved --> App
-    CSV[Two uploaded results CSVs] --> Compare[comparison.py: validated saved metrics]
-    Compare --> App
+flowchart LR
+    UI[Next.js Setup, Lab and Compare] --> Proxy[Same-origin API routes]
+    Proxy --> Python[Python API]
+    Python --> Record[One-shot engine and recorded snapshots]
+    Python --> Live[Continuous workers and bounded telemetry]
+    Python --> Shards[Sharded dependency and outage experiments]
+    Record --> Policies[Routing policy registry]
+    Live --> Policies
+    Experiments[Reproduction scripts] --> Record
+    Experiments --> Shards
 ```
 
-| Module | Responsibility |
+| Path | Responsibility |
 | --- | --- |
-| `app.py` | Collect settings, run the model and retain the last successful config/summary in session state. |
-| `settings.py` | Shared input validation for the form and simulation API. |
-| `simulation.py` | Public `run_simulation(config) -> dict`: validate, route, summarize, attach response times and events. |
-| `utils/generate_seed.py` | Generate the complete seeded workload, select round-robin or least-active targets, process events and drain accepted work. |
-| `server.py` | Request/execution records, bounded FIFO admission, concurrent slots and completion with immediate queue promotion. |
-| `metrics.py` | Outcome counts, mean/p95 latency and per-server utilization. |
-| `results.py` | Overview charts, metric cards and server details. |
-| `datacenter.py`, `playback.py` | Server panels and recorded playback with time controls. |
-| `exports.py` | Deterministic version-one configuration JSON, results CSV and shared metrics fingerprint. |
-| `saved_runs.py` | Parse/validate saved files and verify regenerated metrics before accepting replay. |
-| `comparison.py` | Read-only panels for two result sets, configuration differences and per-server values. |
-| `experiments/scale_benchmark.py` | Fresh-process runtime/memory measurements, workload verification and saved evidence. |
-| `experiments/compare_policies.py` | Paired low/near/overload/+20% workloads over three seeds, with recorded traces and validation. |
-| `experiments/profile_engine.py`, `compare_profiles.py` | Fresh-process profiling and matched before/after timing/output checks. |
+| `src/frontend/` | Setup and templates, policy comparisons, recorded playback, live commands, and shard timelines. |
+| `src/lbsim/api.py`, `runs.py`, `sessions.py` | HTTP validation, recorded-run paging, worker lifecycle, and bounded snapshots. |
+| `src/lbsim/simulation.py`, `staged.py`, `continuous.py` | Single-pool event processing for simple and CPU/I/O workloads. |
+| `src/lbsim/policies.py` | Single routing registry with policy-specific state and deterministic ties. |
+| `src/lbsim/regional_engine.py`, `fanout.py` | Regional routing with transit delay and separate sharded service experiments. |
+| `src/lbsim/app.py` | Earlier Streamlit interface, including saved JSON/CSV workflows. |
 
-The configuration-upload path runs only after the user explicitly requests a
-replay. CSV comparison reads already-computed results and never invokes the
-simulation. In-session event playback simply advances through an existing log;
-configuration replay regenerates a simulation and a new event log.
+The browser displays Python results. A one-shot run finishes before the browser
+scrubs its recorded timeline. A continuous worker owns its clock, accepts
+commands, and returns snapshots while the run is active. The browser reads pages
+of server data instead of receiving the full event log at startup.
 
-### Configuration and lifecycle
+Single Pool supports simple service or CPU → I/O → CPU, with either execution
+mode. Regions uses aggregate pools and configurable transit delays. Sharded
+Service models one coordinator waiting for required parallel or serial replies.
+Sharded experiments run one-shot and isolate dependency slowdown or outages.
+See [CPU/I/O](cpu-io-lab.md), [regions](regional-api.md), [fan-out](fanout-pipeline.md),
+and [routing policies](routing-policies.md) for the model boundaries.
+
+[Docker Compose](docker-compose.md) and [Kubernetes](kubernetes.md) separate web
+and independent compute replicas from the single owner of sessions and
+recordings. Restarting the state owner expires its in-memory state.
+
+### Simple single-pool configuration and lifecycle
 
 All times are simulated seconds. Server IDs start at zero. Each request occupies
 one execution slot for its full service time.
@@ -87,7 +61,7 @@ one execution slot for its full service time.
 | `duration` | Positive finite arrival-window duration; also the utilization window. |
 | `service_min`, `service_max` | Positive finite service bounds, minimum no greater than maximum. Equal bounds produce fixed service times. |
 | `seed` | Integer; negative values are valid. |
-| `policy` | Use `round_robin` or `least_active_requests`. Least-active selects the fewest running requests, breaking ties by lowest server ID; queues do not count and full targets are not skipped. |
+| `policy` | The simple pool supports `round_robin`, `least_active_requests`, `least_outstanding`, and `power_of_two`. Least Active counts running requests. Least Outstanding also counts queued work. Both minimum policies break ties by lowest server ID. |
 
 The engine generates `N = int(arrival_rate * duration)` requests, IDs `0..N-1`.
 Request `i` arrives at `i / arrival_rate`; service time is sampled with a local
@@ -147,10 +121,9 @@ Tests and the benchmark check these properties.
 
 ## 2. Design decisions
 
-- **Local Python and Streamlit:** the app runs locally in one Python process.
-  Tests and experiment scripts call the same package independently; benchmark
-  samples use fresh worker processes. Distributed services would add unnecessary
-  operational complexity.
+- **One authoritative engine:** the browser uses the Python API. Experiments can
+  call the same package directly, and benchmark samples can use fresh processes.
+  Deployment can scale independent runs while keeping session state on one owner.
 - **Event-driven execution:** jumping between events separates simulated time
   from machine scheduling; threads and sleeps would introduce timing variation.
 - **Separate routing and admission:** the engine selects a target; `Server`
@@ -180,78 +153,24 @@ Tests and the benchmark check these properties.
 
 ## 3. Setup
 
-Use Git, uv, a terminal and a browser. `.python-version` selects Python 3.12.
-`uv sync --locked` creates `.venv`, installs the importable `lbsim` package and
-uses `uv.lock`. The October 20 fresh-clone verification used uv 0.11.32,
-Python 3.12.13 and Streamlit 1.65.0.
-`pyproject.toml` permits Python `>=3.12,<3.15`, but these instructions use the
-selected 3.12 environment. No GPU is required. Initial installation needs internet.
-
-Install Git if absent. Install uv using its
-[official instructions](https://docs.astral.sh/uv/getting-started/installation/).
-For Windows with WinGet:
-
-```powershell
-winget install --id=astral-sh.uv -e
-```
-
-For macOS/Linux with curl:
+Start from the [repository quick start](../README.md#quick-start) for cloning,
+pinned dependency installation, the API and the Lab. This candidate was checked
+on macOS arm64 with Python 3.12.12, uv 0.13.7, Node.js 26.13.0, and npm 11.20.0.
+Install dependencies with `uv sync --locked` and `npm ci`. The engine and
+experiments run on a local CPU. Installation needs internet access.
 
 ```sh
-curl -LsSf https://astral.sh/uv/install.sh | sh
+uv run python -m unittest discover -s tests -q
+npm --prefix src/frontend run build
 ```
 
-Open a new terminal so uv is on `PATH`. From a parent directory where you want
-the checkout, run these commands (PowerShell or Bash):
+Expect `Ran 144 tests` followed by `OK` (about 25 seconds here), then a successful
+Next.js build. See the [frontend checks](../src/frontend/README.md#checks) for
+Node and browser tests.
 
-```sh
-git clone https://github.com/ec528-fall26/load-balancing.git
-cd load-balancing
-git checkout --detach 9af5b0c8ba7db6f01da4a4a38d05f789e198d78c
-uv sync --locked
-uv run python --version
-uv run python -m unittest discover -s tests -v
-uv run streamlit run src/lbsim/app.py
-```
-
-The pinned checkout includes all source and evidence referenced here and avoids
-accidentally launching the older `demo-2` submission. It is a reproducible source
-snapshot, not a requirement to develop on a detached branch. For an existing
-checkout containing this implementation, start at `uv sync --locked` in its
-repository root. Environment activation and `PYTHONPATH` overrides are unnecessary
-because uv installs the package. Open the printed local URL, usually
-`http://localhost:8501`. Stop with Ctrl+C. If the port is occupied, append
-`--server.port 8502` to the run command.
-
-The existing suite contains 53 tests for validation, lifecycle, routing, metrics,
-UI integration, playback, whole-run correctness, exports, verified replay and
-saved-result comparison. Success ends with `Ran 53 tests` and `OK`.
-Allow roughly 10 seconds for the suite after dependencies are installed.
-It runs locally and requires no cloud resources or GPU.
-Streamlit AppTest can print `missing ScriptRunContext` warnings during tests;
-the assertions and final status determine success.
-
-Verification was performed on Windows 11, AMD64, with 32 logical CPUs. The saved
-10,000-request benchmark stayed below 39 MiB peak process memory per worker there.
-This is measured usage, not a minimum RAM requirement or a bound for arbitrary
-inputs. Linux/macOS instructions are provided but were not executed for this
-document's verification.
-
-### Interface
-
-Enter sidebar settings, choose **Round robin** or **Least active requests**, and
-select **Run simulation**. A successful run replaces results; invalid submitted settings
-show an error and clear prior results. Editing inputs alone does not run the model.
-
-- **Overview:** outcome bars, completed-request latency histogram with p95, and
-  per-server utilization.
-- **Datacenter:** recorded playback or run-average utilization. Playback starts
-  paused, supports play/pause, restart, seeking and 0.25x-10x speed, and includes
-  draining. At 1x, one simulated second takes one real second. Racks group eight
-  servers schematically; pages show up to 32 servers. Execution and waiting
-  stacks are separate. Task-pool counts cover all servers, including those off page.
-- **Server details:** utilization values behind the chart. The **Run
-  configuration** expander shows settings for the displayed run.
+The worked example and JSON/CSV instructions below reproduce the earlier
+Streamlit baseline with `uv run streamlit run src/lbsim/app.py`. For the three
+current Lab workflows, follow the [Demo 3 quick start](../README.md#quick-start).
 
 ### Short worked example: overload and draining
 
@@ -570,37 +489,39 @@ deterministic results can be checked separately from machine-dependent timings.
 | Expected runtime | A few seconds on a local CPU. |
 | Expected output | `Validated 54 runs on 9 shared traces.` See the [reference analysis](../experiments/results/a-02/analysis.md). |
 
+## Demo 3 experiments
+
+Run these from the repository root after `uv sync --locked`. Use a quiet local
+machine for timings. The committed reports preserve the original environments
+and workload hashes.
+
+| Experiment | Command | Expected result |
+| --- | --- | --- |
+| Three-policy replay (slide 7) | `uv run python experiments/compare_policies.py --include-least-outstanding --output experiments/results/demo-3-policy-rerun` | A few seconds. Validates 36 runs and replays on 12 traces. In the `near_capacity` rows of `report.json`, average rejection and p95 are **0.00% / 2.13 s**, **2.91% / 5.24 s**, and **0.00% / 1.23 s** for Round Robin, Least Active, and Least Outstanding. |
+| Engine before/after | [Matched-revision commands](../experiments/README.md#d3-07-deque-beforeafter-comparison) | The reference 100,000-request, 100-server run moved from 1.030 s to 0.364 s, or 2.83×, with matching full-summary fingerprints. Timing varies by machine. |
+| Recorded playback and scale | Start the API as in the [A-11 guide](../experiments/results/a-11/README.md), then run `uv run python experiments/pagination_scale.py --output pagination-demo-3-rerun.json` | Allow roughly a minute on a local CPU. The reference 100,000-request case reduced the initial decoded payload from 7.87 MB to 4.10 kB. The harness checks every paginated event against the full trace and verifies seek and live pause/drain. |
+| Sharded service outage | `uv run python experiments/compare_fanout_pipeline.py > /tmp/demo-3-fanout.json` | A few seconds. At 50 parents/s for four seconds with seed 42 and a 500 ms outage, 7 of 200 fail with one required call and 25 of 200 with four. Both no-outage controls finish all 200. See [fan-out evidence](fanout-pipeline.md). |
+| CPU/I/O and power-of-two choices | `uv run python experiments/compare_cpu_io.py --output experiments/results/a-24-rerun` | A few seconds. 81 paired runs on 27 traces. The [reference analysis](../experiments/results/a-24/analysis.md) defines the research model and expected comparisons. |
+
+The [Lab quick start](../README.md#quick-start) uses one trace for the video
+comparison. The slide uses three traces at 90% of nominal capacity, with p95
+averaged over the three per-run percentiles of completed requests.
+
 ## 5. Claims and limitations
 
-The prototype provides configurable identical servers, fixed-interval seeded
-traffic, round-robin and least-active-requests routing, bounded FIFO queues, draining, charts, recorded
-playback and a reproducible local baseline.
-
-- The D2 scale baseline is round-robin only; D3-02 now compares both policies
-  across four fixed-load scenarios and three seeds. Least-active counts running
-  requests only; lowest-ID
-  ties can favor a full queue, and idle ties concentrate light traffic on server 0.
-- Arrivals are evenly spaced; bursty/exponential traffic is not modeled.
-  Request count truncates to `int(arrival_rate * duration)`.
-- Concurrency defines capacity. Hardware speeds, CPU/memory pressure,
-  failures/reliability, regions, network delay, retries and preemption are not modeled.
-- Configuration/results live in Streamlit session state and can be downloaded,
-  reloaded for verified simulation, or compared from CSV. There is no server-side
-  run library or schema migration. Downloads contain summary metrics, not original
-  request traces or playback events. Replay regenerates events; its fingerprint
-  verifies only the exported configuration/metrics and is not authentication.
-- While playing, playback requests updates every 0.2 seconds; actual refresh
-  timing depends on execution and browser load. Short events can fall between
-  frames, while replay counts process every event. Racks are display organization,
-  not topology.
-- The engine retains the complete workload/event log. Arrivals use a deque,
-  but pending completions still use list front removals and sorting. There is no
-  resource cap for arbitrary configurations;
-  large runs can block the synchronous UI or exhaust RAM.
-- The D2 scale baseline and deque timings each use one seed/workload family and
-  three timing repetitions per case on their recorded machines. D3-02 uses three
-  seeds but one fleet/service distribution. Neither dataset establishes cloud
-  performance, production guarantees, optimized complexity or general policy rankings.
+- The policies see the same seeded offered work within each comparison. Results
+  are specific to the workload, capacity, and tie rules. Admission rejects when
+  the selected server is full. The policies in the video use no retries.
+- Single-pool traffic uses fixed intervals and seeded service times. CPU/I/O,
+  regional transit and sharded dependencies model specific resources and delays.
+  Slot occupancy measures simulated capacity, and engine wall time measures
+  local execution speed.
+- Latency excludes rejected requests and, for shards, failed parents. Compare
+  latency alongside outcomes. Continuous p95 uses a bounded recent window,
+  while a drained single-pool recording uses all completed requests.
+- Live workers and recordings expire. Paging bounds each response, and the
+  state service retains what it needs for playback within its configured limits.
+  The deployment keeps one state owner and scales independent compute manually.
 
 ## 6. Evidence coverage and verification
 
@@ -622,5 +543,4 @@ not a claim that a new manual browser check was performed for every policy sampl
 The commands above are local and require no cloud service or GPU. New rerun
 directories preserve original captures; environment/timestamp/source metadata
 may differ on rerun. Compare deterministic trace/summary fields directly and
-interpret performance only within matched environments. Demo slides, recording
-and release submission remain separate deliverables, outside D3-08.
+interpret performance only within matched environments.
