@@ -5,7 +5,7 @@ The Python worker owns the simulation clock; browser polling only reads bounded
 snapshots. The one-shot Run path and recorded playback remain separate.
 
 Start Python as documented in [continuous-api.md](continuous-api.md), then start
-Next.js from `frontend/`. `LBSIM_API_URL` remains server-only and defaults to
+Next.js from `src/frontend/`. `LBSIM_API_URL` remains server-only and defaults to
 `http://127.0.0.1:8000`. Open `http://127.0.0.1:3000/simulator`.
 
 ## Controls
@@ -72,7 +72,7 @@ Stopped/expired data is labeled as a last retained snapshot.
 ## Verification
 
 ```sh
-cd frontend
+cd src/frontend
 npm run build
 npm run test:api
 npm run test:live
