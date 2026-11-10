@@ -1,8 +1,16 @@
 "use client";
 import Link from "next/link";
+import { Separator } from "@/components/ui/separator";
 import { Play, LoaderCircle } from "lucide-react";
 import { policies, type Config } from "@/lib/engine";
 import { regionalPolicies } from "@/lib/policy-metadata";
+import {
+  FanoutFields,
+  FanoutTraceOptions,
+  FanoutWidth,
+  ParameterHelp,
+} from "@/components/fanout-fields";
+import type { ShardedConfig } from "@/lib/fanout";
 import type { RegionalTopology } from "@/lib/regions";
 import { RegionalSettings } from "@/components/regional-settings";
 import { RequestModelFields } from "@/components/request-model-fields";
@@ -46,6 +54,8 @@ type Props = {
   onExecution: (v: string) => void;
   topology: string;
   onTopology: (v: string) => void;
+  sharded: ShardedConfig;
+  onSharded: (v: ShardedConfig) => void;
   regional: RegionalTopology;
   onRegional: (v: RegionalTopology) => void;
   regionalPolicy: string;
@@ -56,8 +66,10 @@ type Props = {
   ready: boolean;
 };
 export function LabControls(p: Props) {
-  const c = p.config,
-    single = p.topology === "single_pool";
+  const c = p.config;
+  const single = p.topology === "single_pool";
+  const sharded = p.topology === "sharded";
+  const continuous = !sharded && p.execution === "continuous";
   const servers = single
     ? c.server_count
     : p.regional.regions.reduce((n, r) => n + r.servers, 0);
@@ -74,7 +86,15 @@ export function LabControls(p: Props) {
     onChange: (v: string) => void,
   ) => (
     <Field>
-      <FieldLabel htmlFor={`setup-${label}`}>{label}</FieldLabel>
+      <div className="flex items-center gap-1">
+        <FieldLabel htmlFor={`setup-${label}`}>{label}</FieldLabel>
+        {label === "Topology" && (
+          <ParameterHelp
+            label={label}
+            description="Choose a single server pool, multiple regions, or a coordinator that sends work to a fleet of shards."
+          />
+        )}
+      </div>
       <Select value={value} onValueChange={onChange}>
         <SelectTrigger id={`setup-${label}`}>
           <SelectValue />
@@ -115,10 +135,40 @@ export function LabControls(p: Props) {
                 {select(
                   "Topology",
                   p.topology,
-                  { single_pool: "Single server pool", regions: "Regions" },
+                  {
+                    single_pool: "Single server pool",
+                    regions: "Regions",
+                    sharded: "Sharded service",
+                  },
                   p.onTopology,
                 )}
-                {single ? (
+                {sharded ? (
+                  <>
+                    <FanoutWidth
+                      config={p.sharded}
+                      onChange={p.onSharded}
+                      disabled={p.busy}
+                    />
+                    <FieldDescription>
+                      One coordinator and four shard servers. Calls use fixed
+                      placement and split the same total work across the
+                      selected shards.
+                    </FieldDescription>
+                    <FanoutFields
+                      config={p.sharded}
+                      onChange={p.onSharded}
+                      names={["rtt_ms"]}
+                      disabled={p.busy}
+                    />
+                    <Separator />
+                    <FanoutFields
+                      config={p.sharded}
+                      onChange={p.onSharded}
+                      names={["slow_shard", "slowdown"]}
+                      disabled={p.busy}
+                    />
+                  </>
+                ) : single ? (
                   <FieldGroup className="grid gap-4 sm:grid-cols-2">
                     <NumberField
                       label="Server count"
@@ -154,72 +204,89 @@ export function LabControls(p: Props) {
           <section aria-labelledby="traffic-title">
             <Card>
               <CardHeader>
-                <CardTitle id="traffic-title">Traffic and routing</CardTitle>
+                <CardTitle id="traffic-title">
+                  {sharded ? "Traffic" : "Traffic and routing"}
+                </CardTitle>
                 <CardDescription>
-                  Define the requests and how the load balancer chooses a
-                  destination.
+                  {sharded
+                    ? "Set the parent arrival rate and when a request misses its deadline."
+                    : "Define the requests and how the load balancer chooses a destination."}
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col gap-5">
-                <FieldGroup className="grid gap-4 sm:grid-cols-2">
-                  <NumberField
-                    label="Requests per second"
-                    value={c.arrival_rate}
-                    step={0.01}
-                    onChange={(n) => p.onChange({ ...c, arrival_rate: n })}
+                {sharded ? (
+                  <FanoutFields
+                    config={p.sharded}
+                    onChange={p.onSharded}
+                    names={["rate", "deadline_ms"]}
+                    disabled={p.busy}
                   />
-                  {select(
-                    single ? "Routing policy" : "Regional routing policy",
-                    single ? c.policy : p.regionalPolicy,
-                    single ? policies : regionalPolicies,
-                    (v) =>
-                      single
-                        ? p.onChange({ ...c, policy: v as Config["policy"] })
-                        : p.onRegionalPolicy(v),
-                  )}
-                </FieldGroup>
-                {single && (
-                  <RequestModelFields
-                    config={c}
-                    onChange={p.onChange}
-                    view="basic"
-                  />
+                ) : (
+                  <>
+                    <FieldGroup className="grid gap-4 sm:grid-cols-2">
+                      <NumberField
+                        label="Requests per second"
+                        value={c.arrival_rate}
+                        step={0.01}
+                        onChange={(n) => p.onChange({ ...c, arrival_rate: n })}
+                      />
+                      {select(
+                        single ? "Routing policy" : "Regional routing policy",
+                        single ? c.policy : p.regionalPolicy,
+                        single ? policies : regionalPolicies,
+                        (v) =>
+                          single
+                            ? p.onChange({
+                                ...c,
+                                policy: v as Config["policy"],
+                              })
+                            : p.onRegionalPolicy(v),
+                      )}
+                    </FieldGroup>
+                    {single && (
+                      <RequestModelFields
+                        config={c}
+                        onChange={p.onChange}
+                        view="basic"
+                      />
+                    )}
+                    {single && c.request_model === "cpu_io" && (
+                      <Accordion type="single" collapsible>
+                        <AccordionItem value="io">
+                          <AccordionTrigger>
+                            I/O capacity and request details
+                          </AccordionTrigger>
+                          <AccordionContent>
+                            <RequestModelFields
+                              config={c}
+                              onChange={p.onChange}
+                              view="advanced"
+                            />
+                          </AccordionContent>
+                        </AccordionItem>
+                      </Accordion>
+                    )}
+                    <FieldGroup className="grid gap-4 sm:grid-cols-2">
+                      <NumberField
+                        label="Min service (s)"
+                        value={c.service_min}
+                        step={0.001}
+                        onChange={(n) => p.onChange({ ...c, service_min: n })}
+                      />
+                      <NumberField
+                        label="Max service (s)"
+                        value={c.service_max}
+                        step={0.001}
+                        onChange={(n) => p.onChange({ ...c, service_max: n })}
+                      />
+                    </FieldGroup>
+                    <FieldDescription>
+                      {single && c.request_model === "cpu_io"
+                        ? "Service time is CPU + I/O before queueing. Server speed changes CPU stages only."
+                        : "Service time is sampled within this range before queueing."}
+                    </FieldDescription>
+                  </>
                 )}
-                {single && c.request_model === "cpu_io" && (
-                  <Accordion type="single" collapsible>
-                    <AccordionItem value="io">
-                      <AccordionTrigger>
-                        I/O capacity and request details
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        <RequestModelFields
-                          config={c}
-                          onChange={p.onChange}
-                          view="advanced"
-                        />
-                      </AccordionContent>
-                    </AccordionItem>
-                  </Accordion>
-                )}
-                <FieldGroup className="grid gap-4 sm:grid-cols-2">
-                  <NumberField
-                    label="Min service (s)"
-                    value={c.service_min}
-                    step={0.001}
-                    onChange={(n) => p.onChange({ ...c, service_min: n })}
-                  />
-                  <NumberField
-                    label="Max service (s)"
-                    value={c.service_max}
-                    step={0.001}
-                    onChange={(n) => p.onChange({ ...c, service_max: n })}
-                  />
-                </FieldGroup>
-                <FieldDescription>
-                  {single && c.request_model === "cpu_io"
-                    ? "Service time is CPU + I/O before queueing. Server speed changes CPU stages only."
-                    : "Service time is sampled within this range before queueing."}
-                </FieldDescription>
               </CardContent>
             </Card>
           </section>
@@ -228,31 +295,49 @@ export function LabControls(p: Props) {
               <CardHeader>
                 <CardTitle id="execution-title">Execution</CardTitle>
                 <CardDescription>
-                  Run a fixed workload or keep traffic flowing continuously.
+                  {sharded
+                    ? "Sharded services run for a fixed arrival window and then drain."
+                    : "Run a fixed workload or keep traffic flowing continuously."}
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <FieldGroup className="grid gap-4 sm:grid-cols-2">
-                  {select(
-                    "Execution",
-                    p.execution,
-                    { one_shot: "One-shot", continuous: "Continuous" },
-                    p.onExecution,
-                  )}
-                  {p.execution === "one_shot" && (
-                    <NumberField
-                      label="Arrival window (seconds)"
-                      value={c.duration}
-                      step={0.01}
-                      onChange={(n) => p.onChange({ ...c, duration: n })}
+                {sharded ? (
+                  <FieldGroup>
+                    <FanoutFields
+                      config={p.sharded}
+                      onChange={p.onSharded}
+                      names={["duration"]}
+                      disabled={p.busy}
                     />
-                  )}
-                  <NumberField
-                    label="Random seed"
-                    value={c.seed}
-                    onChange={(n) => p.onChange({ ...c, seed: n })}
-                  />
-                </FieldGroup>
+                    <FanoutTraceOptions
+                      config={p.sharded}
+                      onChange={p.onSharded}
+                      disabled={p.busy}
+                    />
+                  </FieldGroup>
+                ) : (
+                  <FieldGroup className="grid gap-4 sm:grid-cols-2">
+                    {select(
+                      "Execution",
+                      p.execution,
+                      { one_shot: "One-shot", continuous: "Continuous" },
+                      p.onExecution,
+                    )}
+                    {p.execution === "one_shot" && (
+                      <NumberField
+                        label="Arrival window (seconds)"
+                        value={c.duration}
+                        step={0.01}
+                        onChange={(n) => p.onChange({ ...c, duration: n })}
+                      />
+                    )}
+                    <NumberField
+                      label="Random seed"
+                      value={c.seed}
+                      onChange={(n) => p.onChange({ ...c, seed: n })}
+                    />
+                  </FieldGroup>
+                )}
               </CardContent>
             </Card>
           </section>
@@ -269,46 +354,59 @@ export function LabControls(p: Props) {
             <CardContent className="flex flex-col gap-5">
               <div className="flex flex-wrap gap-2">
                 <Badge variant="secondary">
-                  {p.execution === "continuous" ? "Continuous" : "One-shot"}
+                  {continuous ? "Continuous" : "One-shot"}
                 </Badge>
                 <Badge variant="outline">
-                  {single
-                    ? "Single pool"
-                    : `${p.regional.regions.length} regions`}
+                  {sharded
+                    ? "Sharded service"
+                    : single
+                      ? "Single pool"
+                      : `${p.regional.regions.length} regions`}
                 </Badge>
               </div>
               <dl className="flex flex-col gap-3 text-sm">
-                {[
-                  ["Servers", servers.toLocaleString()],
-                  ["CPU slots", slots.toLocaleString()],
-                  ["Traffic", `${c.arrival_rate.toLocaleString()} requests/s`],
-                  [
-                    "Routing",
-                    single
-                      ? policies[c.policy]
-                      : regionalPolicies[
-                          p.regionalPolicy as keyof typeof regionalPolicies
-                        ],
-                  ],
-                  [
-                    "Workload",
-                    !single || c.request_model !== "cpu_io"
-                      ? "Simple service"
-                      : c.io_heavy_probability !== undefined
-                        ? "Mixed CPU / I/O"
-                        : "CPU → I/O → CPU",
-                  ],
-                  ...(p.execution === "one_shot"
-                    ? [
-                        [
-                          "Offered requests",
-                          Math.floor(
-                            c.arrival_rate * c.duration,
-                          ).toLocaleString(),
-                        ],
-                      ]
-                    : []),
-                ].map(([label, value]) => (
+                {(sharded
+                  ? [
+                      ["Shards per parent", p.sharded.width],
+                      ["Traffic", `${p.sharded.rate} parents/s`],
+                      ["Deadline", `${p.sharded.deadline_ms} ms`],
+                      ["Offered parents", p.sharded.rate * p.sharded.duration],
+                    ]
+                  : [
+                      ["Servers", servers.toLocaleString()],
+                      ["CPU slots", slots.toLocaleString()],
+                      [
+                        "Traffic",
+                        `${c.arrival_rate.toLocaleString()} requests/s`,
+                      ],
+                      [
+                        "Routing",
+                        single
+                          ? policies[c.policy]
+                          : regionalPolicies[
+                              p.regionalPolicy as keyof typeof regionalPolicies
+                            ],
+                      ],
+                      [
+                        "Workload",
+                        !single || c.request_model !== "cpu_io"
+                          ? "Simple service"
+                          : c.io_heavy_probability !== undefined
+                            ? "Mixed CPU / I/O"
+                            : "CPU → I/O → CPU",
+                      ],
+                      ...(p.execution === "one_shot"
+                        ? [
+                            [
+                              "Offered requests",
+                              Math.floor(
+                                c.arrival_rate * c.duration,
+                              ).toLocaleString(),
+                            ],
+                          ]
+                        : []),
+                    ]
+                ).map(([label, value]) => (
                   <div className="flex justify-between gap-4" key={label}>
                     <dt className="text-muted-foreground">{label}</dt>
                     <dd className="text-right font-medium tabular-nums">
@@ -340,7 +438,7 @@ export function LabControls(p: Props) {
                 )}
                 {p.busy
                   ? "Running simulation…"
-                  : p.execution === "continuous"
+                  : continuous
                     ? p.active
                       ? "Replace continuous session"
                       : "Start continuous simulation"

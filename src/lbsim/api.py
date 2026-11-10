@@ -15,6 +15,7 @@ from starlette.concurrency import run_in_threadpool
 from starlette.exceptions import HTTPException
 
 from lbsim.cpu_io_preview import preview as cpu_io_preview
+from lbsim.fanout import experiment as fanout_experiment, run_fanout
 from lbsim.runs import RunStore
 from lbsim.settings import validate_config
 from lbsim.regional import RegionalSimulation, run_regional, presets
@@ -323,6 +324,24 @@ def create_app(*, limits=None, runner=isolated_run, session_limits=None, session
             raise APIError(429, 'RUN_BUSY', 'Another simulation is running. Retry after it finishes.')
         try:
             return await run_in_threadpool(cpu_io_preview, request.config)
+        except ValueError as error:
+            raise APIError(422, 'INVALID_CONFIG', str(error)) from error
+        finally:
+            gate.release()
+
+    @app.post('/v1/research/fan-out')
+    async def research_fanout(request: RunRequest):
+        return await fanout_request(request, fanout_experiment)
+
+    @app.post('/v1/fan-out/run')
+    async def fanout_run(request: RunRequest):
+        return await fanout_request(request, run_fanout)
+
+    async def fanout_request(request: RunRequest, operation):
+        if not gate.acquire(blocking=False):
+            raise APIError(429, 'RUN_BUSY', 'Another simulation is running. Retry after it finishes.')
+        try:
+            return await run_in_threadpool(operation, request.config)
         except ValueError as error:
             raise APIError(422, 'INVALID_CONFIG', str(error)) from error
         finally:

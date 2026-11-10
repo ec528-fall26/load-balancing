@@ -7,6 +7,15 @@ import {
   type RegionalRun,
   type RegionalTopology,
 } from "@/lib/regions";
+import { ShardedRunResults } from "@/components/sharded-run-results";
+import {
+  fanoutCompareHref,
+  fanoutRequest,
+  isShardedConfig,
+  shardedDefaults,
+  type FanoutRun,
+  type ShardedConfig,
+} from "@/lib/fanout";
 import { LabControls } from "@/components/lab-controls";
 import { useLiveSession } from "@/hooks/use-live-session";
 import { LiveSessionPanel } from "@/components/live-session-panel";
@@ -208,6 +217,11 @@ export default function SimulationWorkspace({
     }
   }, [pathname]);
   const [topology, setTopology] = useState("single_pool");
+  const [sharded, setSharded] = useState(shardedDefaults);
+  const [shardedRun, setShardedRun] = useState<{
+    config: ShardedConfig;
+    run: FanoutRun;
+  } | null>(null);
   const [regional, setRegional] = useState<RegionalTopology>(initialRegions);
   const [regionalPolicy, setRegionalPolicy] = useState("least_loaded");
   const [regionalRun, setRegionalRun] = useState<RegionalRun | null>(null);
@@ -295,9 +309,15 @@ export default function SimulationWorkspace({
             "The comparison's lab setup is unavailable in this tab.",
           );
         const draft = JSON.parse(raw);
-        if (draft.version !== 1 || !validCompareConfig(draft.config))
+        if (
+          draft.version !== 1 ||
+          (!isShardedConfig(draft.config) && !validCompareConfig(draft.config))
+        )
           throw new Error("The comparison's lab setup could not be loaded.");
-        if (isRegional(draft.config)) {
+        if (isShardedConfig(draft.config)) {
+          setTopology("sharded");
+          setSharded(draft.config);
+        } else if (isRegional(draft.config)) {
           setRegional(draft.config);
           setRegionalPolicy(draft.config.policy);
           setTopology("regions");
@@ -309,7 +329,10 @@ export default function SimulationWorkspace({
             service_max: draft.config.service_max,
             seed: draft.config.seed,
           });
-        } else setConfig(draft.config);
+        } else {
+          setTopology("single_pool");
+          setConfig(draft.config);
+        }
         setExecution(
           draft.execution === "continuous" ? "continuous" : "one_shot",
         );
@@ -372,8 +395,8 @@ export default function SimulationWorkspace({
         JSON.stringify({
           version: 1,
           name: setupName,
-          config: draftConfig,
-          execution,
+          config: topology === "sharded" ? sharded : draftConfig,
+          execution: topology === "sharded" ? "one_shot" : execution,
         }),
       );
     } catch {
@@ -383,6 +406,7 @@ export default function SimulationWorkspace({
     config,
     regional,
     regionalPolicy,
+    sharded,
     topology,
     execution,
     setupName,
@@ -415,6 +439,29 @@ export default function SimulationWorkspace({
       setFeedback(
         "Could not transfer this setup to Compare. Browser session storage may be unavailable.",
       );
+    }
+  }
+  async function runSharded() {
+    if (requestPending.current) return;
+    requestPending.current = true;
+    setBusy(true);
+    setFeedback("");
+    try {
+      const { topology: _topology, ...settings } = sharded;
+      const result = await fanoutRequest<FanoutRun>(
+        "/api/fan-out/run",
+        settings,
+      );
+      setShardedRun({ config: sharded, run: result });
+      setLabExecution("one_shot");
+      setLabTopology("sharded");
+      setLabName("Sharded service");
+      router.push("/simulator");
+    } catch (e) {
+      setFeedback((e as Error).message);
+    } finally {
+      requestPending.current = false;
+      setBusy(false);
     }
   }
   async function runRegional() {
@@ -547,11 +594,17 @@ export default function SimulationWorkspace({
     }
   }
   if (pathname === "/compare") return children;
+  const shardedComparison =
+    isSetup && topology === "sharded"
+      ? fanoutCompareHref(sharded)
+      : !isSetup && labTopology === "sharded" && shardedRun
+        ? fanoutCompareHref(shardedRun.config)
+        : null;
   return (
     <div className="min-h-screen bg-background">
       <AppHeader
         section={isSetup ? "setup" : "lab"}
-        compareHref="/compare?draft=1"
+        compareHref={shardedComparison ?? "/compare?draft=1"}
         actions={
           isSetup && topology === "single_pool" ? (
             <SaveSetupDialog
@@ -594,7 +647,11 @@ export default function SimulationWorkspace({
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => openComparison(draftConfig)}
+                  onClick={() =>
+                    shardedComparison
+                      ? router.push(shardedComparison)
+                      : openComparison(draftConfig)
+                  }
                 >
                   Compare current setup
                 </Button>
@@ -615,6 +672,11 @@ export default function SimulationWorkspace({
               name={setupName}
               execution={execution}
               topology={topology}
+              sharded={sharded}
+              onSharded={(next) => {
+                setSharded(next);
+                detachTemplate();
+              }}
               regional={regional}
               onRegional={(next) => {
                 setRegional(next);
@@ -637,6 +699,10 @@ export default function SimulationWorkspace({
                 detachTemplate();
               }}
               onRun={async () => {
+                if (topology === "sharded") {
+                  await runSharded();
+                  return;
+                }
                 if (config.service_min > config.service_max) {
                   setFeedback(
                     "service_min must be less than or equal to service_max",
@@ -778,17 +844,19 @@ export default function SimulationWorkspace({
                 size="sm"
                 className="mt-3"
                 onClick={() =>
-                  openComparison(
-                    labExecution === "continuous" && live.snapshot
-                      ? {
-                          ...live.snapshot.config,
-                          arrival_rate: live.snapshot.arrival_rate,
-                          duration: config.duration,
-                        }
-                      : labTopology === "regions"
-                        ? (regionalRun?.config ?? draftConfig)
-                        : (run?.config ?? draftConfig),
-                  )
+                  shardedComparison
+                    ? router.push(shardedComparison)
+                    : openComparison(
+                        labExecution === "continuous" && live.snapshot
+                          ? {
+                              ...live.snapshot.config,
+                              arrival_rate: live.snapshot.arrival_rate,
+                              duration: config.duration,
+                            }
+                          : labTopology === "regions"
+                            ? (regionalRun?.config ?? draftConfig)
+                            : (run?.config ?? draftConfig),
+                      )
                 }
               >
                 Compare this run
@@ -811,8 +879,9 @@ export default function SimulationWorkspace({
                 </Button>
               )}
               <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-                Explore how traffic and server capacity affect waiting, latency,
-                and rejected requests.
+                {labTopology === "sharded" && labExecution === "one_shot"
+                  ? "A coordinator splits each request across shards and waits for their replies."
+                  : "See where requests went, how busy servers became, and whether traffic exceeded capacity."}
               </p>
             </div>
             {feedback && (
@@ -851,6 +920,11 @@ export default function SimulationWorkspace({
                     ? { ...live.snapshot.config, duration: config.duration }
                     : draftConfig
                 }
+              />
+            ) : labTopology === "sharded" && shardedRun ? (
+              <ShardedRunResults
+                run={shardedRun.run}
+                config={shardedRun.config}
               />
             ) : labTopology === "regions" ? (
               regionalRun ? (

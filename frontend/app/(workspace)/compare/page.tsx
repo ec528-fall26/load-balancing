@@ -2,6 +2,9 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { FanoutComparison } from "@/components/fanout-comparison";
+import { fanoutSettingsFromQuery } from "@/lib/fanout";
 import { AppHeader } from "@/components/app-header";
 import { VariantEditor } from "@/components/variant-editor";
 import { NumberField } from "@/components/number-field";
@@ -62,6 +65,20 @@ const clone = (config: CompareConfig): Variant => ({
   fields: [],
 });
 export default function ComparePage() {
+  const query = useSearchParams();
+  if (query.has("fanout")) {
+    return (
+      <FanoutComparison
+        key={query.toString()}
+        initial={fanoutSettingsFromQuery(query)}
+        href={`/compare?${query}`}
+      />
+    );
+  }
+  return <RoutingComparison />;
+}
+
+function RoutingComparison() {
   const [base, setBase] = useState<CompareConfig>(defaults),
     [baseName, setBaseName] = useState("Default setup"),
     [source, setSource] = useState("default"),
@@ -199,14 +216,19 @@ export default function ComparePage() {
         setupHref={draftBaseline ? "/setup?compareDraft=1" : "/setup"}
       />
       <main className="mx-auto flex max-w-7xl flex-col gap-7 px-5 py-8 md:px-8 md:py-10">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">
-            Compare configurations
-          </h1>
-          <p className="mt-2 max-w-3xl text-muted-foreground">
-            Keep your setup as the baseline. Clone it, change one or two
-            settings, and see what those changes do.
-          </p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight">
+              Compare configurations
+            </h1>
+            <p className="mt-2 max-w-3xl text-muted-foreground">
+              Keep your setup as the baseline. Clone it, change one or two
+              settings, and see what those changes do.
+            </p>
+          </div>
+          <Button asChild variant="outline">
+            <Link href="/compare?fanout=1">Compare fan-out</Link>
+          </Button>
         </div>
         {error && <Notice error>{error}</Notice>}
         <fieldset disabled={busy} className="flex min-w-0 flex-col gap-6">
