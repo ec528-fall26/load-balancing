@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass, replace
 from math import isfinite
 import multiprocessing
+from os import getenv
 from threading import BoundedSemaphore
 from typing import Any, Literal
 
@@ -273,7 +274,9 @@ def isolated_run(config, limits, *, worker_target=_worker):
 
 def create_app(*, limits=None, runner=isolated_run, session_limits=None, session_manager=None, run_store=None):
     limits = limits or Limits()
-    session_limits = session_limits or SessionLimits()
+    session_limits = session_limits or SessionLimits(
+        startup_seconds=float(getenv("LBSIM_SESSION_STARTUP_SECONDS", "5"))
+    )
     manager = session_manager or SessionManager(session_limits)
     recordings = run_store or RunStore()
 
