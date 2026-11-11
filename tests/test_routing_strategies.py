@@ -42,8 +42,27 @@ class PolicyTests(unittest.TestCase):
         demand[2] = 0
         self.assertEqual(loaded.choose(), 2)
 
+    def test_nearest_under_load_spills_over_only_above_threshold(self):
+        # Region 0 is nearest, then 1, then 2. Each has 10 slots.
+        demand, capacity = [0, 0, 0], [10, 10, 10]
+        context = RoutingContext(3, lambda i: 0, demand.__getitem__, capacity.__getitem__, (2, 12, 75))
+        policy = create_policy('nearest_under_load', context, 'regions')
+        self.assertEqual(policy.choose(), 0)          # room nearby: stay local
+        demand[0] = 8
+        self.assertEqual(policy.choose(), 0)          # 80% is still under 90%
+        demand[0] = 9
+        self.assertEqual(policy.choose(), 1)          # 90% counts as overloaded: next nearest
+        demand[1] = 9
+        self.assertEqual(policy.choose(), 2)
+        demand[2] = 10
+        self.assertEqual(policy.choose(), 0)          # all overloaded: least loaded, nearest on ties
+        demand[0] = 12
+        self.assertEqual(policy.choose(), 1)
+        self.assertFalse(supports_policy('nearest_under_load'))
+
     def test_frontend_metadata_is_generated_from_registry(self):
         root = Path(__file__).resolve().parents[1]
         subprocess.run([sys.executable, str(root / 'scripts/generate_policy_metadata.py'), '--check'], cwd=root, check=True)
         self.assertEqual(list(policy_options()), ['round_robin', 'least_active_requests', 'least_outstanding', 'power_of_two'])
-        self.assertEqual(list(policy_options('regions')), ['least_loaded', 'round_robin', 'nearest'])
+        self.assertEqual(list(policy_options('regions')),
+                         ['least_loaded', 'round_robin', 'nearest', 'nearest_under_load'])

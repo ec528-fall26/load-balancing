@@ -13,13 +13,16 @@ sampling, completion handling and queues remain engine responsibilities.
 | `least_active_requests` | Single pool | Fewest running requests, then lowest server ID. Waiting work is excluded; no fallback on rejection. |
 | `least_loaded` | Regions | Minimum `(running + queued + outbound in transit) / slots`, then client RTT, then region index. |
 | `nearest` | Regions | Minimum client RTT, then region index. |
+| `nearest_under_load` | Regions | Nearest region (client RTT, then index) whose `(running + queued + outbound in transit) / slots` is below 0.9. If every region is at or above 0.9, falls back to `least_loaded`. |
 | `least_outstanding` | Single pool | Fewest running + CPU-queued + I/O-waiting requests, then lowest ID. |
 | `power_of_two` | Single pool and CPU/I/O research | Sample two distinct targets; fewer CPU-active requests, first sampled on ties. |
 
 Least-active and least-outstanding own bounded indexed minimum trees: O(log n) running-count updates
 and O(1) selection. Round robin and regional strategies do not allocate that
 index. The regional model still represents aggregate pools, not independent
-per-server schedules. These are the existing policies, not new routing semantics.
+per-server schedules. `nearest_under_load` is the one added routing rule: it
+follows the mentor's example of preferring low latency until a region passes
+about 90% load, then accepting extra latency to avoid overloading it.
 
 ## Frontend contract
 

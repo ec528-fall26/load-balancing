@@ -13,6 +13,7 @@ Regional policies are separate from individual-server least-active:
 - `round_robin`: alternate regional targets.
 - `nearest`: minimum client RTT, ties by region index.
 - `least_loaded`: minimum `(running + waiting + outbound) / slots`, then client RTT, then region index. Outbound requests are counted before they arrive at the target. Returning responses no longer consume compute slots.
+- `nearest_under_load`: the nearest region (client RTT, then region index) whose load, as defined for `least_loaded`, is below 0.9. If every region is at or above 0.9, it chooses like `least_loaded`. Light traffic stays local; heavier traffic spills to the next-nearest regions instead of overloading the nearest one.
 
 A full target rejects at dispatch with no retry. Rejection accounting is immediate at dispatch; rejected requests do not incur an additional return event. Latency metrics cover successful completed responses only. Same-time completions free slots before dispatch; stable sequence numbers order other ties.
 

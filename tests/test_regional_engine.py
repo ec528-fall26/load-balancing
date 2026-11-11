@@ -119,6 +119,29 @@ class LiveTests(unittest.TestCase):
         self.assertEqual(len(sim.pools[0].responses), 2000)
         self.check_conservation(sim)
 
+    def test_nearest_under_load_stays_local_then_spills_over(self):
+        regions, matrix = PRESETS['US · balanced']
+
+        def run(policy, rate):
+            sim = LiveSimulation(regions, matrix, arrival_rate=rate, policy=policy, seed=42)
+            sim.run_once(20)
+            self.check_conservation(sim)
+            return sim
+
+        # Light traffic fits in the nearest region: identical to nearest.
+        light, nearest_light = run('nearest_under_load', 40), run('nearest', 40)
+        self.assertEqual([p.completed for p in light.pools], [p.completed for p in nearest_light.pools])
+        self.assertEqual(light.response_sum, nearest_light.response_sum)
+        self.assertEqual(light.rejected, 0)
+        # Heavier traffic: nearest overloads its region; this policy spills over.
+        nearest, spill, loaded = (run(p, 130) for p in ('nearest', 'nearest_under_load', 'least_loaded'))
+        self.assertGreater(nearest.rejected, 0)
+        self.assertEqual(spill.rejected, 0)
+        # It keeps more work local and sends less to the far region than least_loaded.
+        self.assertGreater(spill.pools[0].completed, loaded.pools[0].completed)
+        self.assertLess(spill.pools[2].completed, loaded.pools[2].completed)
+        self.assertLess(spill.response_sum / spill.completed, loaded.response_sum / loaded.completed)
+
     def test_nearest_policy_and_invalid_topology(self):
         sim = LiveSimulation([Region('east'), Region('west')], [[2, 80], [80, 2]],
                              source=1, policy='nearest')

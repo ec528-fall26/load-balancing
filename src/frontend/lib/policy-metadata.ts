@@ -8,7 +8,8 @@ export const serverPolicies = {
 export const regionalPolicies = {
   "least_loaded": "Least loaded region",
   "round_robin": "Round robin across regions",
-  "nearest": "Nearest region"
+  "nearest": "Nearest region",
+  "nearest_under_load": "Nearest region under 90% load"
 } as const;
 export const cpuIOPolicies = {
   "round_robin": "Round robin",

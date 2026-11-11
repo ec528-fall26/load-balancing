@@ -132,7 +132,7 @@ export function acceptRegionalSummary(
     Array.isArray(s.config.client_latency_ms) &&
     s.config.client_latency_ms.length === s.config.regions.length &&
     s.config.client_latency_ms.every(n) &&
-    ["round_robin", "least_loaded", "nearest"].includes(s.config.policy) &&
+    Object.hasOwn(regionalPolicies, s.config.policy) &&
     !!s.totals &&
     Object.values(s.totals).every(c) &&
     [
