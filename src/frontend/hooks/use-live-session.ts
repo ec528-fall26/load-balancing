@@ -119,6 +119,7 @@ export function useLiveSession(enabled: boolean) {
   }, [enabled, id, offset, adopt, remember]);
   async function operation<T>(
     callback: () => Promise<T>,
+    clearTerminalSession = true,
   ): Promise<T | undefined> {
     if (pending.current) return;
     pending.current = true;
@@ -132,7 +133,7 @@ export function useLiveSession(enabled: boolean) {
     } catch (e) {
       if (mounted.current) {
         setError(e instanceof Error ? e.message : "Session request failed.");
-        if (isTerminalSessionError(e)) remember(null);
+        if (clearTerminalSession && isTerminalSessionError(e)) remember(null);
       }
       return undefined;
     } finally {
@@ -142,11 +143,13 @@ export function useLiveSession(enabled: boolean) {
   }
   async function create(config: Config | RegionalConfig) {
     return operation(async () => {
-      if (idRef.current)
-        throw new Error("Stop the existing session before starting another.");
+      const previous = idRef.current;
       const data = (await sessionRequest("", {
         method: "POST",
-        body: { config: continuousConfig(config) },
+        body: {
+          config: continuousConfig(config),
+          ...(previous ? { replace_session_id: previous } : {}),
+        },
       })) as LiveSnapshot;
       if (!mounted.current) {
         await sessionRequest("/" + data.session_id, { method: "DELETE" });
@@ -158,7 +161,7 @@ export function useLiveSession(enabled: boolean) {
       setStartedId(data.session_id);
       adopt(data);
       return true;
-    });
+    }, false);
   }
   async function command(
     action: "pause" | "resume" | "set_rate" | "set_speed",

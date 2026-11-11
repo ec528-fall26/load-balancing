@@ -7,6 +7,7 @@ export const isRegional = (
   config: CompareConfig,
 ): config is RegionalConfig & { duration: number } =>
   "topology" in config && config.topology === "regions";
+export const WORKSPACE_DRAFT_KEY = "lbsim.workspace-draft.v1";
 export const COMPARE_DRAFT_KEY = "lbsim.compare-draft.v1";
 export const configLabels: Record<keyof Config, string> = {
   server_count: "Server count",

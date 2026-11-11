@@ -47,6 +47,7 @@ import {
   isRegional,
   validCompareConfig,
   COMPARE_DRAFT_KEY,
+  WORKSPACE_DRAFT_KEY,
   compactRun,
   compactRegionalRun,
   type CompareConfig,
@@ -102,9 +103,12 @@ function RoutingComparison() {
     } catch (e) {
       setError((e as Error).message);
     }
-    if (new URLSearchParams(location.search).has("draft")) {
+    const draftSource = new URLSearchParams(location.search).get("draft");
+    if (draftSource !== null) {
       try {
-        const raw = sessionStorage.getItem(COMPARE_DRAFT_KEY);
+        const raw = sessionStorage.getItem(
+          draftSource === "workspace" ? WORKSPACE_DRAFT_KEY : COMPARE_DRAFT_KEY,
+        );
         if (!raw || raw.length > 65536)
           throw new Error(
             "This lab setup is unavailable in this tab. Choose a baseline below.",
@@ -213,7 +217,6 @@ function RoutingComparison() {
     <div className="min-h-screen bg-background">
       <AppHeader
         section="compare"
-        setupHref={draftBaseline ? "/setup?compareDraft=1" : "/setup"}
       />
       <main className="mx-auto flex max-w-7xl flex-col gap-7 px-5 py-8 md:px-8 md:py-10">
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -504,9 +507,7 @@ function RoutingComparison() {
         </p>
         {results && <ComparisonResults cases={results} />}
         <Button asChild variant="outline" className="self-start">
-          <Link
-            href={draftBaseline ? "/setup?compareDraft=1" : "/setup"}
-          >
+          <Link href="/setup">
             Back to Setup
           </Link>
         </Button>

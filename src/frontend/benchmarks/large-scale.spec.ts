@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
-const out = path.resolve(__dirname, "../../../experiments/results/a-11");
+const out = process.env.A11_OUTPUT_DIR ?? path.resolve(__dirname, "../../../experiments/results/a-11");
 test("1000-server bounded playback renders 32 servers and seeks to its last page", async ({
   page,
   request,
@@ -27,7 +27,7 @@ test("1000-server bounded playback renders 32 servers and seeks to its last page
     await page.route("**/api/engine/run", (route) =>
       route.fulfill({ json: run }),
     );
-    await page.goto("/simulator");
+    await page.goto("/setup");
     const cdp = await page.context().newCDPSession(page);
     await cdp.send("HeapProfiler.collectGarbage");
     const initial = await cdp.send("Runtime.getHeapUsage");
@@ -91,7 +91,7 @@ test("12-datacenter latency preset runs continuously with 1000 servers", async (
   test.setTimeout(60000);
   let sid = "";
   try {
-    await page.goto("/simulator");
+    await page.goto("/setup");
     await page.getByLabel("Topology", { exact: true }).click();
     await page.getByRole("option", { name: "Regions", exact: true }).click();
     await page.getByLabel("Regional preset", { exact: true }).click();

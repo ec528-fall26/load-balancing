@@ -30,8 +30,8 @@ def route(server_count: int, concurrency: int, queue_limit: int, policy: str, ar
     rejected = []
 
     routing = create_policy(policy, RoutingContext(
-        server_count, lambda i: len(server_map[i].running),
-        demand=lambda i: len(server_map[i].running)+len(server_map[i].waiting),
+        server_count, lambda i: server_map[i].running_count,
+        demand=lambda i: server_map[i].running_count+server_map[i].waiting_count,
         routing_rng=random.Random(seed + 1000000)))
 
     # Continue until there are no more requests or pending completions
@@ -56,7 +56,7 @@ def route(server_count: int, concurrency: int, queue_limit: int, policy: str, ar
             routing.update(server_id)
             completed.append(c.finished)
             if events is not None:
-                events.append((now, server_id, len(server.running), len(server.waiting), "completed", req_id))
+                events.append((now, server_id, server.running_count, server.waiting_count, "completed", req_id))
             
             # If the server pulled a request from its queue, keep track of that
             if c.started:
@@ -73,8 +73,8 @@ def route(server_count: int, concurrency: int, queue_limit: int, policy: str, ar
             admission = target_server.submit(req, now)
             routing.update(target_server.id)
             if events is not None:
-                events.append((now, target_server.id, len(target_server.running),
-                               len(target_server.waiting), admission.status, req.id))
+                events.append((now, target_server.id, target_server.running_count,
+                               target_server.waiting_count, admission.status, req.id))
             
             if admission.status == "started":
                 # Request has been sent, put id in pending

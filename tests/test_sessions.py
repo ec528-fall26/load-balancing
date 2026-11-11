@@ -264,6 +264,30 @@ class SessionTests(unittest.TestCase):
                 manager.limits = replace(limits, startup_seconds=SessionLimits().startup_seconds)
                 self.create(client)
 
+    def test_replacement_preserves_old_session_until_success_at_capacity(self):
+        limits = SessionLimits(max_sessions=1)
+        manager = SessionManager(limits)
+        with TestClient(create_app(session_limits=limits, session_manager=manager)) as client:
+            old = self.create(client, paused=True)["session_id"]
+            snapshot = f"/v1/sessions/{old}/snapshot"
+            replacement = {"config": CONFIG, "replace_session_id": old}
+
+            invalid = dict(replacement, config=dict(CONFIG, server_count=0))
+            self.assertEqual(client.post("/v1/sessions", json=invalid).status_code, 422)
+            self.assertEqual(client.get(snapshot).json()["status"], "paused")
+
+            manager.worker_target = dead_worker
+            self.assertEqual(client.post("/v1/sessions", json=replacement).status_code, 503)
+            self.assertEqual(client.get(snapshot).json()["status"], "paused")
+            self.assertEqual(manager.pending, 0)
+
+            manager.worker_target = session_worker
+            new = self.create(client, replace_session_id=old)["session_id"]
+            self.assertNotEqual(new, old)
+            self.assertEqual(client.get(snapshot).status_code, 404)
+            self.assertEqual(client.get(f"/v1/sessions/{new}/snapshot").status_code, 200)
+            self.assertEqual(list(manager.sessions), [new])
+
     def test_healthy_session_and_health_remain_responsive_during_one_shot(self):
         started, release = Event(), Event()
 

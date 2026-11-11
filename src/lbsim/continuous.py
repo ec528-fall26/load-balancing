@@ -30,8 +30,8 @@ class ContinuousSimulation:
         ]
         self.rng = Random(config["seed"])
         self.routing = create_policy(config["policy"], RoutingContext(
-            count, lambda i: len(self.servers[i].running),
-            demand=lambda i: len(self.servers[i].running)+len(self.servers[i].waiting),
+            count, lambda i: self.servers[i].running_count,
+            demand=lambda i: self.servers[i].running_count+self.servers[i].waiting_count,
             routing_rng=Random(config["seed"] + 1000000)))
         self.active = [0] * count
         self.queued = [0] * count

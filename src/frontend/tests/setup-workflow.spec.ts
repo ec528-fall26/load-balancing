@@ -50,6 +50,9 @@ test("Setup, Lab and Compare preserve completed results and distinguish the draf
     await page
       .getByRole("link", { name: "Back to Setup", exact: true })
       .click();
+    await expect(
+      page.getByRole("spinbutton", { name: "Server count", exact: true }),
+    ).toHaveValue("17");
     await page
       .getByRole("link", { name: "Return to Lab", exact: true })
       .click();
@@ -86,7 +89,7 @@ test("legacy template links open editable Setup; edits survive reload and New si
     .poll(() =>
       page.evaluate(
         () =>
-          JSON.parse(sessionStorage.getItem("lbsim.compare-draft.v1") ?? "{}")
+          JSON.parse(sessionStorage.getItem("lbsim.workspace-draft.v1") ?? "{}")
             .config?.server_count,
       ),
     )

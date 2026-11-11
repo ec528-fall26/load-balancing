@@ -297,14 +297,30 @@ class SessionManager:
     def _envelope(sid, data):
         return dict(api_version="1", session_id=sid, **data)
 
-    def create(self, config, *, speed=1.0, paused=False):
+    def create(self, config, *, speed=1.0, paused=False, replace_session_id=None):
         self.sweep()
+        with self.lock:
+            previous = self.sessions.get(replace_session_id)
+        if previous is None:
+            return self._create(config, speed, paused)
+        if not previous.lock.acquire(timeout=self.limits.command_seconds):
+            raise SessionError(429, "SESSION_BUSY", "Another command is using this session. Retry shortly.")
+        try:
+            if self._get(replace_session_id) is not previous:
+                raise SessionError(404, "SESSION_NOT_FOUND", "Session was removed.")
+            return self._create(config, speed, paused, (replace_session_id, previous))
+        finally:
+            previous.lock.release()
+
+    def _create(self, config, speed, paused, replacement=None):
         with self.lock:
             if self.closed:
                 raise SessionError(
                     503, "SESSIONS_CLOSED", "Session service is shutting down."
                 )
-            if len(self.sessions) + self.pending >= self.limits.max_sessions:
+            # A replacement can borrow one worker slot during startup.
+            capacity = self.limits.max_sessions + (replacement is not None)
+            if len(self.sessions) + self.pending >= capacity:
                 raise SessionError(
                     429,
                     "SESSION_LIMIT",
@@ -346,11 +362,16 @@ class SessionManager:
                     raise SessionError(
                         503, "SESSIONS_CLOSED", "Session service is shutting down."
                     )
+                if replacement is not None:
+                    del self.sessions[replacement[0]]
                 self.sessions[sid] = record
-            return self._envelope(sid, data)
         except BaseException:
             self._stop(record)
             raise
+        else:
+            if replacement is not None:
+                self._stop(replacement[1])
+            return self._envelope(sid, data)
         finally:
             child.close()
             with self.lock:

@@ -1,0 +1,41 @@
+name: Simulator tests
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
+      - run: uv sync --locked
+      - run: uv run --locked python -m unittest discover -s tests
+      - run: npm ci
+        working-directory: src/frontend
+      - run: npm run build
+        working-directory: src/frontend
+      - name: Test frontend modules
+        working-directory: src/frontend
+        run: |
+          npx --no-install tsc -p tsconfig.api-tests.json
+          node --test .api-tests/tests/*.test.js
+      - run: npx --no-install playwright install --with-deps chromium
+        working-directory: src/frontend
+      - name: Test Lab workflows
+        env:
+          LBSIM_API_URL: http://127.0.0.1:8000
+          PLAYWRIGHT_CHANNEL: chromium
+        run: |
+          uv run --locked uvicorn lbsim.api:app --host 127.0.0.1 --port 8000 &
+          api_pid=$!
+          trap 'kill "$api_pid"' EXIT
+          curl --fail --retry 20 --retry-connrefused --retry-delay 1 "$LBSIM_API_URL/health"
+          npm --prefix src/frontend test

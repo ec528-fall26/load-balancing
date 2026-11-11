@@ -270,3 +270,27 @@ test("mobile run opens Lab and draft execution edits preserve the live session",
     page.getByRole("button", { name: "Pause session", exact: true }),
   ).toBeVisible();
 });
+
+test("a rejected replacement leaves the active run usable", async ({ page, request }) => {
+  await page.goto("/setup?mode=continuous");
+  const start = page.getByRole("button", { name: "Start continuous simulation", exact: true });
+  await start.click();
+  await expect(page.getByRole("button", { name: "Pause session", exact: true })).toBeVisible();
+  await expect.poll(() => created.get(page)?.size).toBe(1);
+  const [old] = created.get(page)!;
+  await page.getByRole("link", { name: "Edit configuration", exact: true }).click();
+  await page.route("**/api/sessions", async (route) => {
+    const body = route.request().postDataJSON();
+    expect(body.replace_session_id).toBe(old);
+    await route.continue({ postData: { ...body, config: { ...body.config, server_count: 0 } } });
+  }, { times: 1 });
+  const rejected = page.waitForResponse((response) =>
+    response.url().endsWith("/api/sessions") && response.status() === 422,
+  );
+  await page.getByRole("button", { name: "Replace continuous session", exact: true }).click();
+  await rejected;
+  expect((await request.get(`/api/sessions/${old}/snapshot`)).ok()).toBe(true);
+  await page.getByRole("link", { name: "Return to Lab", exact: true }).click();
+  await page.getByRole("button", { name: "Pause session", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Resume session", exact: true })).toBeVisible();
+});

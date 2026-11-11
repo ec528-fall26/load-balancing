@@ -182,7 +182,7 @@ test("staged policy comparison retains the request model and isolates routing ch
     .getByRole("option", { name: "Least active requests", exact: true })
     .click();
   const payloads: Record<string, unknown>[] = [];
-  await page.route("**/api/engine/run", async (route) => {
+  await page.route("**/api/engine/summarize", async (route) => {
     payloads.push(route.request().postDataJSON().config);
     await route.continue();
   });

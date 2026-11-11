@@ -11,7 +11,7 @@ from typing import Any, Literal
 from fastapi import FastAPI, Query
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, ConfigDict, StrictBool, StrictFloat, StrictInt
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictFloat, StrictInt
 from starlette.concurrency import run_in_threadpool
 from starlette.exceptions import HTTPException
 
@@ -157,6 +157,7 @@ class SessionRequest(BaseModel):
     config: dict[str, Any]
     speed: StrictFloat | StrictInt = 1.0
     paused: StrictBool = False
+    replace_session_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{32}$")
 
 
 class SessionCommand(BaseModel):
@@ -474,7 +475,10 @@ def create_app(*, limits=None, runner=isolated_run, session_limits=None, session
         config = (checked_regional_config(request.config, limits, session_limits, continuous=True)
                   if request.config.get('topology') == 'regions' else
                   checked_session_config(request.config, limits, session_limits))
-        return await run_in_threadpool(manager.create, config, speed=request.speed, paused=request.paused)
+        return await run_in_threadpool(
+            manager.create, config, speed=request.speed, paused=request.paused,
+            replace_session_id=request.replace_session_id,
+        )
 
     @app.get('/v1/sessions/{session_id}/snapshot')
     async def session_snapshot(session_id: str,

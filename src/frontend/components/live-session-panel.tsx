@@ -182,13 +182,11 @@ export function LiveSessionPanel({
                 Drain traffic
               </Button>
             </div>
-            <Panel title="Session options"><div className="flex flex-wrap items-end gap-3">
+            <Panel key={live.id} title="Session options"><div className="flex flex-wrap items-end gap-3">
               <Button
                 variant="outline"
                 disabled={live.busy}
-                onClick={async () => {
-                  if (await live.stop()) await live.create(config);
-                }}
+                onClick={() => live.create(config)}
               >
                 Restart session
               </Button>

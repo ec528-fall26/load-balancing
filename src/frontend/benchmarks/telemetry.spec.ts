@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { test, expect, type Page } from "@playwright/test";
 import { writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
-const out = path.resolve(__dirname, "../../../experiments/results/a-11");
+const out = process.env.A11_OUTPUT_DIR ?? path.resolve(__dirname, "../../../experiments/results/a-11");
 const ids = new WeakMap<Page, Set<string>>();
 test.beforeEach(async ({ page }) => {
   const created = new Set<string>();
@@ -132,7 +132,7 @@ for (const topology of ["single_pool", "regions"])
             });
           } catch {}
         });
-        await page.goto("/simulator");
+        await page.goto("/setup");
         if (topology === "regions") {
           await choose(page, "Topology", "Regions");
           await choose(page, "Regional preset", "Scale · 100 servers");
@@ -240,6 +240,7 @@ for (const topology of ["single_pool", "regions"])
           await page
             .getByRole("button", { name: "Drain traffic", exact: true })
             .click();
+          await page.getByRole("button", { name: "Session options", exact: true }).click();
           await choose(page, "Simulation speed", "10×");
           await page
             .getByRole("button", { name: "Resume session", exact: true })

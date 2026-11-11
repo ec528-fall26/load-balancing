@@ -1,5 +1,6 @@
 """Run the fixed-work fan-out experiment across three paired seeds."""
 
+import argparse
 import json
 from statistics import mean
 
@@ -7,7 +8,11 @@ from lbsim.fanout import experiment
 
 
 def main():
-    runs = [experiment({"seed": seed}) for seed in (42, 43, 44)]
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--outage", action="store_true", help="Compare against a seeded 500 ms shard outage.")
+    args = parser.parse_args()
+    scenario = {"outage_ms": 500, "slowdown": 1} if args.outage else {}
+    runs = [experiment({"seed": seed, **scenario}) for seed in (42, 43, 44)]
     summaries = []
     for index, case in enumerate(runs[0]["cases"]):
         samples = [run["cases"][index] for run in runs]
@@ -19,6 +24,7 @@ def main():
             condition=case["condition"],
             offered=sum(row["offered"] for row in samples),
             on_time=successes,
+            outage_failed=sum(row["outage_failed"] for row in samples),
             timed_out=sum(row["timed_out"] for row in samples),
             rejected=sum(row["shard_rejected"] + row["coordinator_rejected"] for row in samples),
             mean_seed_p95_ms=mean(successful_p95s) if successful_p95s else None,

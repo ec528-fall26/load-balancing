@@ -33,7 +33,7 @@ Use isolated ports to preserve the interactive demo. Run phases sequentially on 
    npm test -- --config benchmarks/playwright.config.ts
    ```
 
-   Defaults to the installed Chromium channel; `PLAYWRIGHT_CHANNEL` can select another installed browser. Ten cases cover both topologies, rates and execution modes, plus 1,000-server playback and the 12-datacenter preset. One-shot cases offer 100,000 requests; live cases observe 15 seconds of updates, then pause/drain/stop. This suite is outside the default test directory. It records CDP heap/task metrics, long tasks, animation-frame gaps, decoded polling payloads, request concurrency and control latency. Test-owned sessions are deleted afterward.
+   Defaults to the installed Chromium channel; `PLAYWRIGHT_CHANNEL` can select another installed browser. Set `A11_OUTPUT_DIR` to an absolute directory to keep a rerun separate from the checked-in evidence. Ten cases cover both topologies, rates and execution modes, plus 1,000-server playback and the 12-datacenter preset. One-shot cases offer 100,000 requests; live cases observe 15 seconds of updates, then pause/drain/stop. This suite is outside the default test directory. It records CDP heap/task metrics, long tasks, animation-frame gaps, decoded polling payloads, request concurrency and control latency. Test-owned sessions are deleted afterward.
 
 5. Generate the analysis from the repository root:
 

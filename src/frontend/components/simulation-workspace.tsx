@@ -24,6 +24,7 @@ import Link from "next/link";
 
 import {
   COMPARE_DRAFT_KEY,
+  WORKSPACE_DRAFT_KEY,
   validCompareConfig,
   isRegional,
 } from "@/lib/comparison";
@@ -299,13 +300,13 @@ export default function SimulationWorkspace({
     const query = new URLSearchParams(location.search);
     if (query.get("mode") === "continuous") setExecution("continuous");
     try {
-      if (
-        query.has("compareDraft") ||
-        (!sourceKey &&
-          !query.has("new") &&
-          sessionStorage.getItem(COMPARE_DRAFT_KEY))
-      ) {
-        const raw = sessionStorage.getItem(COMPARE_DRAFT_KEY);
+      const raw = query.has("compareDraft")
+        ? sessionStorage.getItem(COMPARE_DRAFT_KEY)
+        : !sourceKey && !query.has("new")
+          ? sessionStorage.getItem(WORKSPACE_DRAFT_KEY) ??
+            sessionStorage.getItem(COMPARE_DRAFT_KEY)
+          : null;
+      if (raw !== null || query.has("compareDraft")) {
         if (!raw || raw.length > 65536)
           throw new Error(
             "The comparison's lab setup is unavailable in this tab.",
@@ -339,7 +340,9 @@ export default function SimulationWorkspace({
           setConfig(draft.config);
         }
         setExecution(
-          draft.execution === "continuous" ? "continuous" : "one_shot",
+          query.get("mode") === "continuous" || draft.execution === "continuous"
+            ? "continuous"
+            : "one_shot",
         );
         setSetupName(typeof draft.name === "string" ? draft.name : "Lab setup");
         setSourceReady(true);
@@ -396,7 +399,7 @@ export default function SimulationWorkspace({
     if (!draftReady) return;
     try {
       sessionStorage.setItem(
-        COMPARE_DRAFT_KEY,
+        WORKSPACE_DRAFT_KEY,
         JSON.stringify({
           version: 1,
           name: setupName,
@@ -611,7 +614,7 @@ export default function SimulationWorkspace({
     <div className="min-h-screen bg-background">
       <AppHeader
         section={isSetup ? "setup" : "lab"}
-        compareHref={shardedComparison ?? "/compare?draft=1"}
+        compareHref={shardedComparison ?? "/compare?draft=workspace"}
         actions={
           isSetup && topology === "single_pool" ? (
             <SaveSetupDialog
@@ -717,7 +720,6 @@ export default function SimulationWorkspace({
                   return;
                 }
                 if (execution === "continuous") {
-                  if (live.id && !(await live.stop())) return;
                   if (await live.create(draftConfig)) {
                     setLabExecution("continuous");
                     setLabTopology(topology);
