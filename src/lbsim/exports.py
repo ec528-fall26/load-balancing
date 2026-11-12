@@ -34,6 +34,8 @@ def build_exports(config: dict, summary: dict) -> RunExports:
     values become empty cells. Events and individual response times are omitted.
     """
     config = validate_config(config)
+    if config.get("request_model") == "cpu_io":
+        raise ValueError("CPU/I/O runs require a newer export schema; version 1 cannot represent request stages.")
     if "processing_rates" in config:
         raise ValueError("Exports do not support per-server processing rates yet "
                          "(schema version 1 has nine settings).")

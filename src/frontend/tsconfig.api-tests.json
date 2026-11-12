@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
+    "types": [
+      "node"
+    ],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "outDir": ".api-tests"
+  },
+  "include": [
+    "lib/server/engine-proxy.ts",
+    "lib/engine.ts",
+    "tests/api-proxy.test.ts",
+    "lib/saved-setups.ts",
+    "tests/saved-setups.test.ts",
+    "lib/comparison.ts",
+    "tests/comparison.test.ts",
+    "lib/server/session-proxy.ts",
+    "lib/live-session.ts",
+    "tests/live-api.test.ts",
+    "lib/server/run-proxy.ts",
+    "tests/recorded-api.test.ts"
+  ]
+}

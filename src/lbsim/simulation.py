@@ -7,6 +7,9 @@ from lbsim.utils.generate_seed import route
 
 def run_simulation(values: dict) -> dict:
     config = validate_config(values)
+    if config.get("request_model") == "cpu_io":
+        from lbsim.staged import run_staged_simulation
+        return run_staged_simulation(config)
     events = []
     completed, rejected = route(**config, events=events)
     summary = summarize(

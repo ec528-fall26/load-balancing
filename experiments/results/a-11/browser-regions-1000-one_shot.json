@@ -1,0 +1,210 @@
+{
+  "recorded_at_utc": "2026-11-03T00:37:18.883Z",
+  "git_head": "d6fbfafeab8d429e83567efd7a45f76ef09513ff",
+  "benchmark_source_sha256": "e2e6e57d763d220fa04d14bc95259827acf7d6a54bf5d136223b2329a364bd48",
+  "topology": "regions",
+  "rate": 1000,
+  "mode": "one_shot",
+  "browser_version": "156.0.8078.4",
+  "viewport": {
+    "width": 1440,
+    "height": 1000
+  },
+  "first_ready_ms": 834.8923329999961,
+  "initial_heap": {
+    "usedSize": 7642612,
+    "totalSize": 8470528,
+    "embedderHeapUsedSize": 2495096,
+    "backingStorageSize": 1535923
+  },
+  "natural_end_heap": {
+    "usedSize": 11589912,
+    "totalSize": 22102016,
+    "embedderHeapUsedSize": 3342288,
+    "backingStorageSize": 1540814
+  },
+  "post_gc_end_heap": {
+    "usedSize": 11527204,
+    "totalSize": 12402688,
+    "embedderHeapUsedSize": 3223776,
+    "backingStorageSize": 1540356
+  },
+  "retained_heap_delta_bytes": 3884592,
+  "rendering": {
+    "long_tasks": [
+      60
+    ],
+    "frames": 139,
+    "frame_gap_max_ms": 33.299999999999955,
+    "frame_gap_mean_ms": 16.78561151079137,
+    "frame_gaps_over_100ms": 0,
+    "json_reads": [
+      {
+        "url": "/api/regions/run",
+        "ms": 0.6000000089406967
+      }
+    ],
+    "visibility": "visible"
+  },
+  "cdp_metrics": [
+    {
+      "name": "Timestamp",
+      "value": 87625.998863
+    },
+    {
+      "name": "AudioHandlers",
+      "value": 0
+    },
+    {
+      "name": "AudioWorkletProcessors",
+      "value": 0
+    },
+    {
+      "name": "Documents",
+      "value": 1
+    },
+    {
+      "name": "Frames",
+      "value": 1
+    },
+    {
+      "name": "JSEventListeners",
+      "value": 3628
+    },
+    {
+      "name": "LayoutObjects",
+      "value": 809
+    },
+    {
+      "name": "MediaKeySessions",
+      "value": 0
+    },
+    {
+      "name": "MediaKeys",
+      "value": 0
+    },
+    {
+      "name": "Nodes",
+      "value": 1109
+    },
+    {
+      "name": "Resources",
+      "value": 18
+    },
+    {
+      "name": "ContextLifecycleStateObservers",
+      "value": 26
+    },
+    {
+      "name": "V8PerContextDatas",
+      "value": 2
+    },
+    {
+      "name": "WorkerGlobalScopes",
+      "value": 0
+    },
+    {
+      "name": "UACSSResources",
+      "value": 0
+    },
+    {
+      "name": "RTCPeerConnections",
+      "value": 0
+    },
+    {
+      "name": "ResourceFetchers",
+      "value": 1
+    },
+    {
+      "name": "AdSubframes",
+      "value": 0
+    },
+    {
+      "name": "DetachedScriptStates",
+      "value": 0
+    },
+    {
+      "name": "ArrayBufferContents",
+      "value": 36
+    },
+    {
+      "name": "LayoutCount",
+      "value": 154
+    },
+    {
+      "name": "RecalcStyleCount",
+      "value": 227
+    },
+    {
+      "name": "LayoutDuration",
+      "value": 0.004456
+    },
+    {
+      "name": "RecalcStyleDuration",
+      "value": 0.009556
+    },
+    {
+      "name": "DevToolsCommandDuration",
+      "value": 0.005201
+    },
+    {
+      "name": "ScriptDuration",
+      "value": 0.063298
+    },
+    {
+      "name": "V8CompileDuration",
+      "value": 0
+    },
+    {
+      "name": "TaskDuration",
+      "value": 0.128591
+    },
+    {
+      "name": "TaskOtherDuration",
+      "value": 0.04608
+    },
+    {
+      "name": "ThreadTime",
+      "value": 0.129605
+    },
+    {
+      "name": "ProcessTime",
+      "value": 0.656672
+    },
+    {
+      "name": "JSHeapUsedSize",
+      "value": 11635536
+    },
+    {
+      "name": "JSHeapTotalSize",
+      "value": 22102016
+    },
+    {
+      "name": "FirstMeaningfulPaint",
+      "value": 87623.292356
+    },
+    {
+      "name": "DomContentLoaded",
+      "value": 87623.284761
+    },
+    {
+      "name": "NavigationStart",
+      "value": 87623.251907
+    }
+  ],
+  "poll_count": 0,
+  "max_simultaneous_polls": 0,
+  "poll_latency_ms": null,
+  "poll_body_bytes": null,
+  "poll_start_gap_ms": null,
+  "polls": [],
+  "counts": {
+    "offered": 100000,
+    "completed": 73700,
+    "rejected": 26300,
+    "running": 0,
+    "waiting": 0,
+    "in_transit": 0
+  },
+  "errors": []
+}

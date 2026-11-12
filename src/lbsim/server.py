@@ -68,6 +68,7 @@ class Server:
         self.processing_rate = float(processing_rate)
         self._running: dict[int, Execution] = {}
         self._waiting: deque[Request] = deque()
+        self._waiting_ids: set[int] = set()
         self._last_time = 0.0
 
     @property
@@ -77,6 +78,14 @@ class Server:
     @property
     def waiting(self) -> tuple[Request, ...]:
         return tuple(self._waiting)
+
+    @property
+    def running_count(self) -> int:
+        return len(self._running)
+
+    @property
+    def waiting_count(self) -> int:
+        return len(self._waiting)
 
     def _check_time(self, now: float):
         if not isfinite(now) or now < self._last_time:
@@ -94,7 +103,7 @@ class Server:
             raise ValueError("submit at the request's arrival time")
         if any(e.completion_time <= now for e in self._running.values()):
             raise ValueError("process pending completions before arrivals")
-        if request.id in self._running or any(r.id == request.id for r in self._waiting):
+        if request.id in self._running or request.id in self._waiting_ids:
             raise ValueError("request ID is already active on this server")
         if len(self._running) < self.concurrency:
             execution = self._execution(request, now)
@@ -102,6 +111,7 @@ class Server:
             result = Admission("started", execution)
         elif len(self._waiting) < self.queue_limit:
             self._waiting.append(request)
+            self._waiting_ids.add(request.id)
             result = Admission("queued")
         else:
             result = Admission("rejected")
@@ -121,6 +131,7 @@ class Server:
         del self._running[request_id]
         if started is not None:
             self._waiting.popleft()
+            self._waiting_ids.remove(started.request.id)
             self._running[started.request.id] = started
         self._last_time = now
         return Completion(finished, started)

@@ -21,7 +21,7 @@ class SimulationAppTests(unittest.TestCase):
         self.assertEqual([m.value for m in app.metric], ['4', '0', '0.100 s', '0.100 s'])
         self.assertEqual(app.session_state['config']['seed'], -42)
         self.assertEqual(app.selectbox(key='policy').options,
-                         ['Round robin', 'Least active requests'])
+                         ['Round robin', 'Least active requests', 'Least outstanding requests', 'Power of two choices'])
         app.number_input(key='arrival_rate').set_value(3.0)
         next(b for b in app.button if b.label == 'Run simulation').click().run()
         self.assertEqual(app.metric[0].value, '6')

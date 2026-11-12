@@ -1,0 +1,16 @@
+{
+  "python_tests": 99,
+  "browser_benchmark_cases": 8,
+  "typescript": "passed",
+  "diff_check": "passed",
+  "engine_samples": 24,
+  "one_shot_api_samples": 16,
+  "live_api_cases": 4,
+  "live_snapshot_checks": 331,
+  "one_shot_counts_match_engine": true,
+  "remaining_session_workers": 0,
+  "hardware": {
+    "cpu": "Apple M4 Pro",
+    "memory_bytes": 51539607552
+  }
+}

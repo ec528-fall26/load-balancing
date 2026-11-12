@@ -49,8 +49,12 @@ def validate(events, completed, rejected, config):
             raise RuntimeError('Events moved backwards')
         previous = now
         if action != 'completed':
-            target = (arrivals % config['server_count'] if config['policy'] == 'round_robin'
-                      else min(states, key=lambda s: (states[s][0], s)))
+            if config['policy'] == 'round_robin':
+                target = arrivals % config['server_count']
+            elif config['policy'] == 'least_outstanding':
+                target = min(states, key=lambda sid: (sum(states[sid]), sid))
+            else:
+                target = min(states, key=lambda sid: (states[sid][0], sid))
             if sid != target or request_id != arrivals:
                 raise RuntimeError('Routing does not match the current state or arrival order')
             if action == 'rejected' and states[sid] != (config['concurrency'], config['queue_limit']):
@@ -115,8 +119,11 @@ def sample(config, expected_trace):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--output', type=Path, default=ROOT/'experiments/results/d3-02')
+    parser.add_argument('--output', type=Path, default=ROOT/'experiments/results/d3-02-rerun')
+    parser.add_argument('--include-least-outstanding', action='store_true',
+                        help='Include the queue-aware policy shown on the Demo 3 slide.')
     args = parser.parse_args()
+    policies = (*POLICIES, 'least_outstanding') if args.include_least_outstanding else POLICIES
     output = args.output.resolve()
     (output/'traces').mkdir(parents=True, exist_ok=True)
     capacity = BASE['server_count'] * BASE['concurrency'] / ((BASE['service_min']+BASE['service_max'])/2)
@@ -133,7 +140,7 @@ def main():
                 writer = csv.writer(stream)
                 writer.writerow(['request_id', 'arrival_seconds', 'service_seconds'])
                 writer.writerows((r.id, r.arrival_time, r.service_time) for r in trace)
-            for policy in POLICIES:
+            for policy in policies:
                 row = sample({**config, 'policy': policy}, trace)
                 row.update(scenario=scenario, seed=seed, policy=policy,
                            nominal_load=load, trace_file=filename)
@@ -144,14 +151,15 @@ def main():
                'mean_wait_seconds', 'mean_utilization', 'utilization_population_stdev']
     aggregates = []
     for scenario in SCENARIOS:
-        for policy in POLICIES:
+        for policy in policies:
             rows = [s for s in samples if s['scenario']==scenario and s['policy']==policy]
             aggregates.append(dict(scenario=scenario, policy=policy, metrics={
                 key: dict(mean=statistics.fmean(r[key] for r in rows),
                           minimum=min(r[key] for r in rows), maximum=max(r[key] for r in rows),
                           sample_stdev=statistics.stdev(r[key] for r in rows)) for key in metrics}))
     files = ['experiments/compare_policies.py', 'src/lbsim/utils/generate_seed.py',
-             'src/lbsim/server.py', 'src/lbsim/metrics.py', 'src/lbsim/simulation.py']
+             'src/lbsim/server.py', 'src/lbsim/metrics.py', 'src/lbsim/simulation.py',
+             'src/lbsim/policies.py']
     report = dict(recorded_at_utc=datetime.now(timezone.utc).isoformat(),
                   revision=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
                   source_sha256={f: hashlib.sha256((ROOT/f).read_bytes()).hexdigest() for f in files},
@@ -173,7 +181,8 @@ def main():
         for row in samples:
             writer.writerows((row['scenario'], row['seed'], row['policy'], sid, value)
                              for sid, value in row['per_server_utilization'].items())
-    print('Validated 24 runs and public-API replays; saved 12 shared traces and all metrics.')
+    print(f'Validated {len(samples)} runs and public-API replays; '
+          f'saved {len(SCENARIOS) * len(SEEDS)} shared traces and all metrics.')
 
 
 if __name__ == '__main__':

@@ -79,11 +79,15 @@ def load_configuration(data: bytes) -> SavedConfiguration:
 def replay_configuration(saved: SavedConfiguration) -> dict:
     """Return a regenerated full run only when its exported metrics match."""
     summary = run_simulation(saved.config)
+    verify_replay(saved, summary)
+    return summary
+
+
+def verify_replay(saved: SavedConfiguration, summary: dict) -> None:
     if build_exports(saved.config, summary).run_id != saved.run_id:
         raise ValueError("Replay did not match the saved results fingerprint. The file may "
                          "have changed, or it may use a different simulator version. "
                          "Current results were not replaced.")
-    return summary
 
 
 def _integer(value, field):

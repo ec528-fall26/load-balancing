@@ -1,8 +1,7 @@
 # Python engine API (A-05)
 
 The API wraps the existing seeded simulation engine. It does not change routing,
-queueing, draining, metrics, or processing-rate behavior. The Next.js proxy is
-not connected yet; that is A-06. Regional and continuous APIs are later tasks.
+queueing, draining, metrics, or processing-rate behavior. The Next.js proxy connects the one-shot Run action. [Continuous sessions](continuous-api.md) add a separate service-owned clock and bounded telemetry contract (A-08). Regional APIs remain A-09.
 
 ## Start locally
 
@@ -54,7 +53,7 @@ Defaults, also returned by `/health`:
 
 | Limit | Value |
 | --- | ---: |
-| Actual request body, including chunked uploads | 65,536 bytes |
+| Actual request body, including chunked uploads | 65,536 bytes (saved CSV comparison: 12 MiB total, 5 MiB per CSV) |
 | Arrival rate × duration | 100,000 |
 | Servers | 1,000 |
 | Total processing slots | 4,096 |
