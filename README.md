@@ -24,13 +24,11 @@ and Node.js 22 or newer. Dependencies are pinned by `uv.lock` and
 `src/frontend/package-lock.json`.
 
 ```sh
-git clone --branch sean-dev https://github.com/ec528-fall26/load-balancing.git
+git clone --branch demo-3 https://github.com/ec528-fall26/load-balancing.git
 cd load-balancing
 uv sync --locked
 uv run uvicorn lbsim.api:app --host 127.0.0.1 --port 8000 --workers 1
 ```
-
-For the graded snapshot, use `demo-3` in place of `sean-dev` once published.
 
 In a second terminal, from the repository root:
 
