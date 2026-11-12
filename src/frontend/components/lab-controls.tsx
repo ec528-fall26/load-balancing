@@ -12,7 +12,7 @@ import {
   ParameterHelp,
 } from "@/components/fanout-fields";
 import type { ShardedConfig } from "@/lib/fanout";
-import type { RegionalTopology } from "@/lib/regions";
+import { withoutRegionalClients, type RegionalTopology } from "@/lib/regions";
 import { RegionalSettings } from "@/components/regional-settings";
 import { RequestModelFields } from "@/components/request-model-fields";
 import { NumberField } from "@/components/number-field";
@@ -71,6 +71,10 @@ export function LabControls(p: Props) {
   const single = p.topology === "single_pool";
   const sharded = p.topology === "sharded";
   const continuous = !sharded && p.execution === "continuous";
+  const weights = p.regional.client_weights;
+  const regionalClients = !single && continuous && !!weights;
+  const totalWeight = weights?.reduce((sum, weight) => sum + weight, 0) ?? 0;
+  const canRun = !p.busy && p.ready && (!regionalClients || totalWeight > 0);
   const servers = single
     ? c.server_count
     : p.regional.regions.reduce((n, r) => n + r.servers, 0);
@@ -116,7 +120,7 @@ export function LabControls(p: Props) {
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        p.onRun();
+        if (canRun) p.onRun();
       }}
     >
       <fieldset
@@ -198,6 +202,7 @@ export function LabControls(p: Props) {
                     policy={p.regionalPolicy}
                     onPolicyChange={p.onRegionalPolicy}
                     hidePolicy
+                    regionalClients={regionalClients}
                   />
                 )}
               </CardContent>
@@ -245,6 +250,51 @@ export function LabControls(p: Props) {
                             : p.onRegionalPolicy(v),
                       )}
                     </FieldGroup>
+                    {!single && continuous && (
+                      <FieldGroup>
+                        {select(
+                          "Client traffic",
+                          regionalClients ? "regional" : "single",
+                          { single: "Single source", regional: "Clients by region" },
+                          (mode) => p.onRegional(mode === "regional" ? {
+                            ...p.regional,
+                            client_weights: p.regional.regions.map(() => 1),
+                            client_migration: true,
+                          } : withoutRegionalClients(p.regional)),
+                        )}
+                        {regionalClients && weights && (
+                          <>
+                            <FieldDescription>
+                              Weights split the total request rate among client origins. Zero disables an origin.
+                            </FieldDescription>
+                            <FieldGroup className="grid gap-4 sm:grid-cols-2">
+                              {p.regional.regions.map((region, index) => (
+                                <NumberField
+                                  key={index}
+                                  label={`${region.name} traffic weight`}
+                                  value={weights[index]}
+                                  help={totalWeight > 0 ? `${(c.arrival_rate * weights[index] / totalWeight).toLocaleString(undefined, { maximumFractionDigits: 1 })} req/s` : undefined}
+                                  onChange={(weight) => p.onRegional({
+                                    ...p.regional,
+                                    client_weights: weights.map((value, i) => i === index ? Math.max(0, Math.min(10000, Math.round(weight))) : value),
+                                  })}
+                                />
+                              ))}
+                            </FieldGroup>
+                            {totalWeight === 0 && <p role="alert" className="text-sm text-destructive">Set at least one positive traffic weight.</p>}
+                            {select(
+                              "Client migration",
+                              p.regional.client_migration ? "enabled" : "disabled",
+                              { enabled: "Gradual shift and return", disabled: "Per-request failover only" },
+                              (mode) => p.onRegional({ ...p.regional, client_migration: mode === "enabled" }),
+                            )}
+                            <FieldDescription>
+                              Clients prefer their home region. Requests can fail over immediately. Migration gradually shifts up to 60% of a cohort during an outage or sustained load and returns it once home has recovered.
+                            </FieldDescription>
+                          </>
+                        )}
+                      </FieldGroup>
+                    )}
                     {single && (
                       <RequestModelFields
                         config={c}
@@ -428,7 +478,7 @@ export function LabControls(p: Props) {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={p.busy || !p.ready}
+                disabled={!canRun}
               >
                 {p.busy ? (
                   <LoaderCircle

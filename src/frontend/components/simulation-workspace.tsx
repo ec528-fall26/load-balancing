@@ -3,6 +3,7 @@ import { initialRegions } from "@/components/regional-settings";
 import { RegionalTelemetry } from "@/components/regional-telemetry";
 import {
   regionalRequest,
+  withoutRegionalClients,
   type RegionalConfig,
   type RegionalRun,
   type RegionalTopology,
@@ -385,7 +386,7 @@ export default function SimulationWorkspace({
     }
   }, [sourceKey]);
   const regionalConfig: RegionalConfig = {
-    ...regional,
+    ...(execution === "continuous" ? regional : withoutRegionalClients(regional)),
     topology: "regions",
     policy: regionalPolicy as RegionalConfig["policy"],
     arrival_rate: config.arrival_rate,

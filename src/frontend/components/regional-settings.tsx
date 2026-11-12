@@ -67,11 +67,13 @@ export function RegionalSettings({
   policy,
   onPolicyChange,
   hidePolicy=false,
+  regionalClients = false,
 }: {
   value: RegionalTopology;
   onChange: (v: RegionalTopology) => void;
   policy: string;
   hidePolicy?: boolean;
+  regionalClients?: boolean;
   onPolicyChange: (v: string) => void;
 }) {
   const [presets, setPresets] = useState<RegionPreset[]>([]),
@@ -106,7 +108,15 @@ export function RegionalSettings({
             if (p) {
               setPreset(id);
               const { id: _id, ...topology } = p;
-              onChange(structuredClone(topology));
+              const weights = value.client_weights;
+              onChange(structuredClone(weights ? {
+                ...topology,
+                client_weights: topology.regions.map((region) => {
+                  const index = value.regions.findIndex((r) => r.name === region.name);
+                  return weights[index] ?? 1;
+                }),
+                client_migration: value.client_migration,
+              } : topology));
             }
           }}
         >
@@ -149,7 +159,7 @@ export function RegionalSettings({
         </FieldDescription>
       </Field>
       </>}
-      <Field>
+      {!regionalClients && <Field>
         <FieldLabel htmlFor="source-region">Source region</FieldLabel>
         <Select
           value={String(value.source)}
@@ -179,7 +189,7 @@ export function RegionalSettings({
           Selecting a source resets client RTTs to that matrix row. Edit them
           below for a custom client location.
         </FieldDescription>
-      </Field>
+      </Field>}
       <Accordion type="multiple">
         {value.regions.map((r, i) => (
           <AccordionItem value={String(i)} key={i}>
@@ -226,7 +236,7 @@ export function RegionalSettings({
                     }
                   />
                 ))}
-                <NumberField
+                {!regionalClients && <NumberField
                   label={`Client RTT to ${r.name} (ms)`}
                   value={value.client_latency_ms[i]}
                   onChange={(v) =>
@@ -237,7 +247,7 @@ export function RegionalSettings({
                       ),
                     })
                   }
-                />
+                />}
               </FieldGroup>
             </AccordionContent>
           </AccordionItem>
@@ -247,9 +257,9 @@ export function RegionalSettings({
           <AccordionContent className="h-auto">
             <FieldGroup>
               <FieldDescription>
-                Directed RTT assumptions in milliseconds. Editing the source row
-                does not overwrite separately edited client RTTs; reselect a
-                source to copy its row.
+                {regionalClients
+                  ? "Each client origin uses its own row, including when traffic shifts to another region."
+                  : "Directed RTT assumptions in milliseconds. Reselect the source to copy its row into client RTTs."}
               </FieldDescription>
               {value.latency_ms.flatMap((row, i) =>
                 row.map((n, j) => (

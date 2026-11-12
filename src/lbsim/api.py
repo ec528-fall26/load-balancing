@@ -191,7 +191,7 @@ def checked_session_config(values, limits, session_limits):
 def checked_regional_config(values, limits, session_limits, *, continuous=False):
     """Normalize a distinct regional schema; never reinterpret a server policy."""
     allowed = {'topology','regions','latency_ms','client_latency_ms','source','policy',
-               'arrival_rate','service_min','service_max','seed'} | (set() if continuous else {'duration'})
+               'arrival_rate','service_min','service_max','seed'} | ({'client_weights', 'client_migration'} if continuous else {'duration'})
     try:
         if set(values)-allowed or values.get('topology') != 'regions':
             raise ValueError('Use the regional schema; unknown fields or continuous duration are not allowed.')
@@ -231,6 +231,9 @@ def checked_regional_config(values, limits, session_limits, *, continuous=False)
         config = dict(topology='regions', regions=[asdict(r) for r in regions], latency_ms=matrix,
             client_latency_ms=values.get('client_latency_ms',matrix[source]), source=source,
             arrival_rate=rate,service_min=low,service_max=high,seed=seed,policy=values.get('policy','least_loaded'))
+        config.update({key: values[key] for key in ('client_weights', 'client_migration') if key in values})
+        if 'client_weights' in values and values['client_weights'] is None:
+            raise ValueError('Client weights must be an array.')
         # Verify the engine contract, including client RTT and regional policy.
         RegionalSimulation(config)
         if not continuous and rate*duration > limits.generated_requests:
@@ -238,7 +241,10 @@ def checked_regional_config(values, limits, session_limits, *, continuous=False)
         # Bound outstanding travel memory at the maximum permitted session rate,
         # even when a running session later changes traffic via a command.
         travel_rate = session_limits.max_arrival_rate if continuous else rate
-        if travel_rate * max(config['client_latency_ms'])/1000 > 100000:
+        weights = config.get('client_weights')
+        max_rtt = (max(rtt for weight, row in zip(weights, matrix) if weight for rtt in row)
+                   if weights else max(config['client_latency_ms']))
+        if travel_rate * max_rtt/1000 > 100000:
             raise ValueError('Client RTT × maximum traffic exceeds the 100,000 in-transit budget. Reduce RTT (or one-shot traffic).')
         if not continuous:
             config['duration'] = duration
