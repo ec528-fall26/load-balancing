@@ -4,6 +4,9 @@ from dataclasses import dataclass
 from math import isfinite
 
 
+MAX_REGIONAL_SERVERS = 100_000
+
+
 @dataclass(frozen=True)
 class Region:
     name: str
@@ -15,10 +18,12 @@ class Region:
     def __post_init__(self):
         if not isinstance(self.name, str) or not self.name.strip():
             raise ValueError('Each region needs a name.')
-        for key, minimum in (('servers', 1), ('slots_per_server', 1), ('queue_per_server', 0)):
+        for key, minimum, maximum in (('servers', 1, MAX_REGIONAL_SERVERS),
+                                      ('slots_per_server', 1, 10_000),
+                                      ('queue_per_server', 0, 10_000)):
             value = getattr(self, key)
-            if type(value) is not int or not minimum <= value <= 10000:
-                raise ValueError(f'{key} must be an integer from {minimum} to 10,000.')
+            if type(value) is not int or not minimum <= value <= maximum:
+                raise ValueError(f'{key} must be an integer from {minimum} to {maximum:,}.')
         if type(self.compute) not in (int, float) or not isfinite(self.compute) or not 0 < self.compute <= 1000:
             raise ValueError('Compute speed must be positive and at most 1,000×.')
 
@@ -55,6 +60,13 @@ PRESETS = {
 PRESETS['Scale · 1,000 servers / 12 datacenters'] = (
     tuple(Region(f'dc-{i+1:02}', 84 if i < 4 else 83, 4, (1, .75, 2)[i % 3], 10) for i in range(12)),
     tuple(tuple(2 if i == j else 10 + abs(i-j)*40 for j in range(12)) for i in range(12)),
+)
+
+
+PRESETS['Scale · 100,000 servers / 12 datacenters'] = (
+    tuple(Region(f'dc-{i+1:02}', 8334 if i < 4 else 8333, 4, (1, .75, 2)[i % 3])
+          for i in range(12)),
+    PRESETS['Scale · 1,000 servers / 12 datacenters'][1],
 )
 
 

@@ -206,9 +206,9 @@ export function validCompareConfig(value: unknown): value is CompareConfig {
         r.name.trim() === r.name &&
         r.name.length > 0 &&
         r.name.length <= 64 &&
-        int(r.servers, 1, 1000) &&
-        int(r.slots_per_server, 1, 4096) &&
-        int(r.queue_per_server, 0, 100000) &&
+        int(r.servers, 1, 100_000) &&
+        int(r.slots_per_server, 1, 10_000) &&
+        int(r.queue_per_server, 0, 10_000) &&
         num(r.compute) &&
         r.compute > 0 &&
         r.compute <= 1000,
@@ -239,9 +239,9 @@ export function validCompareConfig(value: unknown): value is CompareConfig {
     num(c.service_max) &&
     c.service_min > 0 &&
     c.service_max >= c.service_min &&
-    c.regions.reduce((n, r) => n + r.servers, 0) <= 1000 &&
-    c.regions.reduce((n, r) => n + r.servers * r.slots_per_server, 0) <= 4096 &&
-    c.regions.reduce((n, r) => n + r.servers * r.queue_per_server, 0) <= 100000
+    c.regions.reduce((n, r) => n + r.servers, 0) <= 100_000 &&
+    c.regions.reduce((n, r) => n + r.servers * r.slots_per_server, 0) <= 400_000 &&
+    c.regions.reduce((n, r) => n + r.servers * r.queue_per_server, 0) <= 1_000_000
   );
 }
 export type ComparisonRun = {

@@ -43,7 +43,7 @@ Regional configuration fields:
 }
 ```
 
-Client RTT defaults to the source row if omitted. Names must be unique, trimmed and at most 64 characters; use 1–12 regions. Matrices/vectors must match region count, with finite nonnegative RTTs up to 60,000 ms. Existing global server/slot/waiting capacity and one-shot request/runtime limits apply. Effective service times must be 1 ns–3,600 seconds; seed is an integer in `[0, 2^32−1]`.
+Client RTT defaults to the source row if omitted. Names must be unique, trimmed and at most 64 characters; use 1–12 regions. Matrices/vectors must match region count, with finite nonnegative RTTs up to 60,000 ms. Regional capacity is capped across all regions at 100,000 servers, 400,000 processing slots, and 1,000,000 waiting places. Regional runs retain the existing one-shot request and runtime limits. Effective service times must be 1 ns–3,600 seconds; seed is an integer in `[0, 2^32−1]`.
 
 To bound in-flight memory, maximum traffic × maximum client RTT (seconds) must not exceed 100,000. Continuous creation uses the service ceiling of 100,000 requests/s for this check, since later rate commands can reach it. Therefore continuous client RTT is limited to 1,000 ms. This deliberately conservative bound is distinct from the matrix's allowed values. Unknown fields, invalid policies and continuous duration are rejected before worker creation.
 
