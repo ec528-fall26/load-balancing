@@ -1,25 +1,72 @@
 # Demo 3 design document: load balancing simulator
 
+**Team:** Daniel Thomas, Kimone Walker, Neev Jain, Sean O'Connor
+
+**Mentor:** Shripad Nadgowda (Meta)
+
+**Updated:** November 12, 2026
+
+**Implementation audited for the November 12 measurements:** `demo-3` at `c07af2150d3f36dcbe5f512e6139217b57d72a01`
+
+**Submission:** November 16, 2026, noon, America/New_York, branch `demo-3`
+
+## Problem and evaluation goals
+
+Uneven load, hidden queued work, and slow dependencies can produce rejections
+and long response times even when some capacity appears idle. Load Balancing
+Lab investigates these effects with repeatable simulated workloads. Its goal
+is to explain routing and resource tradeoffs, not to predict production fleet
+capacity. Policies within a comparison see the same offered work, including
+requests that are subsequently rejected.
+
 The [Next.js Lab](../src/frontend/README.md) runs repeatable experiments on the
 Python simulator. Since Demo 2 we added queue-aware routing and paired policy
 comparisons, live sessions, regional and staged workloads, sharded dependencies
 with seeded outages, and a paginated playback API. The [PDF](../slides/demo-3.pdf)
-and [video](../videos/demo-3.mp4) show the current implementation. The
+and [video](../videos/demo-3.mp4) show the main Demo 3 workflows. The
 `demo-2` branch preserves the previous submission.
+
+### Progress against the proposal and grading rubric
+
+The [Demo 3 rubric](https://ec528.github.io/ec528/fall26/grading/#demo-3)
+assigns 50% to progress, 20% to this document, and 10% each to code quality,
+slides, and technical depth. Its milestone bar requires numerical improvement
+over Demo 2 on meaningful workloads. The table connects the
+[original proposal](design-proposal.md) to implemented work and evidence.
+These are current measured acceptance checks; the original proposal did not
+state these numerical targets, and this document does not claim mentor approval
+of revised milestones.
+
+| Commitment or extension | Demo 2 baseline | Demo 3 evidence and acceptance check |
+| --- | --- | --- |
+| Profile and improve a measured bottleneck | List front-removal of pending arrivals; original 10,000-request benchmark | Published snapshot medians improve 1.19-1.62x with matching traces and metrics. The isolated deque study improves 2.76-4.31x at 100,000 requests with exact full-summary fingerprints. See Experiments 3/4 and [snapshot comparison](#published-demo-2-vs-demo-3). |
+| Implement and compare load feedback | Round-robin prototype | Running-only least active and queue-aware least outstanding; 36 policy runs and exact API replays on twelve shared traces. Near-capacity p95 is 2.13/5.24/1.23 s, with rejection 0/2.91/0%. See the [Demo 3 experiments](#demo-3-experiments). |
+| Save, replay, and compare simulations | In-memory recorded-event playback | Version-one JSON/CSV, fingerprint-verified replay, and validated saved-result comparison; complete replayed summaries/events match. Experiments 2/5. |
+| Make larger results usable | Legacy full-trace API response | Initial decoded response falls from 7,870,218 to 4,097 bytes for the reference 100-server/100,000-request case; paginated events reconstruct the original trace. [Playback validation](#recorded-playback-and-scale). |
+| Selected advanced models | Identical servers in one region | CPU/I/O, live controls, regional spillover and client migration, shard slowdown/outages, and manual compute scaling. The regional example changes 173 rejections to zero out of 650 requests. These extensions supplement the core milestones. |
+| Reproducible deliverables | Earlier slides, document, video | Demo 3 code, [slides](../slides/demo-3.pdf), [video](../videos/demo-3.mp4), setup, commands, expected results, and limitations in this document. Presence does not establish presentation quality or a guaranteed grade. |
+
+The 10,000- and 100,000-request studies address engine scaling and transfer cost.
+The smaller regional and shard examples isolate routing and failure behavior;
+they are not production-scale capacity benchmarks. Advanced goals were optional
+in the proposal. Unimplemented portions and submission checks are listed below
+rather than silently treated as completed milestones.
 
 ## 1. Architecture
 
 ```mermaid
-flowchart LR
-    UI[Next.js Setup, Lab and Compare] --> Proxy[Same-origin API routes]
-    Proxy --> Python[Python API]
-    Python --> Record[One-shot engine and recorded snapshots]
-    Python --> Live[Continuous workers and bounded telemetry]
-    Python --> Shards[Sharded dependency and outage experiments]
-    Record --> Policies[Routing policy registry]
-    Live --> Policies
-    Experiments[Reproduction scripts] --> Record
-    Experiments --> Shards
+flowchart TB
+    UI["Browser: Library / Setup / Lab / Compare"] --> Proxy["Next.js same-origin routes"]
+    Proxy --> API["Local Python API; Nginx routing in deployment"]
+    API --> Compute["Compute replicas: independent summaries, regions, shards"]
+    API --> State["One state API: recordings, exports, sessions"]
+    State --> Record["One-shot worker -> temporary SQLite recording"]
+    State --> Live["Spawned live workers -> bounded snapshots"]
+    Compute --> Engines["Python event engines"]
+    Record --> Engines
+    Live --> Engines
+    Engines --> Policies["Per-run routing strategies and registry"]
+    Experiments["Reproduction scripts and tests"] --> Engines
 ```
 
 | Path | Responsibility |
@@ -46,6 +93,41 @@ and [routing policies](routing-policies.md) for the model boundaries.
 [Docker Compose](docker-compose.md) and [Kubernetes](kubernetes.md) separate web
 and independent compute replicas from the single owner of sessions and
 recordings. Restarting the state owner expires its in-memory state.
+
+Local development uses one Python API process for both roles. Compute replicas
+can serve independent requests; stateful IDs belong to one owner. This is not
+distributed session ownership, autoscaling, or automatic failover.
+
+| Model | Supported execution | Boundary |
+| --- | --- | --- |
+| Simple single pool | One-shot and continuous | Finite execution slots, bounded waiting FIFO, service-demand sampling, optional processing-rate multipliers. |
+| Main Lab CPU/I/O | One-shot and continuous | CPU -> shared finite I/O -> CPU, with CPU-ready FIFO and per-server outstanding admission caps. I/O releases CPU but retains admission capacity. |
+| Regions | One-shot and continuous | Aggregate compute pools, configurable request/reply transit, and current load knowledge. Continuous runs support manual datacenter outages and optional client migration. No per-server regional scheduling or delayed telemetry. |
+| Sharded service | One-shot | Coordinator, one/two/four required calls, parallel/serial dispatch, CPU/I/O, deadlines, slowdown, and a seeded outage with recovery. |
+| A-24 research | Script and research view | Separate CPU/I/O model with unbounded I/O delay. Its results do not characterize the main Lab's finite shared I/O resource. |
+
+### Recorded results and live state
+
+`POST /v1/runs` returns exact single-pool metrics, at most 20 histogram bins,
+per-server utilization, and a recording ID. Empty event/sample compatibility
+arrays do not mean no events occurred. The legacy `/v1/run` still returns the
+full trace; Compare uses `/v1/run-summary` without creating a recording.
+SQLite indexes support stable event pages (at most 1,000 rows) and selected-time
+server snapshots (at most 64 rows; the UI requests 32).
+
+Recordings default to four runs, a 64 MiB retained-file budget, and a ten-minute
+absolute TTL. Reads do not renew the TTL. Generation still needs temporary
+staging and bounded full results in memory. Paging reduces initial transfer
+and retained trace allocation, not all transient engine/IPC allocation.
+
+Live sessions default to two workers, 2,000 recent response samples, 240 history
+points, and 128 command records. A tick has a 10 ms processing budget and a
+20,000-event ceiling. Idle/absolute lifetimes default to 300/3,600 seconds.
+Pause freezes time; zero traffic while running drains outstanding work.
+Sequential polls and cancellation prevent overlapping/stale reads. Expiry,
+worker failure, and API restart loss are explicit states. The session owner is
+temporary, not a database. See [recordings](recorded-runs.md) and
+[session lifecycle](continuous-api.md).
 
 ### Simple single-pool configuration and lifecycle
 
@@ -153,20 +235,86 @@ Tests and the benchmark check these properties.
 
 ## 3. Setup
 
-Start from the [repository quick start](../README.md#quick-start) for cloning,
-pinned dependency installation, the API and the Lab. This candidate was checked
-on macOS arm64 with Python 3.12.12, uv 0.13.7, Node.js 26.13.0, and npm 11.20.0.
-Install dependencies with `uv sync --locked` and `npm ci`. The engine and
-experiments run on a local CPU. Installation needs internet access.
+The primary runbook uses a POSIX shell on Linux or macOS. CI runs on Ubuntu
+with Node.js 24. Install Git, Python 3.12 (including `venv`), and Node.js 24
+with npm. The audit used uv 0.11.32; the bootstrap below pins that working
+version. uv selects Python 3.12 from `.python-version`.
+`uv.lock` and `src/frontend/package-lock.json`
+pin application packages; this snapshot locks Streamlit 1.67.0, Next.js 16.4.3,
+and React 19.3.1. Historical measurements retain their original recorded versions.
+The Dockerfiles select uv 0.13.7, Python 3.12-slim, and Node 24-bookworm-slim;
+base-image tags are not immutable digests.
+
+No GPU, cloud credentials, external dataset, or database service is needed.
+Internet access is needed for cloning and package/browser installation. A local
+CPU is sufficient. For a clean evaluation machine, 4 CPU cores, 8 GiB RAM, and
+5 GiB free disk are a starting allocation, not a measured minimum. Larger
+builds/runs may need more. Reserve 8000/3000 for ordinary use and 8001/3001 for
+isolated benchmarks. Allow several minutes for first installation.
+
+Install Git, Python 3.12, and Node.js 24 using your OS packages or official
+installers. On Linux, install your distribution's Python venv package if it is
+separate. Bootstrap uv in a temporary environment, then clone the submission:
 
 ```sh
-uv run python -m unittest discover -s tests -q
-npm --prefix src/frontend run build
+tool_env=$(mktemp -d)
+python3.12 -m venv "$tool_env"
+"$tool_env/bin/python" -m pip install uv==0.11.32
+export PATH="$tool_env/bin:$PATH"
+git clone --branch demo-3 https://github.com/ec528-fall26/load-balancing.git
+cd load-balancing
+git rev-parse HEAD
+uv --version
+node --version
+npm --version
+uv sync --locked
+npm --prefix src/frontend ci
 ```
 
-Expect `Ran 148 tests` followed by `OK` (about 25 seconds here), then a successful
-Next.js build. See the [frontend checks](../src/frontend/README.md#checks) for
-Node and browser tests.
+Record the resolved commit and versions with a rerun. This document's review
+branch must be merged into `demo-3` to enter the graded snapshot.
+The [course setup requirements](https://ec528.github.io/ec528/fall26/setup/#instructions-the-ta-can-run)
+require a teammate to follow the final instructions from a clean environment.
+
+Start the API in terminal A, with one worker for local state ownership:
+
+```sh
+uv run --locked python -m uvicorn lbsim.api:app --host 127.0.0.1 --port 8000 --workers 1
+```
+
+In terminal B, from the repository root:
+
+```sh
+curl -fsS http://127.0.0.1:8000/health
+LBSIM_API_URL=http://127.0.0.1:8000 npm --prefix src/frontend run dev
+```
+
+Expect health JSON containing `"status":"ok"`; open
+[Setup](http://127.0.0.1:3000/setup). The [README](../README.md#quick-start)
+provides the routing, live-traffic, and outage walkthroughs. On PowerShell, set
+`$env:LBSIM_API_URL='http://127.0.0.1:8000'` before running npm; inline variable
+assignments and historical shell loops below require a POSIX shell.
+`python -m uvicorn` avoids an executable-shim block observed on Windows.
+
+### Automated checks
+
+```sh
+uv run --locked python -m unittest discover -s tests -q
+uv run --locked python scripts/generate_policy_metadata.py --check
+npm --prefix src/frontend run build
+(cd src/frontend && npx --no-install tsc -p tsconfig.api-tests.json && node --test .api-tests/tests/*.test.js)
+(cd src/frontend && npx --no-install playwright install --with-deps chromium)
+LBSIM_API_URL=http://127.0.0.1:8000 PLAYWRIGHT_CHANNEL=chromium npm --prefix src/frontend test
+```
+
+Expect 148 Python tests with `OK`, a successful metadata check/build, 23 passing
+Node module tests, and no failed browser cases. Keep the API running. Stop the
+interactive frontend before Playwright starts its own server on port 3000.
+The default config otherwise selects Edge; explicitly selecting Chromium makes
+this command portable. Allow roughly 30-120 seconds for Python, 1-3 minutes for
+a cold build, and 2-10 minutes for browser checks after installation. Slower
+machines may exceed these estimates. These categories also run in
+[CI](../.github/workflows/tests.yml); counts identify the audited snapshot.
 
 The worked example and JSON/CSV instructions below reproduce the earlier
 Streamlit baseline with `uv run streamlit run src/lbsim/app.py`. For the three
@@ -380,7 +528,7 @@ used macOS arm64, Python 3.12.12 and Streamlit 1.65.0 as recorded in those repor
 These are matched sequential batches on one machine, not the Windows D2 timing
 environment; do not divide D2 timings by these timings to claim optimization.
 All six complete summaries match before/after. The historical optimization
-validation used 39 tests; the integrated suite now has 53.
+validation used 39 tests; the audited integrated suite now contains 148.
 
 Experiment 3 can collect a new after-change report on another machine. Comparing
 that report directly with the original macOS capture will correctly fail the
@@ -501,9 +649,22 @@ and workload hashes.
 | Deque optimization in isolation | [Matched-revision commands](../experiments/README.md#d3-07-deque-beforeafter-comparison) | The reference 100,000-request, 100-server run moved from 1.030 s to 0.364 s, or 2.83×, with matching full-summary fingerprints. Timing varies by machine. |
 | Published Demo 2 vs. Demo 3 | [Commands and raw results](#published-demo-2-vs-demo-3) | Original 10,000-request Round Robin workload. Median engine runtime improved by 1.19×–1.62× across 10, 100 and 1,000 servers. The trace and reported simulation metrics matched. |
 | Regional routing spillover | [Lab reproduction](#regional-routing-spillover) | At 130 requests/s for 5 seconds, Nearest rejects 173 of 650 requests. Nearest under 90% load completes all 650. |
-| Recorded playback and scale | Start the API as in the [A-11 guide](../experiments/results/a-11/README.md), then run `uv run python experiments/pagination_scale.py --output pagination-demo-3-rerun.json` | Allow roughly a minute on a local CPU. The reference 100,000-request case reduced the initial decoded payload from 7.87 MB to 4.10 kB. The harness checks every paginated event against the full trace and verifies seek and live pause/drain. |
-| Sharded service outage | `uv run python experiments/compare_fanout_pipeline.py --outage > /tmp/demo-3-fanout.json` | A few seconds. At 50 parents/s for four seconds with seed 42 and a 500 ms outage, 7 of 200 fail with one required call and 25 of 200 with four. Both no-outage controls finish all 200. See [fan-out evidence](fanout-pipeline.md). |
+| Recorded playback and scale | [Exact API startup and harness commands](#recorded-playback-and-scale) | Allow 1-3 minutes on a local CPU. The reference 100,000-request case reduced the initial decoded payload from 7.87 MB to 4.10 kB. The harness checks every paginated event against the full trace and verifies seek and live pause/drain. |
+| Sharded service outage | `uv run --locked python experiments/compare_fanout_pipeline.py --outage > fanout-outage-rerun.json` | A few seconds. At 50 parents/s for four seconds with seed 42 and a 500 ms outage, 7 of 200 fail with one required call and 25 of 200 with four. Both no-outage controls finish all 200. [Output interpretation and slowdown controls](#sharded-service-slowdown-outage-and-call-order). |
 | CPU/I/O and power-of-two choices | `uv run python experiments/compare_cpu_io.py --output experiments/results/a-24-rerun` | A few seconds. 81 paired runs on 27 traces. The [reference analysis](../experiments/results/a-24/analysis.md) defines the research model and expected comparisons. |
+
+The three-policy command writes `samples.csv`, `server-utilization.csv`, twelve
+trace CSVs, and `report.json` with per-run fingerprints, configurations, seed
+ranges, and aggregate metrics. Expect `Validated 36 runs and public-API replays;
+saved 12 shared traces and all metrics.` The historical two-policy report has
+24 runs; use the explicit flag to reproduce the third policy rather than
+assuming it is present in that older report.
+
+The CPU/I/O command writes 81 samples, 27 traces in `traces.json`, `report.json`,
+and analysis. For I/O-heavy 400 requests/s, the reference mean rejection is
+0% round robin, 30.31% least active, and 3.38% power of two. This is the research
+model's unbounded I/O delay, not the main Lab's finite shared I/O resource.
+The distinction matters when reproducing or presenting those numbers.
 
 The [Lab quick start](../README.md#quick-start) uses one trace for the video
 comparison. The slide uses three traces at 90% of nominal capacity, with p95
@@ -531,7 +692,9 @@ cmp "$bench_dir/results-demo-2/trace.csv" "$bench_dir/results-demo-3/trace.csv"
 ```
 
 The harness times engine calls in fresh processes. These are medians of
-three runs per fleet on the same macOS arm64 machine and Python 3.12.12.
+three runs per fleet on the same macOS arm64 machine (14 logical CPUs) and
+Python 3.12.12. Each snapshot uses its own locked environment: Streamlit is
+1.65.0 in Demo 2 and 1.67.0 in the measured Demo 3 snapshot.
 Each case offered 10,000 requests. Completed and rejected counts, mean and
 p95 response times, and the final simulated event time matched across snapshots.
 See the [reports and all 18 samples](../experiments/results/demo-2-vs-demo-3/).
@@ -544,6 +707,59 @@ See the [reports and all 18 samples](../experiments/results/demo-2-vs-demo-3/).
 
 The published snapshots include multiple code and dependency changes.
 The separate deque experiment isolates the arrival-list change on 100,000 requests.
+
+### Recorded playback and scale
+
+Start an isolated API in terminal A; do not share it with an interactive session:
+
+```sh
+uv run --locked python -m uvicorn lbsim.api:app --host 127.0.0.1 --port 8001 --workers 1
+```
+
+In terminal B, after health succeeds:
+
+```sh
+curl -fsS http://127.0.0.1:8001/health
+uv run --locked python experiments/pagination_scale.py --backend http://127.0.0.1:8001 --output pagination-demo-3-rerun.json
+```
+
+Allow 1-3 minutes locally. The output filename is relative to
+`experiments/results/a-11/`, so this writes
+`experiments/results/a-11/pagination-demo-3-rerun.json`. All three single-pool
+cases offer 100,000 requests. The harness checks summary equality, histogram
+counts, each paginated event against the legacy trace, stable sequence order,
+and conservation at start/middle/end seeks. It also checks regional draining,
+explicit topology limits, and live pause followed by zero-traffic drain.
+
+Reference [raw measurements](../experiments/results/a-11/pagination-scale.json):
+
+| Servers | Offered/s | Legacy decoded JSON bytes | Compact decoded JSON bytes | Reduction |
+| ---: | ---: | ---: | ---: | ---: |
+| 100 | 1,000 | 7,870,218 | 4,097 | 99.95% |
+| 1,000 | 10,000 | 8,633,692 | 24,300 | 99.72% |
+| 1,000 | 100,000 | 4,807,647 | 16,401 | 99.66% |
+
+Compare exact simulation fields and page contents, not entire HTTP responses:
+opaque IDs, metadata, timings, and serialization may differ. These are initial
+decoded JSON sizes, not total playback transfer or compressed wire bytes.
+The regional cases use 12 datacenters/1,000 servers/4,000 slots and illustrative
+2-450 ms client RTTs. Each offers exactly 100,000 requests. The harness checks
+that 1,001 **single-pool** servers and a separate 13-region topology both
+produce validation errors. The current regional API allows up to 12 regions
+and, across all regions, up to 100,000 servers, 400,000 execution slots, and
+1,000,000 waiting places. These are configuration limits. The measured
+regional runs use the smaller topology described above.
+
+The reference eight-second live probes at 100,000 offered requests/s show
+2.546 s maximum lag for single pool and 2.153 s for regions. These runs are
+below real-time processing. Increasing the event ceiling removes an avoidable
+throttle but does not demonstrate sustained 100,000/s real-time throughput.
+The [follow-up analysis](../experiments/results/a-11/analysis.md#pagination-and-larger-topology-follow-up)
+distinguishes the initial full-trace study from the implemented pagination work.
+Extended browser/telemetry commands are in the [A-11 runbook](../experiments/results/a-11/README.md).
+Those harnesses write into the evidence directory by default: use a disposable
+checkout or their documented output overrides to preserve references, and do
+not overlap measurements with builds.
 
 ### Regional routing spillover
 
@@ -564,7 +780,95 @@ The second run completes 335 requests in `us-east-1`, 281 in `us-east-2`,
 and 34 in `us-west-1`. The policy counts outbound requests in transit
 toward load. See the [routing rules](routing-policies.md).
 
+For an exact browser-free reproduction of that preset:
+
+```sh
+uv run --locked python -c "from lbsim.regional_engine import LiveSimulation; from lbsim.regions import PRESETS; regions,matrix=PRESETS['US · balanced']; sims=[LiveSimulation(regions,matrix,source=0,policy=p,arrival_rate=130,service_min=.1,service_max=1.,seed=42) for p in ('nearest','nearest_under_load')]; [s.run_once(5) for s in sims]; [print(s.policy,s.completed,s.rejected,round(s.response_sum/s.completed,3),[p.completed for p in s.pools]) for s in sims]"
+```
+
+Expect `nearest 477 173 1.485 [477, 0, 0]` and
+`nearest_under_load 650 0 0.559 [335, 281, 34]`. This uses current load knowledge
+and an illustrative RTT matrix, not measured WAN conditions or delayed reports.
+
+### Continuous regional outages and client migration
+
+In Setup, choose **Regions**, **Continuous**, and **US · balanced**. Set
+**Requests per second** to 40, the regional routing policy to **Nearest region**,
+the seed to 42, and service times to 0.1–1.0 seconds. Under **Client traffic**,
+choose **Clients by region**, set the weights to 70/20/10 for
+`us-east-1`/`us-east-2`/`us-west-1`, and leave **Client migration** on
+**Gradual shift and return**. The configured rates are 28, 8, and 4 requests/s.
+Weights are relative, and a weight of zero disables that origin.
+
+1. Start the continuous simulation. In **Client traffic by region**, the
+   rows are client origins and the destination columns count requests routed
+   in the last complete simulated second. At this load, traffic normally
+   stays in its home region.
+2. In the `us-east-1` region card, select **Take offline**. New requests
+   immediately use an available region. When a suitable backup has headroom,
+   **Preferred shift** increases by 20 percentage points per simulated second,
+   up to 60%, toward `us-east-2` in this setup. Actual routing can shift more
+   than 60% because the remaining requests also fail over while home is offline.
+3. Select **Restore** on `us-east-1`. After ten consecutive one-second
+   samples with home online and at or below 70% load, the preferred shift
+   drops by 20 percentage points per sample until it reaches zero. Check
+   **Recent shifts** and the destination counts to see traffic return home.
+   Counts fluctuate with the seeded traffic mix.
+
+Clients keep their original location and its RTT matrix row throughout. The
+configured regional policy handles per-request fallback when a preferred
+region is offline or full. Three consecutive one-second samples at or above
+90% home load can also trigger gradual migration while home stays online.
+The load ratio counts executing, queued, and outbound requests against slots.
+Choose **Per-request failover only** to compare the same workload with gradual
+migration disabled. During a manual outage, the affected datacenter rejects
+its queued, executing, and outbound work. Responses already sent can arrive.
+
+### Sharded service: slowdown, outage, and call order
+
+```sh
+uv run --locked python experiments/compare_fanout_pipeline.py > fanout-slowdown-rerun.json
+uv run --locked python experiments/compare_fanout_pipeline.py --outage > fanout-outage-rerun.json
+uv run --locked python -m unittest discover -s tests -p 'test_fanout_pipeline.py' -v
+```
+
+Allow seconds per experiment on a local CPU. Each JSON has per-seed `runs` and
+aggregate `summaries` for seeds 42/43/44. Each seed offers 200 parents at 50/s
+for 4 s, with a 200 ms deadline and 4 ms shard RTT. Required calls divide fixed
+useful work; one-call placement rotates across the same four-shard fleet.
+The default slow condition applies 4x CPU slowdown to shard 0.
+
+| Case | Successful / offered across seeds | Timeouts | Mean seed p95 |
+| --- | ---: | ---: | ---: |
+| One call, normal | 600 / 600 | 0 | 73.35 ms |
+| One call, slow shard | 558 / 600 | 42 | 182.08 ms |
+| Four parallel calls, normal | 600 / 600 | 0 | 26.00 ms |
+| Four parallel calls, slow shard | 600 / 600 | 0 | 112.46 ms |
+
+For the outage command, inspect `runs[0]` (seed 42): one call has seven outage
+failures, four have 25, and both no-outage controls complete 200. The outage
+setting keeps CPU speed normal. The seed chooses shard and start independently
+of work. Replies already sent can arrive; affected queued/executing/incoming
+calls fail, and recovery permits new calls. Deadline failures, admission
+rejections, and outage failures are separate outcomes.
+
+Setup also supports serial calls. Carry a sharded run to Compare and isolate
+parallel versus serial at two or four calls with all other settings fixed.
+Serial waits for each successful reply and leaves later calls unsent after
+failure/deadline. Do not attribute the parallel table's results to serial mode.
+The focused test suite covers both dispatch modes and unsent work. The model
+omits retries, replication, and link contention; see [the contract](fanout-pipeline.md).
+
 ## 5. Claims and limitations
+
+Deterministic integer outcomes, workload hashes, and full-result checks should
+match for the same code/configuration. Tables round decimal values; compare
+underlying report fields rather than expecting rounded text to match exactly.
+Historical wall-clock values have no promised cross-machine percentage tolerance.
+Repeat both historical revisions on one quiet machine before claiming a new
+speedup. Hardware, background load, Python, packages, and short samples affect
+ratios. Sequential batches and three seeds do not establish statistical
+significance or confidence intervals.
 
 - The policies see the same seeded offered work within each comparison. Results
   are specific to the workload, capacity, and tie rules. Admission rejects when
@@ -579,6 +883,29 @@ toward load. See the [routing rules](routing-policies.md).
 - Live workers and recordings expire. Paging bounds each response, and the
   state service retains what it needs for playback within its configured limits.
   The deployment keeps one state owner and scales independent compute manually.
+
+| Boundary or remaining work | Current status and next validation needed |
+| --- | --- |
+| Production workload realism | Regular arrivals, sampled demands, and illustrative RTTs. Trace-driven/bursty traffic and more repeated trials are needed before production conclusions. |
+| Reliability and stale information | Seeded shard outages/slowdown, manual continuous regional outages, and client migration are implemented. Automatic regional failure detection, retries/replication, and delayed load telemetry are outside the demonstrated model. Announce any proposal-scope revision at the demo. |
+| Portable saved-run coverage | Version one supports simple single-pool runs with uniform processing rates. Regions, CPU/I/O, and shards need a versioned schema and replay evidence. Browser-local setups, portable run files, and temporary recordings are distinct features. |
+| Durable or distributed state | Sessions/recordings expire and restart loses them. Accounts, durable saves, distributed ownership, and automatic failover are not established by manual compute scaling. |
+| Deployment validation | Compose/Kubernetes provide separate compute/state routing. Their presence does not prove autoscaling, high availability, public security, or concurrent-user capacity. Base-image tags remain mutable. |
+| Platform and timeout limits | The November 12 Windows audit reproduced the 100-server/100,000-request paging case exactly, but the subsequent 1,000-server legacy request returned HTTP 504 under the default 15 s worker deadline. The complete historical scale study is not claimed as a successful Windows rerun. Repeat the full harness on the primary Linux/macOS path and record failures rather than treating partial output as success. |
+
+### Code structure and technical depth
+
+Workload generation, policy choice, admission, event processing, metrics,
+temporary storage, and HTTP transport have separate modules. A new policy
+implements a strategy, registers topology eligibility/labels, regenerates
+TypeScript metadata, and adds behavioral coverage. The metadata check prevents
+frontend policy menus drifting from Python.
+
+The substantial systems work is deterministic scheduling across CPU/I/O and
+transit stages, per-worker ownership with bounded commands/progress, indexed
+recording/seek semantics, and routing that distinguishes active from outstanding
+work. UI integration and deployment wiring support these mechanisms; they do
+not independently establish technical depth or production scalability.
 
 ## 6. Evidence coverage and verification
 
@@ -601,3 +928,40 @@ The commands above are local and require no cloud service or GPU. New rerun
 directories preserve original captures; environment/timestamp/source metadata
 may differ on rerun. Compare deterministic trace/summary fields directly and
 interpret performance only within matched environments.
+
+The integrated tests additionally cover 171 pre-refactor parity snapshots,
+indexed routing against a simple oracle after 1,000 load updates, worker expiry
+and failure, recording paging/seek, API validation, saved-file consistency, and
+browser workflows against Python. Passing tests support these contracts, not
+every possible schedule or platform.
+
+### Verification performed for this document update
+
+The November 12 audit used a separate checkout of the audited commit on Windows
+with Python 3.12.13 and locked dependencies. It discovered 148 Python test cases;
+discovery alone is not execution of the full suite. The three-policy study
+validated 36 runs/replays on twelve traces; CPU/I/O validated 81 runs/replays on
+27 traces; the six saved deque ratios passed exact-summary checks; JSON/CSV
+export and two-policy replay reproduced their expected outcomes; and the
+regional example matched the counts/latencies above. The mixed-speed study
+validated 54 runs on nine traces, the current scale
+benchmark completed nine samples with its invariant checks, generated policy
+metadata was current, and all 16 focused shard tests passed. The paging audit
+verified
+all 174 event pages and seek snapshots for the first scale case before the
+larger legacy request timed out. Historical reports remain unchanged. These
+checks do not claim a newly completed clean-VM, full-browser, or deployment run.
+
+### Submission and presentation checks
+
+Before noon Boston time on November 16, merge the reviewed document branch into
+`demo-3`, run the automated checks, and have a teammate follow the commands from
+a clean environment. Verify slides, video, code, and document on that exact
+remote branch. A separate unmerged branch is not collected for grading.
+
+The presentation should explain the baseline, new mechanism, workload,
+measured result, and limitations, with the architecture diagram and labeled
+figures. Slides are still assessed separately. The instructor and mentor judge
+the milestone bar; an evidence map cannot guarantee a grade. Two private
+multiple-choice quiz questions with marked answers are separately due to the
+instructor at 5:30 pm that day; repository contents do not prove submission.
