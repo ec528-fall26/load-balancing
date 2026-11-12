@@ -164,7 +164,7 @@ export function useLiveSession(enabled: boolean) {
     }, false);
   }
   async function command(
-    action: "pause" | "resume" | "set_rate" | "set_speed",
+    action: "pause" | "resume" | "set_rate" | "set_speed" | "fail_region" | "restore_region",
     value?: number,
   ) {
     return operation(async () => {

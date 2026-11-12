@@ -149,6 +149,14 @@ def session_worker(connection, config, limits, speed, paused):
                         paused = False
                     elif action == "set_rate":
                         engine.set_rate(message["value"])
+                    elif action in ("fail_region", "restore_region"):
+                        try:
+                            if not isinstance(engine, RegionalSimulation):
+                                raise ValueError("Datacenter controls require a regional session.")
+                            engine.set_region_online(message["value"], action == "restore_region")
+                        except ValueError as error:
+                            connection.send(dict(_command_error=str(error), _activity=last_activity))
+                            continue
                     elif action == "set_speed":
                         speed = message["value"]
                     else:
@@ -422,8 +430,10 @@ class SessionManager:
                     "SESSION_EXPIRED" if expired else "SESSION_FAILED",
                     "Session expired or its worker became unavailable. Create a new session.",
                 ) from error
-            data.pop("_born")
             record.touched = data.pop("_activity")
+            if "_command_error" in data:
+                raise SessionError(422, "INVALID_COMMAND", data["_command_error"])
+            data.pop("_born")
             return self._envelope(sid, data)
         finally:
             record.lock.release()

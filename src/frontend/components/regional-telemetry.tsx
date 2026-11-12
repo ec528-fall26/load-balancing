@@ -7,6 +7,7 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -31,9 +32,13 @@ import { seconds } from "@/components/results";
 export function RegionalTelemetry({
   summary: s,
   oneShot = false,
+  onRegionChange,
+  controlsBusy = false,
 }: {
   summary: RegionalSummary;
   oneShot?: boolean;
+  onRegionChange?: (index: number, online: boolean) => void;
+  controlsBusy?: boolean;
 }) {
   return (
     <section
@@ -76,21 +81,23 @@ export function RegionalTelemetry({
         {s.metrics.response_window_limit}); latency excludes rejected requests.
       </p>
       <div className="grid min-w-0 gap-4 lg:grid-cols-2 xl:grid-cols-3">
-        {s.regions.map((r) => (
+        {s.regions.map((r, index) => (
           <Card key={r.name} aria-label={`Region ${r.name}`}>
             <CardHeader>
               <div className="flex items-start justify-between gap-2">
                 <CardTitle>{r.name}</CardTitle>
                 <Badge
                   variant={
-                    r.waiting
+                    r.online === false
+                      ? "destructive"
+                      : r.waiting
                       ? "waiting"
                       : r.running
                         ? "executing"
                         : "secondary"
                   }
                 >
-                  {r.waiting ? "Queued" : r.running ? "Executing" : "Idle"}
+                  {r.online === false ? "Offline" : r.waiting ? "Queued" : r.running ? "Executing" : "Idle"}
                 </Badge>
               </div>
               <CardDescription>
@@ -99,6 +106,18 @@ export function RegionalTelemetry({
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
+              {onRegionChange && r.online !== undefined && (
+                <Button
+                  variant={r.online ? "outline" : "secondary"}
+                  size="sm"
+                  className="self-start"
+                  disabled={controlsBusy}
+                  aria-label={r.online ? `Take ${r.name} offline` : `Restore ${r.name}`}
+                  onClick={() => onRegionChange(index, !r.online)}
+                >
+                  {r.online ? "Take offline" : "Restore"}
+                </Button>
+              )}
               <Progress
                 aria-label={`${r.name} CPU slot occupancy`}
                 value={r.cpu_occupancy * 100}

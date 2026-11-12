@@ -7,7 +7,7 @@ state; network latency does not delay telemetry in this model.
 
 from collections import deque
 from dataclasses import dataclass, field
-from heapq import heappop, heappush
+from heapq import heapify, heappop, heappush
 from math import exp, isfinite, ceil
 from random import Random
 from time import perf_counter
@@ -19,6 +19,7 @@ from lbsim.policies import RoutingContext, create_policy, supports_policy
 @dataclass
 class Pool:
     region: Region
+    online: bool = True
     running: int = 0
     flying: int = 0
     waiting: deque = field(default_factory=deque)
@@ -53,13 +54,14 @@ class LiveSimulation:
         if len(self.client_latency_ms) != len(regions) or any(type(v) not in (int, float) or not isfinite(v) or not 0 <= v <= 60000 for v in self.client_latency_ms):
             raise ValueError("Client RTT needs one finite nonnegative value per region (at most 60,000 ms).")
         self.pools = [Pool(r) for r in regions]
+        self.online_regions = tuple(range(len(self.pools)))
         self.source, self.policy = source, policy
         self.routing = create_policy(policy, RoutingContext(
             len(self.pools), lambda i: self.pools[i].running,
             demand=lambda i: (self.pools[i].running + len(self.pools[i].waiting)
                               + self.pools[i].flying),
             capacity=lambda i: self.regions[i].slots,
-            latency_ms=self.client_latency_ms), 'regions')
+            latency_ms=self.client_latency_ms, eligible=lambda: self.online_regions), 'regions')
         self.service_min, self.service_max = service_min, service_max
         self.seed = seed
         self.rng = Random(seed)
@@ -84,6 +86,27 @@ class LiveSimulation:
         self.arrival_rate = float(rate)
         self.anchor, self.arrival_index = self.now, 1
         self.next_arrival = self.anchor + self.arrival_index / rate if rate else float('inf')
+
+    def set_region_online(self, index, online):
+        if type(index) is not int or not 0 <= index < len(self.pools):
+            raise ValueError("Choose a region in this session.")
+        pool = self.pools[index]
+        if pool.online == online:
+            return
+        pool.integrate_load(self.now)
+        pool.online = online
+        self.online_regions = tuple(i for i, p in enumerate(self.pools) if p.online)
+        if not online:
+            rejected = pool.running + pool.flying + len(pool.waiting)
+            pool.rejected += rejected
+            self.rejected += rejected
+            pool.running = pool.flying = 0
+            pool.waiting.clear()
+            # Responses already sent can still reach the client.
+            self.events = [event for event in self.events
+                           if event[4] != index or event[3] == 'response']
+            heapify(self.events)
+        self.sample()
 
     def _push(self, now, kind, region, request):
         # Completions free slots before dispatch; serial makes all ties stable.
@@ -141,12 +164,15 @@ class LiveSimulation:
                     pool.responses.append(response)
             else:
                 self.now = self.next_arrival
-                region = self.routing.choose()
                 request = (self.now, self.rng.uniform(self.service_min, self.service_max))
                 self.offered += 1
-                self.pools[region].flying += 1
-                self._push(self.now + self.client_latency_ms[region] / 2000,
-                           'dispatch', region, request)
+                if self.online_regions:
+                    region = self.routing.choose()
+                    self.pools[region].flying += 1
+                    self._push(self.now + self.client_latency_ms[region] / 2000,
+                               'dispatch', region, request)
+                else:
+                    self.rejected += 1
                 # Integer-indexed arrivals avoid accumulated interval error
                 # admitting a request just before an exclusive one-shot cutoff.
                 self.arrival_index += 1

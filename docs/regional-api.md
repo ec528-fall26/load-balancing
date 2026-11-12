@@ -63,3 +63,16 @@ Launch the two processes using [live-frontend.md](live-frontend.md). Existing St
 ## Local verification — November 2
 
 The production frontend build and TypeScript pass; 98 Python tests and 12 Node API/client tests pass. All 23 browser tests cover the existing single-pool/library/comparison flows plus regional one-shot, regional continuous reconnect/control/drain/restart and desktop/mobile behavior. The three regional tests were repeated after the final editor-height adjustment, including an expanded-content visibility assertion. Original prototype tests were ported to the new regional engine; API tests exercise normalization, malformed inputs, seeded parity, travel, capacity, conservation, shared session admission and progress without browser reads. Broad scale benchmarks are not claimed.
+
+### Manual datacenter outages
+
+In a continuous regional run, use **Take offline** or **Restore** on a
+datacenter card. The session API accepts `fail_region` and `restore_region`
+with the zero-based index in `value`. Commands take effect at the worker's
+current simulation time and can be issued while paused.
+
+Taking a region offline rejects its running, queued, and outbound requests.
+Responses already returning to clients still arrive. Every regional policy
+selects from healthy regions. If all regions are offline, new requests count
+as rejected without a destination. Restoring a region makes its slots
+available for new work. Rejected requests are never retried automatically.

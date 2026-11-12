@@ -19,6 +19,7 @@ class RoutingContext:
     capacity: Callable[[int], int] | None = None
     latency_ms: tuple[float, ...] = ()
     routing_rng: Random | None = None
+    eligible: Callable[[], tuple[int, ...]] | None = None
 
 
 class RoutingPolicy(ABC):
@@ -28,6 +29,9 @@ class RoutingPolicy(ABC):
     @abstractmethod
     def choose(self) -> int:
         """Return a target index before admission, including full targets."""
+
+    def candidates(self):
+        return self.context.eligible() if self.context.eligible else range(self.context.count)
 
     def update(self, target: int) -> None:
         """Notify the strategy after a target's running count changes."""
@@ -40,6 +44,9 @@ class RoundRobinPolicy(RoutingPolicy):
 
     def choose(self):
         target = self.next_target
+        if self.context.eligible:
+            candidates = self.candidates()
+            target = next((i for i in candidates if i >= target), candidates[0])
         self.next_target = (target + 1) % self.context.count
         return target
 
@@ -95,13 +102,13 @@ class PowerOfTwoChoicesPolicy(RoutingPolicy):
 
 class NearestRegionPolicy(RoutingPolicy):
     def choose(self):
-        return min(range(self.context.count),
+        return min(self.candidates(),
                    key=lambda i: (self.context.latency_ms[i], i))
 
 
 class LeastLoadedRegionPolicy(RoutingPolicy):
     def choose(self):
-        return min(range(self.context.count), key=lambda i: (
+        return min(self.candidates(), key=lambda i: (
             self.context.demand(i) / self.context.capacity(i),
             self.context.latency_ms[i], i))
 
@@ -118,10 +125,10 @@ class NearestUnderLoadPolicy(RoutingPolicy):
         context = self.context
         def load(i):
             return context.demand(i) / context.capacity(i)
-        available = [i for i in range(context.count) if load(i) < self.THRESHOLD]
+        available = [i for i in self.candidates() if load(i) < self.THRESHOLD]
         if available:
             return min(available, key=lambda i: (context.latency_ms[i], i))
-        return min(range(context.count), key=lambda i: (load(i), context.latency_ms[i], i))
+        return min(self.candidates(), key=lambda i: (load(i), context.latency_ms[i], i))
 
 
 @dataclass(frozen=True)

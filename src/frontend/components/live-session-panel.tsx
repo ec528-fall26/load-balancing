@@ -244,7 +244,17 @@ export function LiveSessionPanel({
               : ""}
             {!active ? " · Last retained snapshot; no longer live." : ""}
           </p>
-          <RegionalTelemetry summary={s} />
+          <RegionalTelemetry
+            summary={s}
+            controlsBusy={live.busy}
+            onRegionChange={
+              active
+                ? (index, online) => {
+                    void live.command(online ? "restore_region" : "fail_region", index);
+                  }
+                : undefined
+            }
+          />
         </>
       ) : (
         s && (

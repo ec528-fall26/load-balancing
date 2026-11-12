@@ -18,6 +18,37 @@ class LiveTests(unittest.TestCase):
         sim.advance(sim.now + 10)
         self.assertEqual(sim.offered, 4)
 
+    def test_outage_rejects_unfinished_work_and_routes_only_to_healthy_regions(self):
+        for policy in ('round_robin', 'nearest', 'least_loaded', 'nearest_under_load'):
+            with self.subTest(policy=policy):
+                regions = [Region(name, 1, 1, 1, 10) for name in ('east', 'west')]
+                sim = LiveSimulation(regions, [[200, 400], [400, 200]],
+                                     arrival_rate=20, service_min=1, service_max=1,
+                                     policy=policy)
+                sim.advance(0.35)
+                east, west = sim.pools
+                if policy == "nearest":
+                    self.assertTrue(east.running and east.waiting and east.flying)
+                lost = east.running + len(east.waiting) + east.flying
+                sim.set_region_online(0, False)
+                sim.set_region_online(0, False)
+                self.assertEqual((east.rejected, sim.rejected), (lost, lost))
+                self.assertEqual((east.running, len(east.waiting), east.flying), (0, 0, 0))
+                sim.advance(0.55)
+                self.assertEqual(east.rejected, lost)
+                self.assertGreater(west.flying + west.running, 0)
+                self.check_conservation(sim)
+
+                sim.set_region_online(1, False)
+                rejected, offered = sim.rejected, sim.offered
+                sim.advance(0.75)
+                self.assertGreater(sim.offered, offered)
+                self.assertEqual(sim.rejected - rejected, sim.offered - offered)
+                sim.set_region_online(0, True)
+                sim.advance(1.05)
+                self.assertGreater(east.running, 0)
+                self.check_conservation(sim)
+
     def check_conservation(self, sim):
         active = sim.returning + sum(p.running + len(p.waiting) + p.flying for p in sim.pools)
         self.assertEqual(sim.offered, sim.completed + sim.rejected + active)
