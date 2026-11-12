@@ -1,0 +1,8 @@
+**
+!pyproject.toml
+!uv.lock
+!src/
+!src/lbsim/
+!src/lbsim/**
+**/__pycache__/
+**/*.pyc

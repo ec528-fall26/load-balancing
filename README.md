@@ -6,6 +6,8 @@
 
 **Project:** A web application for simulating request traffic, server queues, and load-balancing policies.
 
+For the containerized Next.js Lab and replica controls, see [Docker Compose](docs/docker-compose.md).
+
 ## What this is
 
 Uneven traffic can overload some servers while leaving others underused. This
