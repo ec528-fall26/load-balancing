@@ -29,6 +29,87 @@ import { CartesianGrid, LineChart, Line, XAxis, YAxis } from "recharts";
 import { ResponseChart } from "@/components/chart";
 import { Panel } from "@/components/surface";
 import { seconds } from "@/components/results";
+const migrationReasons = {
+  outage: "Home outage",
+  overload: "Home overloaded",
+  recovery: "Home recovered",
+  destination_unavailable: "Backup unavailable",
+};
+
+function ClientTraffic({ summary }: { summary: RegionalSummary }) {
+  const rows = summary.client_traffic;
+  const changes = summary.client_migration_events ?? [];
+  if (!rows) return null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Client traffic by region</CardTitle>
+        <CardDescription>
+          Routed counts cover the last complete simulated second. Preferred
+          shifts move a share of new requests. Other requests can still fail
+          over when home is offline or full.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Client origin</TableHead>
+              <TableHead className="text-right">Target req/s</TableHead>
+              <TableHead>Preferred shift</TableHead>
+              {summary.regions.map((region) => (
+                <TableHead key={region.name} className="text-right">
+                  To {region.name}
+                </TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((row) => (
+              <TableRow key={row.origin}>
+                <TableCell className="font-medium">{summary.regions[row.origin].name}</TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {row.configured_rps.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+                </TableCell>
+                <TableCell>
+                  {row.destination === null ? "Home" : (
+                    <Badge variant="secondary">
+                      {Math.round(row.shifted_fraction * 100)}% to {summary.regions[row.destination].name}
+                    </Badge>
+                  )}
+                </TableCell>
+                {row.routed_per_second.map((count, i) => (
+                  <TableCell key={i} className={`text-right tabular-nums ${count && i !== row.origin ? "font-semibold" : ""}`}>
+                    {count.toLocaleString()}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        {changes.length > 0 && (
+          <div>
+            <h3 className="mb-2 text-sm font-medium">Recent shifts</h3>
+            <ol className="flex flex-col gap-1.5">
+              {changes.slice(-8).reverse().map((event) => (
+                <li key={`${event.simulation_time}-${event.origin}`} className="text-sm text-muted-foreground">
+                  <span className="mr-2 tabular-nums">{event.simulation_time}s</span>
+                  <span className="font-medium text-foreground">{summary.regions[event.origin].name}</span>
+                  {" · "}{migrationReasons[event.reason]}{" · "}
+                  {event.destination === null
+                    ? event.reason === "recovery" ? "Home preference restored" : "Backup preference cleared"
+                    : `${Math.round(event.shifted_fraction * 100)}% to ${summary.regions[event.destination].name}`}
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export function RegionalTelemetry({
   summary: s,
   oneShot = false,
@@ -80,6 +161,7 @@ export function RegionalTelemetry({
         across the latest {s.metrics.response_window_count} completions (maximum{" "}
         {s.metrics.response_window_limit}); latency excludes rejected requests.
       </p>
+      <ClientTraffic summary={s} />
       <div className="grid min-w-0 gap-4 lg:grid-cols-2 xl:grid-cols-3">
         {s.regions.map((r, index) => (
           <Card key={r.name} aria-label={`Region ${r.name}`}>
@@ -101,8 +183,8 @@ export function RegionalTelemetry({
                 </Badge>
               </div>
               <CardDescription>
-                {r.compute}× compute · {r.slots} slots · {r.client_rtt_ms} ms
-                client RTT
+                {r.compute}× compute · {r.slots} slots
+                {!s.client_traffic && ` · ${r.client_rtt_ms} ms client RTT`}
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
@@ -220,11 +302,9 @@ export function RegionalTelemetry({
       </div>
       <Panel title="Active regional configuration">
         <p className="caption">
-          Policy: {s.config.policy}; source:{" "}
-          {s.config.regions[s.config.source].name}. Regional RTT matrix below is
-          an illustrative topology; client RTT is separately configured and
-          drives the request/response travel. The engine splits each client RTT
-          equally across both directions.
+          {s.client_traffic
+            ? `Fallback policy: ${s.config.policy}. Each client origin uses its row in the RTT matrix for dispatch and response.`
+            : `Policy: ${s.config.policy}. Source: ${s.config.regions[s.config.source].name}. Configured client RTT drives request and response travel.`}
         </p>
         <Table>
           <TableHeader>

@@ -37,7 +37,7 @@ import {
 } from "@/components/ui/table";
 import { Notice, Panel } from "@/components/surface";
 import { defaults, engineRequest, type Run } from "@/lib/engine";
-import { regionalRequest, type RegionalRun } from "@/lib/regions";
+import { withoutRegionalClients, regionalRequest, type RegionalRun } from "@/lib/regions";
 import { readSetups, templates, type SavedSetup } from "@/lib/saved-setups";
 import {
   changedSettings,
@@ -192,7 +192,7 @@ function RoutingComparison() {
         const run = isRegional(item.config)
           ? compactRegionalRun(
               await regionalRequest<RegionalRun>("run", {
-                config: item.config,
+                config: withoutRegionalClients(item.config),
               }),
             )
           : compactRun(

@@ -12,6 +12,8 @@ export type RegionalTopology = {
   latency_ms: number[][];
   client_latency_ms: number[];
   source: number;
+  client_weights?: number[];
+  client_migration?: boolean;
 };
 export type RegionalConfig = RegionalTopology & {
   topology: "regions";
@@ -68,6 +70,20 @@ export type RegionalSummary = {
     recent_p95_response_time: number | null;
     response_window_count: number;
   }[];
+  client_traffic?: {
+    origin: number;
+    configured_rps: number;
+    shifted_fraction: number;
+    destination: number | null;
+    routed_per_second: number[];
+  }[];
+  client_migration_events?: {
+    simulation_time: number;
+    origin: number;
+    destination: number | null;
+    shifted_fraction: number;
+    reason: "outage" | "overload" | "recovery" | "destination_unavailable";
+  }[];
   history: {
     simulation_time: number;
     running: number;
@@ -96,8 +112,12 @@ export function acceptRegionalSummary(
   const s = value as RegionalSummary;
   const n = (v: unknown): v is number =>
     typeof v === "number" && Number.isFinite(v) && v >= 0;
-  const c = (v: unknown) => n(v) && Number.isSafeInteger(v);
+  const c = (v: unknown): v is number => n(v) && Number.isSafeInteger(v);
   const latency = (v: unknown) => v === null || n(v);
+  const regionIndex = (v: unknown) => c(v) && v < s.config.regions.length;
+  const preference = (v: { destination: number | null; shifted_fraction: number }) =>
+    n(v.shifted_fraction) && v.shifted_fraction <= 1 &&
+    (v.shifted_fraction === 0 ? v.destination === null : regionIndex(v.destination));
   return (
     s.topology === "regions" &&
     s.model === "aggregate_regional_pools" &&
@@ -188,6 +208,21 @@ export function acceptRegionalSummary(
         r.load_averages.length === 3 &&
         r.load_averages.every(n),
     ) &&
+    (s.client_traffic === undefined ||
+      (Array.isArray(s.client_traffic) &&
+        s.client_traffic.length === s.regions.length &&
+        s.client_traffic.every((row, i) =>
+          !!row && row.origin === i && n(row.configured_rps) && preference(row) &&
+          Array.isArray(row.routed_per_second) &&
+          row.routed_per_second.length === s.regions.length &&
+          row.routed_per_second.every(c)))) &&
+    (s.client_migration_events === undefined ||
+      (Array.isArray(s.client_migration_events) &&
+        s.client_migration_events.length <= 48 &&
+        s.client_migration_events.every((event) =>
+          !!event && n(event.simulation_time) && regionIndex(event.origin) &&
+          preference(event) &&
+          ["outage", "overload", "recovery", "destination_unavailable"].includes(event.reason)))) &&
     Array.isArray(s.history) &&
     s.history.length <= 240 &&
     s.history.every(
@@ -235,4 +270,9 @@ export async function regionalRequest<T>(
       "INVALID_RESPONSE",
     );
   return data as T;
+}
+
+export function withoutRegionalClients<T extends RegionalTopology>(config: T) {
+  const { client_weights: _weights, client_migration: _migration, ...rest } = config;
+  return rest;
 }
