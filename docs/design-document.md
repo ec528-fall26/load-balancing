@@ -6,7 +6,7 @@
 
 **Updated:** November 12, 2026
 
-**Implementation audited:** `demo-3` at `c07af2150d3f36dcbe5f512e6139217b57d72a01`
+**Implementation audited for the November 12 measurements:** `demo-3` at `c07af2150d3f36dcbe5f512e6139217b57d72a01`
 
 **Submission:** November 16, 2026, noon, America/New_York, branch `demo-3`
 
@@ -23,7 +23,7 @@ The [Next.js Lab](../src/frontend/README.md) runs repeatable experiments on the
 Python simulator. Since Demo 2 we added queue-aware routing and paired policy
 comparisons, live sessions, regional and staged workloads, sharded dependencies
 with seeded outages, and a paginated playback API. The [PDF](../slides/demo-3.pdf)
-and [video](../videos/demo-3.mp4) show the current implementation. The
+and [video](../videos/demo-3.mp4) show the main Demo 3 workflows. The
 `demo-2` branch preserves the previous submission.
 
 ### Progress against the proposal and grading rubric
@@ -43,7 +43,7 @@ of revised milestones.
 | Implement and compare load feedback | Round-robin prototype | Running-only least active and queue-aware least outstanding; 36 policy runs and exact API replays on twelve shared traces. Near-capacity p95 is 2.13/5.24/1.23 s, with rejection 0/2.91/0%. See the [Demo 3 experiments](#demo-3-experiments). |
 | Save, replay, and compare simulations | In-memory recorded-event playback | Version-one JSON/CSV, fingerprint-verified replay, and validated saved-result comparison; complete replayed summaries/events match. Experiments 2/5. |
 | Make larger results usable | Legacy full-trace API response | Initial decoded response falls from 7,870,218 to 4,097 bytes for the reference 100-server/100,000-request case; paginated events reconstruct the original trace. [Playback validation](#recorded-playback-and-scale). |
-| Selected advanced models | Identical servers in one region | CPU/I/O, live controls, regional spillover, shard slowdown/outages, and manual compute scaling. The regional example changes 173 rejections to zero out of 650 requests. These extensions supplement the core milestones. |
+| Selected advanced models | Identical servers in one region | CPU/I/O, live controls, regional spillover and client migration, shard slowdown/outages, and manual compute scaling. The regional example changes 173 rejections to zero out of 650 requests. These extensions supplement the core milestones. |
 | Reproducible deliverables | Earlier slides, document, video | Demo 3 code, [slides](../slides/demo-3.pdf), [video](../videos/demo-3.mp4), setup, commands, expected results, and limitations in this document. Presence does not establish presentation quality or a guaranteed grade. |
 
 The 10,000- and 100,000-request studies address engine scaling and transfer cost.
@@ -102,7 +102,7 @@ distributed session ownership, autoscaling, or automatic failover.
 | --- | --- | --- |
 | Simple single pool | One-shot and continuous | Finite execution slots, bounded waiting FIFO, service-demand sampling, optional processing-rate multipliers. |
 | Main Lab CPU/I/O | One-shot and continuous | CPU -> shared finite I/O -> CPU, with CPU-ready FIFO and per-server outstanding admission caps. I/O releases CPU but retains admission capacity. |
-| Regions | One-shot and continuous | Aggregate compute pools, configurable request/reply transit, and current load knowledge. No per-server regional scheduling or delayed telemetry. |
+| Regions | One-shot and continuous | Aggregate compute pools, configurable request/reply transit, and current load knowledge. Continuous runs support manual datacenter outages and optional client migration. No per-server regional scheduling or delayed telemetry. |
 | Sharded service | One-shot | Coordinator, one/two/four required calls, parallel/serial dispatch, CPU/I/O, deadlines, slowdown, and a seeded outage with recovery. |
 | A-24 research | Script and research view | Separate CPU/I/O model with unbounded I/O delay. Its results do not characterize the main Lab's finite shared I/O resource. |
 
@@ -743,8 +743,12 @@ Compare exact simulation fields and page contents, not entire HTTP responses:
 opaque IDs, metadata, timings, and serialization may differ. These are initial
 decoded JSON sizes, not total playback transfer or compressed wire bytes.
 The regional cases use 12 datacenters/1,000 servers/4,000 slots and illustrative
-2-450 ms client RTTs. Each offers exactly 100,000 requests; 1,001 servers and
-13 regions must produce validation errors.
+2-450 ms client RTTs. Each offers exactly 100,000 requests. The harness checks
+that 1,001 **single-pool** servers and a separate 13-region topology both
+produce validation errors. The current regional API allows up to 12 regions
+and, across all regions, up to 100,000 servers, 400,000 execution slots, and
+1,000,000 waiting places. These are configuration limits. The measured
+regional runs use the smaller topology described above.
 
 The reference eight-second live probes at 100,000 offered requests/s show
 2.546 s maximum lag for single pool and 2.153 s for regions. These runs are
@@ -785,6 +789,40 @@ uv run --locked python -c "from lbsim.regional_engine import LiveSimulation; fro
 Expect `nearest 477 173 1.485 [477, 0, 0]` and
 `nearest_under_load 650 0 0.559 [335, 281, 34]`. This uses current load knowledge
 and an illustrative RTT matrix, not measured WAN conditions or delayed reports.
+
+### Continuous regional outages and client migration
+
+In Setup, choose **Regions**, **Continuous**, and **US · balanced**. Set
+**Requests per second** to 40, the regional routing policy to **Nearest region**,
+the seed to 42, and service times to 0.1–1.0 seconds. Under **Client traffic**,
+choose **Clients by region**, set the weights to 70/20/10 for
+`us-east-1`/`us-east-2`/`us-west-1`, and leave **Client migration** on
+**Gradual shift and return**. The configured rates are 28, 8, and 4 requests/s.
+Weights are relative, and a weight of zero disables that origin.
+
+1. Start the continuous simulation. In **Client traffic by region**, the
+   rows are client origins and the destination columns count requests routed
+   in the last complete simulated second. At this load, traffic normally
+   stays in its home region.
+2. In the `us-east-1` region card, select **Take offline**. New requests
+   immediately use an available region. When a suitable backup has headroom,
+   **Preferred shift** increases by 20 percentage points per simulated second,
+   up to 60%, toward `us-east-2` in this setup. Actual routing can shift more
+   than 60% because the remaining requests also fail over while home is offline.
+3. Select **Restore** on `us-east-1`. After ten consecutive one-second
+   samples with home online and at or below 70% load, the preferred shift
+   drops by 20 percentage points per sample until it reaches zero. Check
+   **Recent shifts** and the destination counts to see traffic return home.
+   Counts fluctuate with the seeded traffic mix.
+
+Clients keep their original location and its RTT matrix row throughout. The
+configured regional policy handles per-request fallback when a preferred
+region is offline or full. Three consecutive one-second samples at or above
+90% home load can also trigger gradual migration while home stays online.
+The load ratio counts executing, queued, and outbound requests against slots.
+Choose **Per-request failover only** to compare the same workload with gradual
+migration disabled. During a manual outage, the affected datacenter rejects
+its queued, executing, and outbound work. Responses already sent can arrive.
 
 ### Sharded service: slowdown, outage, and call order
 
@@ -849,7 +887,7 @@ significance or confidence intervals.
 | Boundary or remaining work | Current status and next validation needed |
 | --- | --- |
 | Production workload realism | Regular arrivals, sampled demands, and illustrative RTTs. Trace-driven/bursty traffic and more repeated trials are needed before production conclusions. |
-| Reliability and stale information | Seeded shard outages/slowdown are implemented. General server reliability, regional failures, retries/replication, and delayed load telemetry are outside the demonstrated model. Announce any proposal-scope revision at the demo. |
+| Reliability and stale information | Seeded shard outages/slowdown, manual continuous regional outages, and client migration are implemented. Automatic regional failure detection, retries/replication, and delayed load telemetry are outside the demonstrated model. Announce any proposal-scope revision at the demo. |
 | Portable saved-run coverage | Version one supports simple single-pool runs with uniform processing rates. Regions, CPU/I/O, and shards need a versioned schema and replay evidence. Browser-local setups, portable run files, and temporary recordings are distinct features. |
 | Durable or distributed state | Sessions/recordings expire and restart loses them. Accounts, durable saves, distributed ownership, and automatic failover are not established by manual compute scaling. |
 | Deployment validation | Compose/Kubernetes provide separate compute/state routing. Their presence does not prove autoscaling, high availability, public security, or concurrent-user capacity. Base-image tags remain mutable. |
