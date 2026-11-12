@@ -14,7 +14,7 @@ policies on identical offered workloads.
 **Demo 3** · [Slides](slides/demo-3.pdf) · [Captioned video](videos/demo-3.mp4) ·
 [Design document](docs/design-document.md) ·
 [Hosted slides](https://ec528-demo-3.vercel.app/load-balancing-demo-3/) ·
-[Hosted Lab](https://ec528-load-balancing-lab.vercel.app/)
+[Hosted Lab](https://ec528-lab.coolify.soconnor.dev/)
 
 ## Quick start
 
