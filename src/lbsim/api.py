@@ -22,7 +22,7 @@ from lbsim.fanout import experiment as fanout_experiment, run_fanout
 from lbsim.runs import RunStore
 from lbsim.settings import validate_config
 from lbsim.regional import RegionalSimulation, run_regional, presets
-from lbsim.regions import Region, validate_topology
+from lbsim.regions import MAX_REGIONAL_SERVERS, Region, validate_topology
 from lbsim.simulation import run_simulation
 from lbsim.sessions import SessionLimits, SessionManager, SessionError
 
@@ -35,6 +35,9 @@ class Limits:
     slots: int = 4096
     waiting_places: int = 100000
     worker_seconds: float = 15.0
+    regional_servers: int = MAX_REGIONAL_SERVERS
+    regional_slots: int = 400_000
+    regional_waiting_places: int = 1_000_000
 
 
 class APIError(Exception):
@@ -214,8 +217,14 @@ def checked_regional_config(values, limits, session_limits, *, continuous=False)
         duration = values.get('duration')
         if not continuous and (not finite_number(duration) or not 0 < duration <= 3600):
             raise ValueError('Arrival duration must be positive and at most 3,600 seconds.')
-        if sum(r.servers for r in regions)>limits.servers or sum(r.slots for r in regions)>limits.slots or sum(r.queue_limit for r in regions)>limits.waiting_places:
-            raise ValueError('Regional totals exceed the server, slot or queue limits.')
+        capacity = (
+            ("servers", sum(r.servers for r in regions), limits.regional_servers),
+            ("slots", sum(r.slots for r in regions), limits.regional_slots),
+            ("queue places", sum(r.queue_limit for r in regions), limits.regional_waiting_places),
+        )
+        for label, total, maximum in capacity:
+            if total > maximum:
+                raise ValueError(f"Regional {label}: {total:,} exceeds the {maximum:,} limit.")
         if any(not 1e-9 <= low/r.compute <= high/r.compute <= 3600 for r in regions):
             raise ValueError('Effective service times must be between 1 ns and 3,600 seconds.')
         from dataclasses import asdict

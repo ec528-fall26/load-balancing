@@ -77,12 +77,25 @@ class RegionalAPITests(unittest.TestCase):
                 self.assertTrue(snapshot['regions'][1]['online'])
                 self.conserve(snapshot)
 
+    def test_regional_capacity_supports_100000_servers(self):
+        config = deepcopy(CONFIG)
+        config['regions'][0].update(servers=50_000, slots_per_server=4, queue_per_server=10)
+        config['regions'][1].update(servers=50_000, slots_per_server=4, queue_per_server=10)
+        with TestClient(create_app()) as client:
+            response = client.post('/v1/sessions', json={'config': config, 'paused': True})
+            self.assertEqual(response.status_code, 201, response.text)
+            self.assertEqual(sum(r['slots'] for r in response.json()['regions']), 400_000)
+            config['regions'][1]['servers'] += 1
+            invalid = client.post('/v1/sessions', json={'config': config})
+            self.assertEqual(invalid.status_code, 422)
+            self.assertIn('100,001 exceeds the 100,000 limit', invalid.text)
+
     def test_invalid_regional_contracts_fail_before_workers_start(self):
         bad=[{'source':True},{'source':2},{'policy':'least_active'},{'seed':True},{'service_min':0},{'service_min':2},
              {'latency_ms':[[0]]},{'latency_ms':[[0,-1],[1,0]]},{'latency_ms':[[0,True],[1,0]]},
              {'client_latency_ms':[1]},{'client_latency_ms':[True,0]}, {'client_latency_ms':[1001,0]},
              {'arrival_rate':True},{'duration':1},{'extra':1}, {'regions':[{'name':'east'},{'name':'east'}]},
-             {'regions':[{'name':'a','servers':1001}]},{'regions':[{'name':' a '}]}, {'regions':[{'name':'a','compute':1e-300}]}]
+             {'regions':[{'name':'a','servers':100001},{'name':'b'}]},{'regions':[{'name':' a '}]}, {'regions':[{'name':'a','compute':1e-300}]}]
         app=create_app()
         with TestClient(app) as c:
             for change in bad:
