@@ -1,0 +1,30 @@
+{
+  "config": {
+    "server_count": 1000,
+    "concurrency": 4,
+    "queue_limit": 10,
+    "arrival_rate": 10000,
+    "duration": 10,
+    "service_min": 0.1,
+    "service_max": 1,
+    "seed": 42,
+    "policy": "round_robin"
+  },
+  "api_ms": 6249.657708000001,
+  "decoded_summary_bytes": 24296,
+  "cached_response_to_results_ms": 146.31912499999999,
+  "seek_to_end_ms": 341.8756249999997,
+  "visible_server_count": 8,
+  "initial_heap": {
+    "usedSize": 5360444,
+    "totalSize": 6291456,
+    "embedderHeapUsedSize": 1861920,
+    "backingStorageSize": 1489766
+  },
+  "post_gc_end_heap": {
+    "usedSize": 11643076,
+    "totalSize": 13713408,
+    "embedderHeapUsedSize": 4298936,
+    "backingStorageSize": 1552815
+  }
+}

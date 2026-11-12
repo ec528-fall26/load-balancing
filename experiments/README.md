@@ -1,5 +1,53 @@
 # Experiments
 
+Run `uv sync --locked` from the repository root before starting. Checked-in
+outputs under `results/` are reference captures. Rerun commands write to separate
+directories so the original captures stay available for comparison.
+
+## A-02: policies on uniform and mixed-speed servers
+
+From the repository root after installing dependencies:
+
+```sh
+PYTHONPATH=src uv run python experiments/compare_speeds.py --output experiments/results/a-02-rerun
+```
+
+Runs both policies on 9 shared seeded traces (3 loads × 3 seeds) and three fleets with
+the same total processing rate: uniform, fast servers at low IDs, and fast servers at
+high IDs. Takes a few seconds and ends with `Validated 54 runs on 9 shared traces.`
+Reference results and interpretation: [analysis](results/a-02/analysis.md). Requires
+A-01 processing rates
+
+## D3-04/05: reproduce saved runs and compare results
+
+```sh
+uv run python experiments/replay_compare.py --output experiments/results/d3-04-05-rerun
+```
+
+From the repository root after installing dependencies, this takes seconds and
+exports two policies on the same 16-request workload, verifies complete replayed
+summaries/events, reads both CSVs and saves `verification.json`. Expect 9 completed
+and 7 rejected for round-robin, versus 7 and 9 for least-active-requests. The
+command overwrites its files in the chosen directory; use the rerun path to keep
+[reference evidence](results/d3-04-05/verification.json). The [saved-run guide](../docs/run-exports.md)
+explains loading the generated JSON and CSV files into the UI. This is a workflow
+example, not the D3-02 policy study.
+
+## D3-03: export a real run
+
+From the repository root after installing dependencies:
+
+```sh
+uv run python experiments/export_run.py --output experiments/results/d3-03-rerun
+```
+
+This executes a fixed overload simulation and exports `config.json` and
+`results.csv` in seconds. Expect two completions, two rejections, mean/p95
+response time 1.375/1.75 seconds and server utilization 1.0. The command
+overwrites those filenames in the selected directory; the rerun directory
+preserves the reference [JSON](results/d3-03/config.json) and
+[CSV](results/d3-03/results.csv). See [the schema documentation](../docs/run-exports.md).
+
 One script per claim. Each script should be runnable from the repository root,
 print what it is measuring, and finish in a bounded amount of time.
 
@@ -13,7 +61,7 @@ From the repository root (PowerShell, Bash, or another terminal):
 
 ```sh
 uv sync --locked
-uv run python experiments/scale_benchmark.py --repeats 3 --output experiments/results/d2-13
+uv run python experiments/scale_benchmark.py --repeats 3 --output experiments/results/d2-13-rerun
 ```
 
 The command overwrites that output directory's three generated files. Choose a
@@ -63,8 +111,7 @@ Python 3.12.13 and Streamlit 1.65.0, against simulation commit `ecfedc5`:
 | 1,000 | 0.1275 | 38.66 | 10,000 | 0 |
 
 All nine samples passed validation and used the same workload hash. These
-numbers describe this saved run; a rerun replaces the raw files, so update this
-table if replacing the reference results.
+numbers describe the saved run. Reruns produce their own reports.
 
 - [Reference trace](results/d2-13/trace.csv): all 10,000 request IDs, arrivals, and service durations; decimal float values round-trip to Python floats.
 - [Raw samples](results/d2-13/samples.csv): runtime seconds, peak process bytes, workload hash, outcomes, latency metrics, draining time, and validation status for each sample.
@@ -82,3 +129,117 @@ It does not isolate the cost of adding servers, establish asymptotic complexity,
 compare policies, or measure UI playback, network throughput, or cloud hardware.
 The engine still sorts pending completions and removes the first item from
 lists; selecting or implementing an optimization belongs to later profiling work.
+
+## D3-06: profile the engine
+
+```sh
+PYTHONPATH=src uv run python experiments/profile_engine.py --output experiments/results/d3-06-rerun
+```
+
+This profiles the checked-out engine with round-robin (10,000 requests on
+10, 100 and 1,000 servers), then repeats those fleet sizes with 100,000 requests.
+The longer workload extends the arrival window from 100 to 1,000 simulated
+seconds; arrival rate, service distribution, seed, slots and queue limits stay
+unchanged. It is a request-count scaling check, not an increase in offered load
+or a comparison of routing policies.
+
+Each case takes three unprofiled timings and one cProfile capture, all in fresh
+Python processes. Imports, process startup, result hashing and file output are
+outside the measured region. Profiled and unprofiled summaries must hash exactly
+the same, and every run checks conservation and final draining. Profiler timing
+includes instrumentation overhead; use unprofiled medians for runtime comparisons.
+Cumulative function times overlap and must not be added together.
+
+Allow about 30 seconds on the recorded machine. Each child has a 120-second
+timeout. The script writes `report.json` and six `.prof` files, overwriting the
+chosen directory. The report includes configuration, source hashes, revision,
+machine/Python details, individual unprofiled timings, result fingerprints and
+function timings. These are local CPU measurements, not cloud performance.
+
+Read the findings and D3-07 plan in [the profiling notes](results/d3-06/analysis.md).
+Inspect a raw profile with Python's standard library:
+
+```sh
+uv run python -m pstats experiments/results/d3-06/100000-requests-100-servers.prof
+```
+
+At the prompt, use `sort tottime` and `stats 15`. For another capture, choose a
+new output directory to preserve the before-change evidence.
+
+## D3-07: deque before/after comparison
+
+The pending-arrival container now uses a deque. The saved before capture is in
+results/d3-06 and the after capture in results/d3-07. See
+[the results](results/d3-07/analysis.md) for all six timings and limitations.
+
+To recalculate the published ratios from the two saved captures:
+
+```sh
+uv run python -X utf8 experiments/compare_profiles.py \
+  experiments/results/d3-06/report.json experiments/results/d3-07/report.json \
+  --output experiments/results/d3-07-comparison-rerun.json
+```
+
+To collect new timings, run the same profiling script on both historical
+revisions on one machine. The pre-deque revision predates the harness, so copy
+the harness from the post-deque revision. Run these commands in a POSIX shell
+from the repository root:
+
+```sh
+run_dir=$(mktemp -d)
+git worktree add --detach "$run_dir/before" 2ae52ee
+git worktree add --detach "$run_dir/after" 9b95fdc
+cp "$run_dir/after/experiments/profile_engine.py" "$run_dir/before/experiments/"
+(cd "$run_dir/before" && uv sync --locked && uv run python experiments/profile_engine.py --output "$run_dir/results-before")
+(cd "$run_dir/after" && uv sync --locked && uv run python experiments/profile_engine.py --output "$run_dir/results-after")
+uv run python -X utf8 experiments/compare_profiles.py \
+  "$run_dir/results-before/report.json" "$run_dir/results-after/report.json" \
+  --output "$run_dir/comparison.json"
+```
+
+Allow roughly a minute for both profiling runs. The comparison prints six
+ratios and checks exact summary fingerprints. Timing ratios vary by machine.
+Keep the Python version and environment the same for both runs. The saved
+captures were taken together, so compare them to each other when checking the
+published ratios.
+
+## D3-02: paired routing-policy comparison
+
+Add `--include-least-outstanding` to the command below for the three-policy
+Demo 3 comparison. It validates 36 runs and replays on the same 12 seeded
+traces. See the [Demo 3 experiment table](../docs/design-document.md#demo-3-experiments)
+for the near-capacity results shown on the slide.
+
+```sh
+PYTHONPATH=src uv run python experiments/compare_policies.py --output experiments/results/d3-02-rerun
+```
+
+Allow a few seconds locally. The script runs four fixed-load scenarios using
+seeds 42/43/44 and both policies (24 runs plus 24 public-API replays). Ten servers,
+one slot each and uniform 0.1–1.0 second service give a nominal reference capacity
+of 18.1818 requests/s. Scenarios use 50%, 90%, 120%, and 90% × 1.2 of that capacity
+for 100 simulated seconds. The +20% case is relative to the near-capacity case;
+it is a separate run, not a mid-run traffic spike.
+
+Each policy's actual generated workload must match its shared reference trace,
+including rejected requests. Validation checks current-state routing, capacity,
+request conservation, FIFO, draining and equality with the public API replay.
+The script saves 12 traces, 24 samples, 240 per-server utilization rows, every
+configuration, and aggregates with three-seed ranges and sample deviations.
+Report/source hashes identify the exact measured implementation. Use another
+output directory to preserve prior evidence. No CPU runtime measurement is made.
+
+See [results and interpretation](results/d3-02/analysis.md). Lower completed-request
+latency must be considered together with rejection rates. Mean per-run p95 is not
+a pooled p95, and three seeds do not establish a general policy ranking.
+
+## A-24: CPU/I/O request stages and power-of-two choices (research)
+
+```sh
+PYTHONPATH=src uv run python experiments/compare_cpu_io.py --output experiments/results/a-24-rerun
+```
+
+Runs 81 policy cases plus exact replays on 27 shared traces in seconds locally.
+Separates CPU execution, I/O wait and the outstanding admission cap. Existing web
+app behavior is unchanged. See [model and limits](../docs/cpu-io-research.md) and
+[recorded results](results/a-24/analysis.md). No cloud or GPU is required.

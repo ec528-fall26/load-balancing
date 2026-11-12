@@ -55,6 +55,20 @@ class ServerTests(unittest.TestCase):
             server.submit(Request(0, 1, 1), 1)
         server.complete(0, 3)
 
+    def test_queued_request_ids_remain_active_until_completion(self):
+        server = Server(0, 1, 2)
+        server.submit(Request(0, 0, 1), 0)
+        server.submit(Request(1, 0, 1), 0)
+        with self.assertRaises(ValueError):
+            server.submit(Request(1, 0, 1), 0)
+        self.assertEqual((server.running_count, server.waiting_count), (1, 1))
+        server.complete(0, 1)
+        self.assertEqual((server.running_count, server.waiting_count), (1, 0))
+        with self.assertRaises(ValueError):
+            server.submit(Request(1, 1, 1), 1)
+        server.complete(1, 2)
+        self.assertEqual(server.submit(Request(1, 2, 1), 2).status, "started")
+
     def test_invalid_capacity_and_request_times(self):
         for slots, limit in [(0, 1), (1, -1), (True, 1), (1.5, 1)]:
             with self.assertRaises(ValueError):

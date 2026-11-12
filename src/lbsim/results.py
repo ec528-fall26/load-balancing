@@ -1,5 +1,6 @@
 """Display actual run metrics and accessible chart data in Streamlit."""
 
+import altair
 import streamlit as st
 from lbsim.datacenter import display_datacenter
 
@@ -7,12 +8,32 @@ TEAL = '#147D92'
 ORANGE = '#B85A27'
 
 
+def response_histogram(times: list[float], bins: int = 20) -> list[dict]:
+    """Aggregate all responses before chart validation and browser transfer."""
+    if not times:
+        return []
+    low, high = min(times), max(times)
+    if low == high:
+        return [{'Start': low, 'End': low + max(0.001, low * 0.05), 'Requests': len(times)}]
+    width = (high - low) / bins
+    counts = [0] * bins
+    for value in times:
+        counts[min(bins - 1, int((value - low) / width))] += 1
+    return [{'Start': low + i * width,
+             'End': high if i == bins - 1 else low + (i + 1) * width,
+             'Requests': count} for i, count in enumerate(counts)]
+
+
 def chart(spec: dict, height: int = 240, alt: str = "Simulation results chart"):
-    st.vega_lite_chart(spec={
+    spec = {
         'height': height,
         'config': {'view': {'stroke': None}, 'axis': {'labelFontSize': 12, 'titleFontSize': 12}},
         **spec,
-    }, width="stretch", alt=alt)
+    }
+    #Streamlit 1.65 st.vega_lite_chart keeps showing the previous run's data  after a rerun
+    #the same spec drawn through Altair redraws correctly
+    kind = altair.LayerChart if 'layer' in spec else altair.Chart
+    st.altair_chart(kind.from_dict(spec), width="stretch", alt=alt)
 
 
 def display_summary(summary: dict, config: dict | None = None):
@@ -53,14 +74,16 @@ def display_summary(summary: dict, config: dict | None = None):
             st.subheader('Response time distribution')
             times = summary.get('response_times', [])
             if times:
-                chart({'data': {'values': [{'Seconds': t} for t in times]}, 'layer': [
+                chart({'data': {'values': response_histogram(times)}, 'layer': [
                     {'mark': {'type': 'bar', 'color': TEAL}, 'encoding': {
-                        'x': {'field': 'Seconds', 'type': 'quantitative', 'bin': {'maxbins': 20},
+                        'x': {'field': 'Start', 'type': 'quantitative', 'bin': 'binned',
                               'title': 'Response time (s)'},
-                        'y': {'aggregate': 'count', 'type': 'quantitative', 'title': 'Completed requests',
+                        'x2': {'field': 'End'},
+                        'y': {'field': 'Requests', 'type': 'quantitative', 'title': 'Completed requests',
                               'axis': {'tickMinStep': 1}},
-                        'tooltip': [{'field': 'Seconds', 'bin': {'maxbins': 20}, 'type': 'quantitative', 'title': 'Seconds'},
-                                    {'aggregate': 'count', 'type': 'quantitative', 'title': 'Requests'}],
+                        'tooltip': [{'field': 'Start', 'type': 'quantitative', 'title': 'From (s)', 'format': '.3f'},
+                                    {'field': 'End', 'type': 'quantitative', 'title': 'To (s)', 'format': '.3f'},
+                                    {'field': 'Requests', 'type': 'quantitative'}],
                     }},
                     {'data': {'values': [{'p95': summary['p95_response_time']}]},
                      'mark': {'type': 'rule', 'color': ORANGE, 'strokeDash': [5, 4]},

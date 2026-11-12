@@ -1,0 +1,611 @@
+{
+  "recorded_at_utc": "2026-11-03T00:36:55.758Z",
+  "git_head": "d6fbfafeab8d429e83567efd7a45f76ef09513ff",
+  "benchmark_source_sha256": "e2e6e57d763d220fa04d14bc95259827acf7d6a54bf5d136223b2329a364bd48",
+  "topology": "single_pool",
+  "rate": 1000,
+  "mode": "continuous",
+  "browser_version": "156.0.8078.4",
+  "viewport": {
+    "width": 1440,
+    "height": 1000
+  },
+  "first_ready_ms": 174.98220800000126,
+  "pause_control_ms": 76.44033300000592,
+  "drain_control_ms": 646.6958750000049,
+  "initial_heap": {
+    "usedSize": 7073040,
+    "totalSize": 8208384,
+    "embedderHeapUsedSize": 2202152,
+    "backingStorageSize": 1533387
+  },
+  "natural_end_heap": {
+    "usedSize": 30576880,
+    "totalSize": 89473024,
+    "embedderHeapUsedSize": 13427888,
+    "backingStorageSize": 1564131
+  },
+  "post_gc_end_heap": {
+    "usedSize": 14054792,
+    "totalSize": 15810560,
+    "embedderHeapUsedSize": 8273320,
+    "backingStorageSize": 1547556
+  },
+  "retained_heap_delta_bytes": 6981752,
+  "rendering": {
+    "long_tasks": [],
+    "frames": 1008,
+    "frame_gap_max_ms": 50.099999999999966,
+    "frame_gap_mean_ms": 16.699007936507936,
+    "frame_gaps_over_100ms": 0,
+    "json_reads": [
+      {
+        "url": "/api/sessions",
+        "ms": 0.19999998807907104
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 1.0999999940395355
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.10000000894069672
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.20000000298023224
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.29999999701976776
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.20000000298023224
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.09999999403953552
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.20000000298023224
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.20000000298023224
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.29999999701976776
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.20000000298023224
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.09999999403953552
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.20000000298023224
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.20000000298023224
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.30000001192092896
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.20000000298023224
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.29999999701976776
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.19999998807907104
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.20000000298023224
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.29999999701976776
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.09999999403953552
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.20000000298023224
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.09999999403953552
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.29999999701976776
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.09999999403953552
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.19999998807907104
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.09999999403953552
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.20000000298023224
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.09999999403953552
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.29999999701976776
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.20000000298023224
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.29999999701976776
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.20000000298023224
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/commands",
+        "ms": 0.6000000089406967
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/commands",
+        "ms": 0.5
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/commands",
+        "ms": 0.29999999701976776
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/commands",
+        "ms": 0.5
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/snapshot",
+        "ms": 0.20000000298023224
+      },
+      {
+        "url": "/api/sessions/ab44940202a548a29fd0a336a40555f9/commands",
+        "ms": 0.5
+      }
+    ],
+    "visibility": "visible"
+  },
+  "cdp_metrics": [
+    {
+      "name": "Timestamp",
+      "value": 87602.798122
+    },
+    {
+      "name": "AudioHandlers",
+      "value": 0
+    },
+    {
+      "name": "AudioWorkletProcessors",
+      "value": 0
+    },
+    {
+      "name": "Documents",
+      "value": 1
+    },
+    {
+      "name": "Frames",
+      "value": 1
+    },
+    {
+      "name": "JSEventListeners",
+      "value": 4088
+    },
+    {
+      "name": "LayoutObjects",
+      "value": 3072
+    },
+    {
+      "name": "MediaKeySessions",
+      "value": 0
+    },
+    {
+      "name": "MediaKeys",
+      "value": 0
+    },
+    {
+      "name": "Nodes",
+      "value": 3359
+    },
+    {
+      "name": "Resources",
+      "value": 19
+    },
+    {
+      "name": "ContextLifecycleStateObservers",
+      "value": 27
+    },
+    {
+      "name": "V8PerContextDatas",
+      "value": 2
+    },
+    {
+      "name": "WorkerGlobalScopes",
+      "value": 0
+    },
+    {
+      "name": "UACSSResources",
+      "value": 0
+    },
+    {
+      "name": "RTCPeerConnections",
+      "value": 0
+    },
+    {
+      "name": "ResourceFetchers",
+      "value": 1
+    },
+    {
+      "name": "AdSubframes",
+      "value": 0
+    },
+    {
+      "name": "DetachedScriptStates",
+      "value": 0
+    },
+    {
+      "name": "ArrayBufferContents",
+      "value": 36
+    },
+    {
+      "name": "LayoutCount",
+      "value": 538
+    },
+    {
+      "name": "RecalcStyleCount",
+      "value": 916
+    },
+    {
+      "name": "LayoutDuration",
+      "value": 0.053418
+    },
+    {
+      "name": "RecalcStyleDuration",
+      "value": 0.167428
+    },
+    {
+      "name": "DevToolsCommandDuration",
+      "value": 0.036441
+    },
+    {
+      "name": "ScriptDuration",
+      "value": 0.739755
+    },
+    {
+      "name": "V8CompileDuration",
+      "value": 0
+    },
+    {
+      "name": "TaskDuration",
+      "value": 1.746487
+    },
+    {
+      "name": "TaskOtherDuration",
+      "value": 0.749445
+    },
+    {
+      "name": "ThreadTime",
+      "value": 1.767194
+    },
+    {
+      "name": "ProcessTime",
+      "value": 3.119676
+    },
+    {
+      "name": "JSHeapUsedSize",
+      "value": 30731312
+    },
+    {
+      "name": "JSHeapTotalSize",
+      "value": 89473024
+    },
+    {
+      "name": "FirstMeaningfulPaint",
+      "value": 0
+    },
+    {
+      "name": "DomContentLoaded",
+      "value": 87585.748468
+    },
+    {
+      "name": "NavigationStart",
+      "value": 87585.722556
+    }
+  ],
+  "poll_count": 33,
+  "max_simultaneous_polls": 1,
+  "poll_latency_ms": {
+    "count": 33,
+    "min": 9.311667000001762,
+    "median": 13.446457999998529,
+    "p95": 30.64287499999773,
+    "max": 44.066915999999765
+  },
+  "poll_body_bytes": {
+    "count": 33,
+    "min": 5070,
+    "median": 8625,
+    "p95": 10369,
+    "max": 10789
+  },
+  "poll_start_gap_ms": {
+    "count": 32,
+    "min": 504.8575830000009,
+    "median": 507.81829199999993,
+    "p95": 511.68016700000226,
+    "max": 512.2695420000018
+  },
+  "polls": [
+    {
+      "started": 22265.08975,
+      "ms": 21.673750000001746,
+      "bytes": 5070,
+      "offered": 0,
+      "lag": 0
+    },
+    {
+      "started": 22776.769917,
+      "ms": 44.066915999999765,
+      "bytes": 7053,
+      "offered": 547,
+      "lag": 0
+    },
+    {
+      "started": 23286.368333,
+      "ms": 12.782959000000119,
+      "bytes": 7045,
+      "offered": 1033,
+      "lag": 0
+    },
+    {
+      "started": 23794.942125,
+      "ms": 25.174457999997685,
+      "bytes": 7156,
+      "offered": 1540,
+      "lag": 0
+    },
+    {
+      "started": 24300.054875,
+      "ms": 13.411207999997714,
+      "bytes": 7263,
+      "offered": 2049,
+      "lag": 0
+    },
+    {
+      "started": 24805.999833,
+      "ms": 11.60216699999728,
+      "bytes": 7384,
+      "offered": 2555,
+      "lag": 0
+    },
+    {
+      "started": 25313.174875,
+      "ms": 9.67570799999885,
+      "bytes": 7499,
+      "offered": 3062,
+      "lag": 0
+    },
+    {
+      "started": 25818.032458,
+      "ms": 11.486417000000074,
+      "bytes": 7614,
+      "offered": 3569,
+      "lag": 0
+    },
+    {
+      "started": 26324.021583,
+      "ms": 30.64287499999773,
+      "bytes": 7731,
+      "offered": 4071,
+      "lag": 0
+    },
+    {
+      "started": 26833.654875,
+      "ms": 13.126124999998865,
+      "bytes": 7841,
+      "offered": 4582,
+      "lag": 0
+    },
+    {
+      "started": 27342.522458,
+      "ms": 10.975750000001426,
+      "bytes": 7953,
+      "offered": 5093,
+      "lag": 0
+    },
+    {
+      "started": 27848.730208,
+      "ms": 16.346708999997645,
+      "bytes": 8049,
+      "offered": 5596,
+      "lag": 0
+    },
+    {
+      "started": 28357.974792,
+      "ms": 15.075457999999344,
+      "bytes": 8172,
+      "offered": 6105,
+      "lag": 0
+    },
+    {
+      "started": 28868.342625,
+      "ms": 13.446457999998529,
+      "bytes": 8282,
+      "offered": 6621,
+      "lag": 0
+    },
+    {
+      "started": 29375.734083,
+      "ms": 10.411667000000307,
+      "bytes": 8394,
+      "offered": 7125,
+      "lag": 0
+    },
+    {
+      "started": 29882.067125,
+      "ms": 20.55620799999815,
+      "bytes": 8509,
+      "offered": 7629,
+      "lag": 0
+    },
+    {
+      "started": 30392.821875,
+      "ms": 24.27287499999875,
+      "bytes": 8625,
+      "offered": 8139,
+      "lag": 0
+    },
+    {
+      "started": 30900.640167,
+      "ms": 10.030124999997497,
+      "bytes": 8746,
+      "offered": 8649,
+      "lag": 0
+    },
+    {
+      "started": 31407.674208,
+      "ms": 13.792750000000524,
+      "bytes": 8854,
+      "offered": 9154,
+      "lag": 0
+    },
+    {
+      "started": 31919.022125,
+      "ms": 13.869666999999026,
+      "bytes": 8968,
+      "offered": 9666,
+      "lag": 0
+    },
+    {
+      "started": 32428.061125,
+      "ms": 13.386666999998852,
+      "bytes": 9070,
+      "offered": 10176,
+      "lag": 0
+    },
+    {
+      "started": 32935.689583,
+      "ms": 9.54491699999926,
+      "bytes": 9188,
+      "offered": 10683,
+      "lag": 0
+    },
+    {
+      "started": 33441.141917,
+      "ms": 10.46612499999901,
+      "bytes": 9309,
+      "offered": 11188,
+      "lag": 0
+    },
+    {
+      "started": 33948.625958,
+      "ms": 16.35212500000489,
+      "bytes": 9429,
+      "offered": 11695,
+      "lag": 0
+    },
+    {
+      "started": 34460.8955,
+      "ms": 10.659166999997979,
+      "bytes": 9551,
+      "offered": 12209,
+      "lag": 0
+    },
+    {
+      "started": 34966.50825,
+      "ms": 13.712542000001122,
+      "bytes": 9669,
+      "offered": 12717,
+      "lag": 0
+    },
+    {
+      "started": 35476.0765,
+      "ms": 17.244457999993756,
+      "bytes": 9781,
+      "offered": 13222,
+      "lag": 0
+    },
+    {
+      "started": 35985.493458,
+      "ms": 16.619542000000365,
+      "bytes": 9904,
+      "offered": 13735,
+      "lag": 0
+    },
+    {
+      "started": 36496.502042,
+      "ms": 15.572999999996682,
+      "bytes": 10012,
+      "offered": 14241,
+      "lag": 0
+    },
+    {
+      "started": 37007.049083,
+      "ms": 11.520917000001646,
+      "bytes": 10128,
+      "offered": 14757,
+      "lag": 0
+    },
+    {
+      "started": 37514.326875,
+      "ms": 9.311667000001762,
+      "bytes": 10251,
+      "offered": 15260,
+      "lag": 0
+    },
+    {
+      "started": 38019.385083,
+      "ms": 10.683166999995592,
+      "bytes": 10369,
+      "offered": 15766,
+      "lag": 0
+    },
+    {
+      "started": 38525.438583,
+      "ms": 22.618875000000116,
+      "bytes": 10789,
+      "offered": 15911,
+      "lag": 0
+    }
+  ],
+  "counts": {
+    "offered": 15911,
+    "completed": 11219,
+    "rejected": 3367,
+    "running": 400,
+    "waiting": 925
+  },
+  "errors": []
+}

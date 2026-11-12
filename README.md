@@ -1,104 +1,105 @@
 # EC528 Project — Load Modeling and Load Balancing Simulation Platform
 
-**Team:** Daniel Thomas, Kimone Walker, Neev Jain, Sean O'Connor
+**Team** Daniel Thomas, Kimone Walker, Neev Jain, Sean O’Connor
 
-**Mentor:** Shripad Nadgowda (Meta)
-
-**Project:** A web application for simulating request traffic, server queues, and load-balancing policies.
+**Mentor** Shripad Nadgowda (Meta)
 
 ## What this is
 
-Uneven traffic can overload some servers while leaving others underused. This
-simulator lets users configure a server pool and workload, then inspect request
-outcomes, response times, and server utilization.
+Load Balancing Lab simulates how routing decisions, server capacity, and
+downstream failures affect queues, rejected requests, and response times.
+A Next.js interface drives the Python simulator. The same seed lets you compare
+policies on identical offered workloads.
 
-The Demo 2 prototype runs locally with round-robin routing, bounded FIFO queues,
-repeatable seeded workloads, result charts, and recorded-event playback.
-Least-active-requests and saved-run comparison are planned for Demo 3.
+**Demo 3** · [Slides](slides/demo-3.pdf) · [Captioned video](videos/demo-3.mp4) ·
+[Design document](docs/design-document.md) ·
+[Hosted slides](https://ec528-demo-3.vercel.app/load-balancing-demo-3/) ·
+[Hosted Lab](https://ec528-lab.coolify.soconnor.dev/)
 
 ## Quick start
 
-Install [Git](https://git-scm.com/downloads) and
-[uv](https://docs.astral.sh/uv/getting-started/installation/), then run:
+From a fresh checkout on macOS or Linux, install Git, [uv](https://docs.astral.sh/uv/getting-started/installation/),
+and [Node.js with npm](https://nodejs.org/). Use Python 3.12 (selected by uv)
+and Node.js 22 or newer. Dependencies are pinned by `uv.lock` and
+`src/frontend/package-lock.json`.
 
 ```sh
-git clone --branch demo-2 https://github.com/ec528-fall26/load-balancing.git
+git clone --branch demo-3 https://github.com/ec528-fall26/load-balancing.git
 cd load-balancing
 uv sync --locked
-uv run streamlit run src/lbsim/app.py
+uv run uvicorn lbsim.api:app --host 127.0.0.1 --port 8000 --workers 1
 ```
 
-uv selects Python 3.12 and installs the dependencies from `uv.lock` into a local
-`.venv`. Open the URL printed by Streamlit, usually `http://localhost:8501`.
-Set the server count, slots, queue capacity, workload, and seed in the sidebar,
-then select **Run simulation**. Stop the app with Ctrl+C.
-
-Run the checks from the repository root:
+In a second terminal, from the repository root:
 
 ```sh
-uv run python -m unittest discover -s tests -v
+npm --prefix src/frontend ci
+LBSIM_API_URL=http://127.0.0.1:8000 npm --prefix src/frontend run dev
 ```
 
-For ongoing development, use the `dev` branch. Keep `pyproject.toml`, `uv.lock`,
-and `.python-version` in Git; each teammate creates their own local environment.
+Open [Setup](http://127.0.0.1:3000/setup). To check the backend independently,
+run `curl -fsS http://127.0.0.1:8000/health` and look for `"status":"ok"`.
 
-## Demo 1 materials
+- **Compare routing.** In Setup, select **Single server pool** and **One-shot**.
+  Use 10 servers, 1 slot and 10 waiting places per server, 16.36 requests/s for
+  100 seconds, simple service times of 0.1–1.0 seconds, and seed 42.
+  Choose **Compare current setup**, clone the baseline, and set the two variants
+  to **Least active requests** and **Least outstanding requests**. Leave the
+  baseline at **Round robin** and click **Run comparison**. Expect 1,636 offered
+  requests per case and 0, 55, and 0 rejections, respectively.
+- **Change load live.** In Setup, use **Continuous**, two servers with one slot
+  each, and start at 2 requests/s. In Lab, enter 10 in **Live requests per
+  second** and click **Apply traffic**. Watch the queue and simulated clock.
+  Click **Pause session**, then **Resume session**. Click **Stop session** when
+  finished.
+- **Inspect an outage.** Choose **Sharded service**, four parallel calls,
+  4 ms round trip, a 500 ms seeded outage, CPU slowdown 1×, 50 parents/s for
+  four seconds, a 200 ms deadline, and seed 42. Under **Seed and request
+  timeline**, choose request 170. Expect 175 of 200 parents on time and 25
+  outage failures. Open **Follow request 170** and **Full event timeline**.
 
-- [Design proposal](docs/design-proposal.md) and [original PDF](docs/design-proposal.pdf).
-- [Presented slides](slides/demo-1.pdf), including simulation architecture and milestones.
-
-These materials were consolidated after grading on October 6, 2026. The original
-snapshot remains at [d01e823](https://github.com/ec528-fall26/load-balancing/tree/d01e823).
-The PDF is the original proposal; the Markdown includes the added architecture diagram.
+The original Streamlit interface is available with
+`uv run streamlit run src/lbsim/app.py`.
+For deployment, see [Docker Compose](docs/docker-compose.md) and
+[Kubernetes](docs/kubernetes.md).
 
 ## Repository layout
 
 | Path | Contents |
 | --- | --- |
-| `docs/` | Design proposal, implemented design document, and simulation contract |
-| `slides/` | Demo slides (`demo-1.pdf`, `demo-2.pdf`, ...) |
-| `src/` | Simulation engine, server model, metrics, and Streamlit interface |
-| `experiments/` | Reproduction scripts and saved benchmark results |
-| `tests/` | Simulator, metrics, interface, and playback checks |
+| `docs/` | Design proposal, design document, API contracts, and deployment instructions |
+| `slides/` and `videos/` | Demo deliverables |
+| `src/lbsim/` | Python simulator, HTTP API, and Streamlit interface |
+| `src/frontend/` | Next.js Lab and browser tests |
+| `experiments/` | Reproduction scripts and saved results |
+| `tests/` | Python engine and API tests |
+| `deploy/` | Dockerfiles, gateway configuration, and Kubernetes manifests |
 
 ## Reproducing our results
 
-Every claim we make in a demo or in the final presentation has a corresponding
-script in `experiments/`.
-
-See [the design document](docs/design-document.md) for architecture, setup,
-worked examples, metric definitions, and limitations. See
-[the experiment instructions](experiments/README.md) for the saved scale baseline.
-
-Run the same 10,000-request workload with 10, 100, and 1,000 servers:
+See the [Demo 3 experiments](docs/design-document.md#demo-3-experiments) for
+commands, expected output, and timing. Run the Python suite and frontend
+build from the repository root:
 
 ```sh
-uv run python experiments/scale_benchmark.py --repeats 3 --output experiments/results/d2-13-rerun
+uv run python -m unittest discover -s tests -q
+npm --prefix src/frontend run build
 ```
 
-The command saves the trace, raw samples, and report in a separate directory,
-preserving the checked-in baseline. Seeded outcomes should match; runtime and
-peak memory depend on the machine.
-
-The model uses identical servers and evenly spaced arrivals. Utilization means
-occupied execution slots, not measured CPU use. Playback replays recorded events;
-it does not run real servers or network requests. Only round-robin is implemented.
+See the [frontend guide](src/frontend/README.md) for Node and browser checks.
 
 ## Submission checklist
 
-Deliverables are collected from the named branch at **12:00 noon Boston time**
-on the demo date. See the
-[course submission instructions](https://ec528.github.io/ec528/fall26/setup/).
+The course collects deliverables from the named branch at noon Boston time on
+the demo date. [Course submission instructions](https://ec528.github.io/ec528/fall26/setup/)
 
-| Deliverable | Date | Branch | Must contain |
-| --- | --- | --- | --- |
-| Demo 1 | September 23 | `demo-1` | Slides, code, design proposal |
-| Demo 2 | October 21 | `demo-2` | Slides, code, `docs/design-document.md`, demo video |
-| Demo 3 | November 16 | `demo-3` | Slides, code, updated design document, demo video |
-| Final | December 9 | `final-demo` | Slides, code, artifact documentation, recorded video presentation |
+| Deliverable | Branch | Must contain |
+| --- | --- | --- |
+| Demo 1 | `demo-1` | Slides, code, design proposal |
+| Demo 2 | `demo-2` | Slides, code, design document, demo video |
+| Demo 3 | `demo-3` | Slides, code, updated design document, demo video |
+| Final | `final-demo` | Slides, code, artifact documentation, recorded video presentation |
 
-Demo 2 submission: [slides](slides/demo-2.pdf) · [demo video](videos/demo-2.mp4)
-
-For each demo, two multiple-choice questions with marked answers are due to the
-instructor by **5:30 pm** that day. Keep those questions within the team before
-the presentation quiz.
+Earlier snapshots: [Demo 1 proposal](docs/design-proposal.md) and
+[slides](slides/demo-1.pdf) · [Demo 2 slides](slides/demo-2.pdf) and
+[video](videos/demo-2.mp4).

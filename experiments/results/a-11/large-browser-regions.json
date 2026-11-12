@@ -1,0 +1,805 @@
+{
+  "first_ready_ms": 135.39558399999987,
+  "pause_control_ms": 60.80395799999678,
+  "snapshot": {
+    "api_version": "1",
+    "session_id": "dc7a8d2a5d394932869726f8b9e42419",
+    "status": "paused",
+    "speed": 1,
+    "revision": 181,
+    "target_simulation_time": 10.033684703626403,
+    "lag_simulation_seconds": 0,
+    "idle_timeout_seconds": 300,
+    "lifetime_seconds": 3600,
+    "commands": [
+      {
+        "sequence": 1,
+        "action": "pause",
+        "value": null,
+        "simulation_time": 10.033684703626403
+      }
+    ],
+    "command_sequence": 1,
+    "command_log_limit": 128,
+    "command_log_truncated": false,
+    "topology": "regions",
+    "model": "aggregate_regional_pools",
+    "config": {
+      "topology": "regions",
+      "regions": [
+        {
+          "name": "dc-01",
+          "servers": 84,
+          "slots_per_server": 4,
+          "compute": 1,
+          "queue_per_server": 10
+        },
+        {
+          "name": "dc-02",
+          "servers": 84,
+          "slots_per_server": 4,
+          "compute": 0.75,
+          "queue_per_server": 10
+        },
+        {
+          "name": "dc-03",
+          "servers": 84,
+          "slots_per_server": 4,
+          "compute": 2,
+          "queue_per_server": 10
+        },
+        {
+          "name": "dc-04",
+          "servers": 84,
+          "slots_per_server": 4,
+          "compute": 1,
+          "queue_per_server": 10
+        },
+        {
+          "name": "dc-05",
+          "servers": 83,
+          "slots_per_server": 4,
+          "compute": 0.75,
+          "queue_per_server": 10
+        },
+        {
+          "name": "dc-06",
+          "servers": 83,
+          "slots_per_server": 4,
+          "compute": 2,
+          "queue_per_server": 10
+        },
+        {
+          "name": "dc-07",
+          "servers": 83,
+          "slots_per_server": 4,
+          "compute": 1,
+          "queue_per_server": 10
+        },
+        {
+          "name": "dc-08",
+          "servers": 83,
+          "slots_per_server": 4,
+          "compute": 0.75,
+          "queue_per_server": 10
+        },
+        {
+          "name": "dc-09",
+          "servers": 83,
+          "slots_per_server": 4,
+          "compute": 2,
+          "queue_per_server": 10
+        },
+        {
+          "name": "dc-10",
+          "servers": 83,
+          "slots_per_server": 4,
+          "compute": 1,
+          "queue_per_server": 10
+        },
+        {
+          "name": "dc-11",
+          "servers": 83,
+          "slots_per_server": 4,
+          "compute": 0.75,
+          "queue_per_server": 10
+        },
+        {
+          "name": "dc-12",
+          "servers": 83,
+          "slots_per_server": 4,
+          "compute": 2,
+          "queue_per_server": 10
+        }
+      ],
+      "latency_ms": [
+        [
+          2,
+          50,
+          90,
+          130,
+          170,
+          210,
+          250,
+          290,
+          330,
+          370,
+          410,
+          450
+        ],
+        [
+          50,
+          2,
+          50,
+          90,
+          130,
+          170,
+          210,
+          250,
+          290,
+          330,
+          370,
+          410
+        ],
+        [
+          90,
+          50,
+          2,
+          50,
+          90,
+          130,
+          170,
+          210,
+          250,
+          290,
+          330,
+          370
+        ],
+        [
+          130,
+          90,
+          50,
+          2,
+          50,
+          90,
+          130,
+          170,
+          210,
+          250,
+          290,
+          330
+        ],
+        [
+          170,
+          130,
+          90,
+          50,
+          2,
+          50,
+          90,
+          130,
+          170,
+          210,
+          250,
+          290
+        ],
+        [
+          210,
+          170,
+          130,
+          90,
+          50,
+          2,
+          50,
+          90,
+          130,
+          170,
+          210,
+          250
+        ],
+        [
+          250,
+          210,
+          170,
+          130,
+          90,
+          50,
+          2,
+          50,
+          90,
+          130,
+          170,
+          210
+        ],
+        [
+          290,
+          250,
+          210,
+          170,
+          130,
+          90,
+          50,
+          2,
+          50,
+          90,
+          130,
+          170
+        ],
+        [
+          330,
+          290,
+          250,
+          210,
+          170,
+          130,
+          90,
+          50,
+          2,
+          50,
+          90,
+          130
+        ],
+        [
+          370,
+          330,
+          290,
+          250,
+          210,
+          170,
+          130,
+          90,
+          50,
+          2,
+          50,
+          90
+        ],
+        [
+          410,
+          370,
+          330,
+          290,
+          250,
+          210,
+          170,
+          130,
+          90,
+          50,
+          2,
+          50
+        ],
+        [
+          450,
+          410,
+          370,
+          330,
+          290,
+          250,
+          210,
+          170,
+          130,
+          90,
+          50,
+          2
+        ]
+      ],
+      "client_latency_ms": [
+        2,
+        50,
+        90,
+        130,
+        170,
+        210,
+        250,
+        290,
+        330,
+        370,
+        410,
+        450
+      ],
+      "source": 0,
+      "arrival_rate": 10000,
+      "service_min": 0.1,
+      "service_max": 1,
+      "seed": 42,
+      "policy": "least_loaded"
+    },
+    "simulation_time": 10.033684703626403,
+    "arrival_rate": 10000,
+    "totals": {
+      "offered": 100337,
+      "completed": 84840,
+      "rejected": 429,
+      "running": 4000,
+      "waiting": 8938,
+      "in_transit": 2130
+    },
+    "metrics": {
+      "mean_response_time": 1.093742893168418,
+      "recent_p95_response_time": 2.5768203316873226,
+      "response_window_count": 2000,
+      "response_window_limit": 2000
+    },
+    "histogram": {
+      "scope": "recent_completed_responses",
+      "bins": [
+        {
+          "start": 0.752491908093539,
+          "end": 0.8583339327377839,
+          "count": 83
+        },
+        {
+          "start": 0.8583339327377839,
+          "end": 0.9641759573820287,
+          "count": 190
+        },
+        {
+          "start": 0.9641759573820287,
+          "end": 1.0700179820262736,
+          "count": 295
+        },
+        {
+          "start": 1.0700179820262736,
+          "end": 1.1758600066705183,
+          "count": 279
+        },
+        {
+          "start": 1.1758600066705183,
+          "end": 1.2817020313147631,
+          "count": 200
+        },
+        {
+          "start": 1.2817020313147631,
+          "end": 1.387544055959008,
+          "count": 49
+        },
+        {
+          "start": 1.387544055959008,
+          "end": 1.4933860806032526,
+          "count": 55
+        },
+        {
+          "start": 1.4933860806032526,
+          "end": 1.5992281052474975,
+          "count": 83
+        },
+        {
+          "start": 1.5992281052474975,
+          "end": 1.7050701298917423,
+          "count": 70
+        },
+        {
+          "start": 1.7050701298917423,
+          "end": 1.8109121545359872,
+          "count": 70
+        },
+        {
+          "start": 1.8109121545359872,
+          "end": 1.916754179180232,
+          "count": 90
+        },
+        {
+          "start": 1.916754179180232,
+          "end": 2.022596203824477,
+          "count": 105
+        },
+        {
+          "start": 2.022596203824477,
+          "end": 2.1284382284687218,
+          "count": 111
+        },
+        {
+          "start": 2.1284382284687218,
+          "end": 2.234280253112966,
+          "count": 71
+        },
+        {
+          "start": 2.234280253112966,
+          "end": 2.340122277757211,
+          "count": 53
+        },
+        {
+          "start": 2.340122277757211,
+          "end": 2.445964302401456,
+          "count": 41
+        },
+        {
+          "start": 2.445964302401456,
+          "end": 2.5518063270457008,
+          "count": 41
+        },
+        {
+          "start": 2.5518063270457008,
+          "end": 2.6576483516899456,
+          "count": 49
+        },
+        {
+          "start": 2.6576483516899456,
+          "end": 2.7634903763341905,
+          "count": 40
+        },
+        {
+          "start": 2.7634903763341905,
+          "end": 2.8693324009784353,
+          "count": 25
+        }
+      ]
+    },
+    "regions": [
+      {
+        "name": "dc-01",
+        "slots": 336,
+        "free_slots": 0,
+        "running": 336,
+        "waiting": 838,
+        "outbound": 2,
+        "queue_limit": 840,
+        "cpu_occupancy": 1,
+        "compute": 1,
+        "load_averages": [
+          125.77,
+          26.55,
+          8.93
+        ],
+        "client_rtt_ms": 2,
+        "completed": 5830,
+        "rejected": 429,
+        "recent_p95_response_time": 1.9970078477357731,
+        "response_window_count": 2000
+      },
+      {
+        "name": "dc-02",
+        "slots": 336,
+        "free_slots": 0,
+        "running": 336,
+        "waiting": 835,
+        "outbound": 5,
+        "queue_limit": 840,
+        "cpu_occupancy": 1,
+        "compute": 0.75,
+        "load_averages": [
+          123.76,
+          26.12,
+          8.79
+        ],
+        "client_rtt_ms": 50,
+        "completed": 4366,
+        "rejected": 0,
+        "recent_p95_response_time": 2.5317511873438283,
+        "response_window_count": 2000
+      },
+      {
+        "name": "dc-03",
+        "slots": 336,
+        "free_slots": 0,
+        "running": 336,
+        "waiting": 787,
+        "outbound": 53,
+        "queue_limit": 840,
+        "cpu_occupancy": 1,
+        "compute": 2,
+        "load_averages": [
+          116.94,
+          24.66,
+          8.3
+        ],
+        "client_rtt_ms": 90,
+        "completed": 11683,
+        "rejected": 0,
+        "recent_p95_response_time": 1.1327732658729364,
+        "response_window_count": 2000
+      },
+      {
+        "name": "dc-04",
+        "slots": 336,
+        "free_slots": 0,
+        "running": 336,
+        "waiting": 801,
+        "outbound": 39,
+        "queue_limit": 840,
+        "cpu_occupancy": 1,
+        "compute": 1,
+        "load_averages": [
+          118.87,
+          25.08,
+          8.43
+        ],
+        "client_rtt_ms": 130,
+        "completed": 5808,
+        "rejected": 0,
+        "recent_p95_response_time": 2.022514785183321,
+        "response_window_count": 2000
+      },
+      {
+        "name": "dc-05",
+        "slots": 332,
+        "free_slots": 0,
+        "running": 332,
+        "waiting": 800,
+        "outbound": 30,
+        "queue_limit": 830,
+        "cpu_occupancy": 1,
+        "compute": 0.75,
+        "load_averages": [
+          117.35,
+          24.75,
+          8.33
+        ],
+        "client_rtt_ms": 170,
+        "completed": 4251,
+        "rejected": 0,
+        "recent_p95_response_time": 2.5697617291391515,
+        "response_window_count": 2000
+      },
+      {
+        "name": "dc-06",
+        "slots": 332,
+        "free_slots": 0,
+        "running": 332,
+        "waiting": 703,
+        "outbound": 127,
+        "queue_limit": 830,
+        "cpu_occupancy": 1,
+        "compute": 2,
+        "load_averages": [
+          104.2,
+          21.95,
+          7.38
+        ],
+        "client_rtt_ms": 210,
+        "completed": 11283,
+        "rejected": 0,
+        "recent_p95_response_time": 1.1848384317560594,
+        "response_window_count": 2000
+      },
+      {
+        "name": "dc-07",
+        "slots": 332,
+        "free_slots": 0,
+        "running": 332,
+        "waiting": 764,
+        "outbound": 65,
+        "queue_limit": 830,
+        "cpu_occupancy": 1,
+        "compute": 1,
+        "load_averages": [
+          111.23,
+          23.45,
+          7.89
+        ],
+        "client_rtt_ms": 250,
+        "completed": 5665,
+        "rejected": 0,
+        "recent_p95_response_time": 2.087978987412624,
+        "response_window_count": 2000
+      },
+      {
+        "name": "dc-08",
+        "slots": 332,
+        "free_slots": 0,
+        "running": 332,
+        "waiting": 763,
+        "outbound": 67,
+        "queue_limit": 830,
+        "cpu_occupancy": 1,
+        "compute": 0.75,
+        "load_averages": [
+          112.35,
+          23.68,
+          7.96
+        ],
+        "client_rtt_ms": 290,
+        "completed": 4222,
+        "rejected": 0,
+        "recent_p95_response_time": 2.5991670384785843,
+        "response_window_count": 2000
+      },
+      {
+        "name": "dc-09",
+        "slots": 332,
+        "free_slots": 0,
+        "running": 332,
+        "waiting": 626,
+        "outbound": 204,
+        "queue_limit": 830,
+        "cpu_occupancy": 1,
+        "compute": 2,
+        "load_averages": [
+          93.01,
+          19.57,
+          6.58
+        ],
+        "client_rtt_ms": 330,
+        "completed": 11078,
+        "rejected": 0,
+        "recent_p95_response_time": 1.2460980326517088,
+        "response_window_count": 2000
+      },
+      {
+        "name": "dc-10",
+        "slots": 332,
+        "free_slots": 0,
+        "running": 332,
+        "waiting": 725,
+        "outbound": 105,
+        "queue_limit": 830,
+        "cpu_occupancy": 1,
+        "compute": 1,
+        "load_averages": [
+          105.13,
+          22.15,
+          7.45
+        ],
+        "client_rtt_ms": 370,
+        "completed": 5557,
+        "rejected": 0,
+        "recent_p95_response_time": 2.1640150804488725,
+        "response_window_count": 2000
+      },
+      {
+        "name": "dc-11",
+        "slots": 332,
+        "free_slots": 0,
+        "running": 332,
+        "waiting": 729,
+        "outbound": 101,
+        "queue_limit": 830,
+        "cpu_occupancy": 1,
+        "compute": 0.75,
+        "load_averages": [
+          107.38,
+          22.62,
+          7.61
+        ],
+        "client_rtt_ms": 410,
+        "completed": 4183,
+        "rejected": 0,
+        "recent_p95_response_time": 2.651511989675063,
+        "response_window_count": 2000
+      },
+      {
+        "name": "dc-12",
+        "slots": 332,
+        "free_slots": 0,
+        "running": 332,
+        "waiting": 567,
+        "outbound": 263,
+        "queue_limit": 830,
+        "cpu_occupancy": 1,
+        "compute": 2,
+        "load_averages": [
+          81.98,
+          17.23,
+          5.79
+        ],
+        "client_rtt_ms": 450,
+        "completed": 10914,
+        "rejected": 0,
+        "recent_p95_response_time": 1.281628118069321,
+        "response_window_count": 2000
+      }
+    ],
+    "history": [
+      {
+        "simulation_time": 0.5142012090072967,
+        "running": 3265,
+        "waiting": 53,
+        "in_transit": 1453
+      },
+      {
+        "simulation_time": 1.0506817919958849,
+        "running": 3917,
+        "waiting": 951,
+        "in_transit": 2062
+      },
+      {
+        "simulation_time": 1.5524739999964368,
+        "running": 3959,
+        "waiting": 1354,
+        "in_transit": 2306
+      },
+      {
+        "simulation_time": 2.073372541999561,
+        "running": 3966,
+        "waiting": 1911,
+        "in_transit": 2310
+      },
+      {
+        "simulation_time": 2.5842224590014666,
+        "running": 4000,
+        "waiting": 2390,
+        "in_transit": 2307
+      },
+      {
+        "simulation_time": 3.096121750000748,
+        "running": 4000,
+        "waiting": 2851,
+        "in_transit": 2309
+      },
+      {
+        "simulation_time": 3.611617792004836,
+        "running": 4000,
+        "waiting": 3267,
+        "in_transit": 2302
+      },
+      {
+        "simulation_time": 4.1247990840056445,
+        "running": 4000,
+        "waiting": 3764,
+        "in_transit": 2260
+      },
+      {
+        "simulation_time": 4.6326780307095055,
+        "running": 4000,
+        "waiting": 4242,
+        "in_transit": 2301
+      },
+      {
+        "simulation_time": 5.145887542006676,
+        "running": 4000,
+        "waiting": 4705,
+        "in_transit": 2299
+      },
+      {
+        "simulation_time": 5.657880375001696,
+        "running": 4000,
+        "waiting": 5173,
+        "in_transit": 2310
+      },
+      {
+        "simulation_time": 6.172164125004201,
+        "running": 4000,
+        "waiting": 5578,
+        "in_transit": 2328
+      },
+      {
+        "simulation_time": 6.683576166993589,
+        "running": 4000,
+        "waiting": 6140,
+        "in_transit": 2251
+      },
+      {
+        "simulation_time": 7.197261541994521,
+        "running": 4000,
+        "waiting": 6565,
+        "in_transit": 2297
+      },
+      {
+        "simulation_time": 7.707197041992913,
+        "running": 4000,
+        "waiting": 7083,
+        "in_transit": 2242
+      },
+      {
+        "simulation_time": 8.220314374993904,
+        "running": 4000,
+        "waiting": 7538,
+        "in_transit": 2260
+      },
+      {
+        "simulation_time": 8.731333542003995,
+        "running": 4000,
+        "waiting": 7979,
+        "in_transit": 2284
+      },
+      {
+        "simulation_time": 9.241053250007099,
+        "running": 4000,
+        "waiting": 8456,
+        "in_transit": 2344
+      },
+      {
+        "simulation_time": 9.751944292002008,
+        "running": 4000,
+        "waiting": 8901,
+        "in_transit": 2201
+      }
+    ],
+    "history_limit": 240,
+    "telemetry": "immediate",
+    "retention": {
+      "pending_events": 6130,
+      "response_values": 2000,
+      "history_points": 19
+    }
+  }
+}

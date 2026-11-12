@@ -1,0 +1,2 @@
+schema_version,run_id,server_count,concurrency,queue_limit,arrival_rate,duration,service_min,service_max,seed,policy,generated_count,completed_count,rejected_count,mean_response_time_seconds,p95_response_time_seconds,server_id,slot_utilization
+1,e839b38e567a725e86152522b752c6bfc7570ce4fd5040a2d390caf2c333d5fe,1,1,1,4.0,1.0,1.0,1.0,42,round_robin,4,2,2,1.375,1.75,0,1.0

@@ -40,8 +40,11 @@ Generated count is `completed_count + rejected_count` after draining.
 
 Round-robin is implemented inside `route`, using a counter to select server IDs
 `0, 1, ..., server_count - 1` repeatedly. There is no separate `select_server`
-function. Routing does not skip full servers; the selected server handles
-admission or rejection.
+function. Least-active-requests selects the minimum `(running_count, server_id)`
+from current server state at each arrival. Both policies leave admission to the
+selected server: neither skips full servers nor retries. Waiting requests do not
+count toward load, so ties can select a full queue even when another server has
+waiting space.
 
 - Pending completions are sorted by `(completion_time, server_id, request_id)`.
 - Completions are processed before arrivals at the same timestamp.
@@ -59,16 +62,49 @@ separate `started` record.
 
 ## Optional extensions
 
-Least-active-requests remains a later task. Validation recognizes
-`least_active_requests`, but both execution entry points reject it until it is
-implemented. The planned policy counts running work only and breaks ties by
-smallest server ID. A reusable policy interface can be introduced with that work.
+Both `round_robin` and `least_active_requests` are implemented in the engine and
+available in the UI. Policy-comparison experiments remain a separate task.
 
 Exponential interarrival times, hardware types, and reliability/failures are also
 optional. The current engine creates identical servers with `size=None` and
 `reliability=None`; those constructor fields do not affect execution. Any future
 traffic generator must create the complete seeded trace before routing so policy
 comparisons use identical requests.
+
+## Server processing rates (A-01)
+
+Each server can have an optional processing-rate multiplier. A request's
+`service_time` is the work it needs on a rate-1.0 server, a server with rate `r`
+runs it for `service_time / r` seconds. Rate 2.0 finishes the same request in
+half the time. Rate 0.5 takes twice as long
+
+- Set it with `processing_rates`: one positive, finite number per server, in
+  server-ID order. Leaving it out, or giving all 1.0, is the original uniform
+  model and returns the same nine-field config and identical results
+- Rates change only execution time. The seeded trace (arrivals and service
+  times) is identical, uniform and mixed fleets can be compared on the same
+  requests
+- Neither policy reads rates. Least-active-requests counts running requests
+  only. A faster server frees slots sooner it's picked more often, and
+  ties still go to the lowest server ID
+- Utilization is still occupied slot time in the arrival window. A fast server
+  at 100% does more work than a slow one at 100%
+- Not yet in the UI or exports. Exports refuse a run with mixed rates rather
+  than silently dropping them (schema version 1 has nine settings)
+
+Worked example (`tests/test_processing_rates.py`): 2 servers, 1 slot, 1 waiting
+place, 4 requests/s for 1 s (arrivals at 0, 0.25, 0.5, 0.75), service 1.0 s,
+rates `[2.0, 1.0]`
+
+| Policy | Where request 3 goes | Response times (s) | Mean | p95 |
+| --- | --- | --- | ---: | ---: |
+| round_robin, uniform `[1, 1]` | queues on server 1 | 1.0, 1.0, 1.5, 1.5 | 1.25 | 1.5 |
+| round_robin, `[2, 1]` | queues on slow server 1, starts at 1.25 | 0.5, 0.5, 1.0, 1.5 | 0.875 | 1.5 |
+| least_active, `[2, 1]` | tie at 1 running: lowest ID, fast server 0, starts at 1.0 | 0.5, 0.5, 1.0, 0.75 | 0.6875 | 1.0 |
+
+Response times are listed in completion order. On the fast server request 0
+ends at 0.5, exactly when request 2 arrives, completions run first,
+request 2 starts at once instead of queueing.
 
 ## Server API (implemented)
 
@@ -171,5 +207,7 @@ uv run python -m unittest discover -s tests -v
 ```
 
 `tests/test_server.py` checks the hand-written server trace above.
-The server lifecycle, fixed-interval workload generator, round-robin event loop,
-metrics and UI are connected. Least-active-requests remains a subsequent task.
+The server lifecycle, fixed-interval workload generator, both routing policies,
+metrics and UI are connected. `tests/test_policies.py` checks changing load,
+completion-before-arrival routing, ties, full queues, multiple slots and identical
+seeded workloads between policies. Whole-run invariants cover both policies.

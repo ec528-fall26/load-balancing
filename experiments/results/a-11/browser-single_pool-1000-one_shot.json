@@ -1,0 +1,206 @@
+{
+  "recorded_at_utc": "2026-11-03T00:36:38.432Z",
+  "git_head": "d6fbfafeab8d429e83567efd7a45f76ef09513ff",
+  "benchmark_source_sha256": "e2e6e57d763d220fa04d14bc95259827acf7d6a54bf5d136223b2329a364bd48",
+  "topology": "single_pool",
+  "rate": 1000,
+  "mode": "one_shot",
+  "browser_version": "156.0.8078.4",
+  "viewport": {
+    "width": 1440,
+    "height": 1000
+  },
+  "first_ready_ms": 1441.4838329999984,
+  "initial_heap": {
+    "usedSize": 6860888,
+    "totalSize": 7946240,
+    "embedderHeapUsedSize": 2317272,
+    "backingStorageSize": 1530906
+  },
+  "natural_end_heap": {
+    "usedSize": 10931220,
+    "totalSize": 21315584,
+    "embedderHeapUsedSize": 3414832,
+    "backingStorageSize": 1539616
+  },
+  "post_gc_end_heap": {
+    "usedSize": 10878152,
+    "totalSize": 11878400,
+    "embedderHeapUsedSize": 2913648,
+    "backingStorageSize": 1538215
+  },
+  "retained_heap_delta_bytes": 4017264,
+  "rendering": {
+    "long_tasks": [
+      52
+    ],
+    "frames": 174,
+    "frame_gap_max_ms": 33.30000000000018,
+    "frame_gap_mean_ms": 16.76206896551724,
+    "frame_gaps_over_100ms": 0,
+    "json_reads": [
+      {
+        "url": "/api/engine/run",
+        "ms": 0.29999999701976776
+      }
+    ],
+    "visibility": "visible"
+  },
+  "cdp_metrics": [
+    {
+      "name": "Timestamp",
+      "value": 87585.550275
+    },
+    {
+      "name": "AudioHandlers",
+      "value": 0
+    },
+    {
+      "name": "AudioWorkletProcessors",
+      "value": 0
+    },
+    {
+      "name": "Documents",
+      "value": 1
+    },
+    {
+      "name": "Frames",
+      "value": 1
+    },
+    {
+      "name": "JSEventListeners",
+      "value": 3773
+    },
+    {
+      "name": "LayoutObjects",
+      "value": 817
+    },
+    {
+      "name": "MediaKeySessions",
+      "value": 0
+    },
+    {
+      "name": "MediaKeys",
+      "value": 0
+    },
+    {
+      "name": "Nodes",
+      "value": 997
+    },
+    {
+      "name": "Resources",
+      "value": 18
+    },
+    {
+      "name": "ContextLifecycleStateObservers",
+      "value": 28
+    },
+    {
+      "name": "V8PerContextDatas",
+      "value": 2
+    },
+    {
+      "name": "WorkerGlobalScopes",
+      "value": 0
+    },
+    {
+      "name": "UACSSResources",
+      "value": 0
+    },
+    {
+      "name": "RTCPeerConnections",
+      "value": 0
+    },
+    {
+      "name": "ResourceFetchers",
+      "value": 1
+    },
+    {
+      "name": "AdSubframes",
+      "value": 0
+    },
+    {
+      "name": "DetachedScriptStates",
+      "value": 0
+    },
+    {
+      "name": "ArrayBufferContents",
+      "value": 36
+    },
+    {
+      "name": "LayoutCount",
+      "value": 159
+    },
+    {
+      "name": "RecalcStyleCount",
+      "value": 264
+    },
+    {
+      "name": "LayoutDuration",
+      "value": 0.00374
+    },
+    {
+      "name": "RecalcStyleDuration",
+      "value": 0.010821
+    },
+    {
+      "name": "DevToolsCommandDuration",
+      "value": 0.005707
+    },
+    {
+      "name": "ScriptDuration",
+      "value": 0.055748
+    },
+    {
+      "name": "V8CompileDuration",
+      "value": 0
+    },
+    {
+      "name": "TaskDuration",
+      "value": 0.152977
+    },
+    {
+      "name": "TaskOtherDuration",
+      "value": 0.076961
+    },
+    {
+      "name": "ThreadTime",
+      "value": 0.1291
+    },
+    {
+      "name": "ProcessTime",
+      "value": 0.508962
+    },
+    {
+      "name": "JSHeapUsedSize",
+      "value": 10977748
+    },
+    {
+      "name": "JSHeapTotalSize",
+      "value": 21315584
+    },
+    {
+      "name": "FirstMeaningfulPaint",
+      "value": 87582.500271
+    },
+    {
+      "name": "DomContentLoaded",
+      "value": 87582.488783
+    },
+    {
+      "name": "NavigationStart",
+      "value": 87582.463392
+    }
+  ],
+  "poll_count": 0,
+  "max_simultaneous_polls": 0,
+  "poll_latency_ms": null,
+  "poll_body_bytes": null,
+  "poll_start_gap_ms": null,
+  "polls": [],
+  "counts": {
+    "completed": 73692,
+    "rejected": 26308
+  },
+  "errors": []
+}

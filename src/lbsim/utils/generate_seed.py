@@ -1,16 +1,23 @@
 import random
+from collections import deque
 from lbsim.server import Request, Server
+from lbsim.policies import RoutingContext, create_policy, supports_policy
 
-def route(server_count: int, concurrency: int, queue_limit: int, policy: str, arrival_rate: float, duration: float, service_min: float, service_max: float, seed: int, events: list | None = None):
-    if policy != "round_robin":
-        raise ValueError("Only round-robin routing is implemented yet.")
+def route(server_count: int, concurrency: int, queue_limit: int, policy: str, arrival_rate: float, duration: float, service_min: float, service_max: float, seed: int, events: list | None = None,
+          processing_rates: tuple[float, ...] | None = None):
+    if not supports_policy(policy):
+        raise ValueError("Select a supported routing policy.")
+    if processing_rates is not None and len(processing_rates) != server_count:
+        raise ValueError("processing_rates needs one value per server")
     rng = random.Random(seed)
     server_map = {}
     for i in range(server_count):
-        server_map[i] = Server(i, concurrency, queue_limit, None, None)
+        # Rates only change execution time; the seeded trace below is identical.
+        rate = 1.0 if processing_rates is None else processing_rates[i]
+        server_map[i] = Server(i, concurrency, queue_limit, None, None, processing_rate=rate)
 
     # Pre-store all requests
-    requests = []
+    requests = deque()
     total_requests = int(arrival_rate * duration)
     for request_id in range(total_requests):
         # Increment arrival time by a fixed amount
@@ -22,7 +29,10 @@ def route(server_count: int, concurrency: int, queue_limit: int, policy: str, ar
     completed = []
     rejected = []
 
-    counter = 0
+    routing = create_policy(policy, RoutingContext(
+        server_count, lambda i: server_map[i].running_count,
+        demand=lambda i: server_map[i].running_count+server_map[i].waiting_count,
+        routing_rng=random.Random(seed + 1000000)))
 
     # Continue until there are no more requests or pending completions
     while requests or pending:
@@ -43,9 +53,10 @@ def route(server_count: int, concurrency: int, queue_limit: int, policy: str, ar
             server = server_map[server_id]
             c = server.complete(req_id, now)
             
+            routing.update(server_id)
             completed.append(c.finished)
             if events is not None:
-                events.append((now, server_id, len(server.running), len(server.waiting), "completed", req_id))
+                events.append((now, server_id, server.running_count, server.waiting_count, "completed", req_id))
             
             # If the server pulled a request from its queue, keep track of that
             if c.started:
@@ -55,17 +66,15 @@ def route(server_count: int, concurrency: int, queue_limit: int, policy: str, ar
         else:
             # If the next arrival happens before the next completion, process that
             now = next_arrival
-            req = requests.pop(0)
+            req = requests.popleft()
             
-            # Routing policy logic
-            if policy == "round_robin":
-                target_server = server_map[counter % server_count]
-                counter += 1
-            
+            target_server = server_map[routing.choose()]
+
             admission = target_server.submit(req, now)
+            routing.update(target_server.id)
             if events is not None:
-                events.append((now, target_server.id, len(target_server.running),
-                               len(target_server.waiting), admission.status, req.id))
+                events.append((now, target_server.id, target_server.running_count,
+                               target_server.waiting_count, admission.status, req.id))
             
             if admission.status == "started":
                 # Request has been sent, put id in pending

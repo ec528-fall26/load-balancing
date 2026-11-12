@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "run_id": "f3a6fa4410f14b940794d19ea71c69cbf86b1e2774b7820e3affe4d3deb0f0f9",
+  "config": {
+    "server_count": 2,
+    "concurrency": 1,
+    "queue_limit": 1,
+    "arrival_rate": 8.0,
+    "duration": 2.0,
+    "service_min": 0.25,
+    "service_max": 1.0,
+    "seed": 42,
+    "policy": "round_robin"
+  }
+}

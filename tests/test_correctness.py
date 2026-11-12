@@ -341,8 +341,9 @@ class SimulatorCorrectnessTests(unittest.TestCase):
         }
 
         for name, config in cases.items():
-            with self.subTest(name=name):
-                self.assert_run_invariants(config)
+            for policy in ('round_robin', 'least_active_requests'):
+                with self.subTest(name=name, policy=policy):
+                    self.assert_run_invariants({**config, 'policy': policy})
 
 
 if __name__ == "__main__":

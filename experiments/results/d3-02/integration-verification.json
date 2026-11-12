@@ -1,0 +1,14 @@
+{
+  "verified_at_utc": "2026-10-23T03:33:43.957628+00:00",
+  "dev_revision": "b5f011f2ccc2eea87f9cbb4a943990671e13a609",
+  "merged_pr": 15,
+  "automated_tests_passed": 53,
+  "policy_experiment_summaries_unchanged": 24,
+  "configuration_exports_loaded_and_full_replays_matched": 24,
+  "results_csv_exports_loaded_and_metrics_matched": 24,
+  "paired_comparison_panels_verified_with_AppTest": 12,
+  "metrics_per_pair": 8,
+  "matching_workload_messages_verified": 12,
+  "browser_upload_checks_performed_this_run": false,
+  "d3_02_publication_status": "local, uncommitted and unpushed"
+}

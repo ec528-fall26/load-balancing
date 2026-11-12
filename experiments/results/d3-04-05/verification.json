@@ -1,0 +1,60 @@
+[
+  {
+    "name": "run-a",
+    "config": {
+      "server_count": 2,
+      "concurrency": 1,
+      "queue_limit": 1,
+      "arrival_rate": 8.0,
+      "duration": 2.0,
+      "service_min": 0.25,
+      "service_max": 1.0,
+      "seed": 42,
+      "policy": "round_robin"
+    },
+    "run_id": "f3a6fa4410f14b940794d19ea71c69cbf86b1e2774b7820e3affe4d3deb0f0f9",
+    "replay_full_summary_matches": true,
+    "event_count": 25,
+    "summary": {
+      "completed_count": 9,
+      "rejected_count": 7,
+      "mean_response_time": 0.8449863416173634,
+      "p95_response_time": 1.354976763398886,
+      "per_server_utilization": {
+        "0": 1.0,
+        "1": 0.9375
+      }
+    },
+    "rejection_rate": 0.4375,
+    "mean_server_slot_utilization": 0.96875
+  },
+  {
+    "name": "run-b",
+    "config": {
+      "server_count": 2,
+      "concurrency": 1,
+      "queue_limit": 1,
+      "arrival_rate": 8.0,
+      "duration": 2.0,
+      "service_min": 0.25,
+      "service_max": 1.0,
+      "seed": 42,
+      "policy": "least_active_requests"
+    },
+    "run_id": "009fb2d22cd75c224efb9867c56e387ead0dde38b8fbe12e80b30ae1b500288d",
+    "replay_full_summary_matches": true,
+    "event_count": 23,
+    "summary": {
+      "completed_count": 7,
+      "rejected_count": 9,
+      "mean_response_time": 0.8556388767830959,
+      "p95_response_time": 1.354976763398886,
+      "per_server_utilization": {
+        "0": 1.0,
+        "1": 0.8480557385200047
+      }
+    },
+    "rejection_rate": 0.5625,
+    "mean_server_slot_utilization": 0.9240278692600024
+  }
+]
