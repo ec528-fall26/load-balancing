@@ -164,7 +164,7 @@ uv run python -m unittest discover -s tests -q
 npm --prefix src/frontend run build
 ```
 
-Expect `Ran 144 tests` followed by `OK` (about 25 seconds here), then a successful
+Expect `Ran 148 tests` followed by `OK` (about 25 seconds here), then a successful
 Next.js build. See the [frontend checks](../src/frontend/README.md#checks) for
 Node and browser tests.
 
@@ -498,7 +498,9 @@ and workload hashes.
 | Experiment | Command | Expected result |
 | --- | --- | --- |
 | Three-policy replay (slide 7) | `uv run python experiments/compare_policies.py --include-least-outstanding --output experiments/results/demo-3-policy-rerun` | A few seconds. Validates 36 runs and replays on 12 traces. In the `near_capacity` rows of `report.json`, average rejection and p95 are **0.00% / 2.13 s**, **2.91% / 5.24 s**, and **0.00% / 1.23 s** for Round Robin, Least Active, and Least Outstanding. |
-| Engine before/after | [Matched-revision commands](../experiments/README.md#d3-07-deque-beforeafter-comparison) | The reference 100,000-request, 100-server run moved from 1.030 s to 0.364 s, or 2.83×, with matching full-summary fingerprints. Timing varies by machine. |
+| Deque optimization in isolation | [Matched-revision commands](../experiments/README.md#d3-07-deque-beforeafter-comparison) | The reference 100,000-request, 100-server run moved from 1.030 s to 0.364 s, or 2.83×, with matching full-summary fingerprints. Timing varies by machine. |
+| Published Demo 2 vs. Demo 3 | [Commands and raw results](#published-demo-2-vs-demo-3) | Original 10,000-request Round Robin workload. Median engine runtime improved by 1.19×–1.62× across 10, 100 and 1,000 servers. The trace and reported simulation metrics matched. |
+| Regional routing spillover | [Lab reproduction](#regional-routing-spillover) | At 130 requests/s for 5 seconds, Nearest rejects 173 of 650 requests. Nearest under 90% load completes all 650. |
 | Recorded playback and scale | Start the API as in the [A-11 guide](../experiments/results/a-11/README.md), then run `uv run python experiments/pagination_scale.py --output pagination-demo-3-rerun.json` | Allow roughly a minute on a local CPU. The reference 100,000-request case reduced the initial decoded payload from 7.87 MB to 4.10 kB. The harness checks every paginated event against the full trace and verifies seek and live pause/drain. |
 | Sharded service outage | `uv run python experiments/compare_fanout_pipeline.py --outage > /tmp/demo-3-fanout.json` | A few seconds. At 50 parents/s for four seconds with seed 42 and a 500 ms outage, 7 of 200 fail with one required call and 25 of 200 with four. Both no-outage controls finish all 200. See [fan-out evidence](fanout-pipeline.md). |
 | CPU/I/O and power-of-two choices | `uv run python experiments/compare_cpu_io.py --output experiments/results/a-24-rerun` | A few seconds. 81 paired runs on 27 traces. The [reference analysis](../experiments/results/a-24/analysis.md) defines the research model and expected comparisons. |
@@ -506,6 +508,61 @@ and workload hashes.
 The [Lab quick start](../README.md#quick-start) uses one trace for the video
 comparison. The slide uses three traces at 90% of nominal capacity, with p95
 averaged over the three per-run percentiles of completed requests.
+
+### Published Demo 2 vs. Demo 3
+
+Use the original D2-13 benchmark with each snapshot's locked environment.
+Run from the quick-start checkout in a POSIX shell. Allow about 30 seconds
+locally once dependencies are cached. A local CPU is sufficient.
+
+```sh
+git fetch origin demo-2
+bench_dir=$(mktemp -d)
+git worktree add --detach "$bench_dir/demo-2" 44e2683a7edbf37dc04f59ff273313718077a2ba
+git worktree add --detach "$bench_dir/demo-3" ccfc4a48897a7c4bd21c348ac1a1745bc0ac60dc
+for snapshot in demo-2 demo-3; do
+  (
+    cd "$bench_dir/$snapshot"
+    uv sync --locked
+    uv run --locked python experiments/scale_benchmark.py --repeats 3 --output "$bench_dir/results-$snapshot"
+  )
+done
+cmp "$bench_dir/results-demo-2/trace.csv" "$bench_dir/results-demo-3/trace.csv"
+```
+
+The harness times engine calls in fresh processes. These are medians of
+three runs per fleet on the same macOS arm64 machine and Python 3.12.12.
+Each case offered 10,000 requests. Completed and rejected counts, mean and
+p95 response times, and the final simulated event time matched across snapshots.
+See the [reports and all 18 samples](../experiments/results/demo-2-vs-demo-3/).
+
+| Servers | Demo 2 median | Demo 3 median | Speedup | Completed / rejected |
+| ---: | ---: | ---: | ---: | ---: |
+| 10 | 21.2 ms | 13.1 ms | 1.62× | 1,905 / 8,095 |
+| 100 | 35.5 ms | 29.2 ms | 1.22× | 10,000 / 0 |
+| 1,000 | 35.1 ms | 29.4 ms | 1.19× | 10,000 / 0 |
+
+The published snapshots include multiple code and dependency changes.
+The separate deque experiment isolates the arrival-list change on 100,000 requests.
+
+### Regional routing spillover
+
+Start the API and Lab with the [quick start](../README.md#quick-start).
+In Setup select **Regions**, **One-shot**, and **US · balanced**.
+Use `us-east-1` as the source, seed 42, 130 requests/s, a five-second arrival
+window, and service times of 0.1–1.0 seconds. Run once with **Nearest region**
+and once with **Nearest region under 90% load**. Allow a few seconds per run
+on a local CPU. In the Lab, read the completed and rejected totals and the
+three region cards.
+
+| Policy | Completed | Rejected | Mean response among completions |
+| --- | ---: | ---: | ---: |
+| Nearest region | 477 | 173 | 1.485 s |
+| Nearest region under 90% load | 650 | 0 | 0.559 s |
+
+The second run completes 335 requests in `us-east-1`, 281 in `us-east-2`,
+and 34 in `us-west-1`. The policy counts outbound requests in transit
+toward load. See the [routing rules](routing-policies.md).
 
 ## 5. Claims and limitations
 
