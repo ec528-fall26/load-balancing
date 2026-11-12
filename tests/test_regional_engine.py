@@ -49,6 +49,63 @@ class LiveTests(unittest.TestCase):
                 self.assertGreater(east.running, 0)
                 self.check_conservation(sim)
 
+    def test_client_cohorts_fail_over_and_gradually_return_home(self):
+        regions, matrix = PRESETS['US · balanced']
+        sim = LiveSimulation(regions, matrix, arrival_rate=40, policy='nearest',
+                             client_weights=[70, 20, 10], client_migration=True)
+        sim.advance(2)
+        before = sim.clients.report(40)
+        self.assertEqual([row['configured_rps'] for row in before], [28, 8, 4])
+        for i, row in enumerate(before):
+            self.assertEqual(sum(row['routed_per_second']), row['routed_per_second'][i])
+
+        sim.set_region_online(0, False)
+        sim.advance(6)
+        east = sim.clients.report(40)[0]
+        self.assertEqual((east['shifted_fraction'], east['destination']), (0.6, 1))
+        self.assertEqual(east['routed_per_second'][0], 0)
+        self.assertGreater(east['routed_per_second'][1], 0)
+
+        sim.set_region_online(0, True)
+        sim.advance(15)
+        self.assertEqual(sim.clients.report(40)[0]['shifted_fraction'], 0.6)
+        sim.advance(19)
+        east = sim.clients.report(40)[0]
+        self.assertIsNone(east['destination'])
+        self.assertGreater(east['routed_per_second'][0], 0)
+        self.assertEqual(east['routed_per_second'][1:], [0, 0])
+        self.assertEqual([event['shifted_fraction'] for event in sim.clients.changes],
+                         [0.2, 0.4, 0.6, 0.4, 0.2, 0])
+        self.check_conservation(sim)
+
+    def test_client_failover_keeps_origin_round_trip_time(self):
+        regions = [Region(name) for name in ('east', 'west')]
+        sim = LiveSimulation(regions, [[5, 200], [300, 10]], arrival_rate=1,
+                             service_min=1, service_max=1, client_weights=[1, 0])
+        sim.set_region_online(0, False)
+        sim.advance(0)
+        sim.set_rate(0)
+        sim.advance(1.19)
+        self.assertEqual(sim.completed, 0)
+        sim.advance(1.21)
+        self.assertEqual(sim.completed, 1)
+        self.assertAlmostEqual(sim.responses[0], 1.2)
+        self.assertFalse(sim.clients.changes)
+        self.check_conservation(sim)
+
+    def test_sustained_load_shifts_clients_with_home_still_online(self):
+        regions = [Region('east', 1, 1), Region('west', 10, 4)]
+        sim = LiveSimulation(regions, [[0, 20], [20, 0]], arrival_rate=10,
+                             service_min=30, service_max=30,
+                             client_weights=[1, 0], client_migration=True)
+        sim.advance(2)
+        self.assertFalse(sim.clients.changes)
+        sim.advance(3)
+        self.assertTrue(sim.pools[0].online)
+        self.assertEqual(sim.clients.changes[-1]['reason'], 'overload')
+        self.assertEqual(sim.clients.report(10)[0]['destination'], 1)
+        self.check_conservation(sim)
+
     def check_conservation(self, sim):
         active = sim.returning + sum(p.running + len(p.waiting) + p.flying for p in sim.pools)
         self.assertEqual(sim.offered, sim.completed + sim.rejected + active)

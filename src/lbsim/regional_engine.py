@@ -12,6 +12,7 @@ from math import exp, isfinite, ceil
 from random import Random
 from time import perf_counter
 
+from lbsim.regional_clients import RegionalClients
 from lbsim.regions import Region, validate_topology
 from lbsim.policies import RoutingContext, create_policy, supports_policy
 
@@ -40,7 +41,8 @@ class Pool:
 class LiveSimulation:
     def __init__(self, regions, latency_ms, *, arrival_rate=1000.0,
                  service_min=0.1, service_max=1.0, source=0,
-                 policy='least_loaded', seed=42, client_latency_ms=None):
+                 policy='least_loaded', seed=42, client_latency_ms=None,
+                 client_weights=None, client_migration=False):
         validate_topology(regions, latency_ms)
         if (type(source) is not int or not 0 <= source < len(regions)
                 or not supports_policy(policy, 'regions')):
@@ -56,12 +58,19 @@ class LiveSimulation:
         self.pools = [Pool(r) for r in regions]
         self.online_regions = tuple(range(len(self.pools)))
         self.source, self.policy = source, policy
-        self.routing = create_policy(policy, RoutingContext(
-            len(self.pools), lambda i: self.pools[i].running,
-            demand=lambda i: (self.pools[i].running + len(self.pools[i].waiting)
-                              + self.pools[i].flying),
-            capacity=lambda i: self.regions[i].slots,
-            latency_ms=self.client_latency_ms, eligible=lambda: self.online_regions), 'regions')
+        if type(client_migration) is not bool or (client_migration and client_weights is None):
+            raise ValueError('Client migration requires regional traffic weights.')
+        if client_weights is not None and (
+                not isinstance(client_weights, (list, tuple)) or len(client_weights) != len(regions)
+                or any(type(v) not in (int, float) or not isfinite(v) or not 0 <= v <= 10000
+                       for v in client_weights) or not any(client_weights)):
+            raise ValueError('Set one traffic weight from 0 to 10,000 per region, with at least one positive weight.')
+        self.client_migration = client_migration
+        self.clients = (RegionalClients(client_weights, self.latency_ms, seed)
+                        if client_weights is not None else None)
+        self.routing = self._make_router(self.client_latency_ms, lambda: self.online_regions)
+        self.client_routing = ([self._make_router(row, self._fallback_regions) for row in self.latency_ms]
+                               if self.clients else [])
         self.service_min, self.service_max = service_min, service_max
         self.seed = seed
         self.rng = Random(seed)
@@ -79,6 +88,28 @@ class LiveSimulation:
         self.response_sum = 0.0
         self.responses = deque(maxlen=2000)
         self.history = deque(maxlen=240)
+
+    def _demand(self, index):
+        pool = self.pools[index]
+        return pool.running + len(pool.waiting) + pool.flying
+
+    def _fallback_regions(self):
+        return tuple(i for i in self.online_regions if self._demand(i) < self.regions[i].slots) or self.online_regions
+
+    def _make_router(self, latency, eligible):
+        return create_policy(self.policy, RoutingContext(
+            len(self.pools), lambda i: self.pools[i].running, demand=self._demand,
+            capacity=lambda i: self.regions[i].slots, latency_ms=latency, eligible=eligible), 'regions')
+
+    def _route(self):
+        if not self.clients:
+            region = self.routing.choose()
+            return region, self.client_latency_ms[region]
+        origin, region = self.clients.preferred_route()
+        if not self.pools[region].online or self._demand(region) >= self.regions[region].slots:
+            region = self.client_routing[origin].choose()
+        self.clients.routed[origin][region] += 1
+        return region, self.latency_ms[origin][region]
 
     def set_rate(self, rate):
         if type(rate) not in (int, float) or not isfinite(rate) or not 0 <= rate <= 100000:
@@ -129,12 +160,19 @@ class LiveSimulation:
         processed = 0
         while True:
             next_arrival = self.next_arrival if self.next_arrival < self.arrival_end else float('inf')
-            if min(next_arrival, self.events[0][0] if self.events else float('inf')) > target:
+            next_event = self.events[0][0] if self.events else float('inf')
+            next_sample = self.clients.next_sample if self.clients else float('inf')
+            if min(next_arrival, next_event, next_sample) > target:
                 break
             if processed >= max_events or (deadline is not None and processed % 128 == 0 and perf_counter() >= deadline):
                 return False
             processed += 1
-            if self.events and self.events[0][0] <= next_arrival:
+            if next_sample <= min(next_event, next_arrival):
+                self.now = next_sample
+                self.clients.sample(self.online_regions,
+                                    [self._demand(i) / p.region.slots for i, p in enumerate(self.pools)],
+                                    self.client_migration)
+            elif next_event <= next_arrival:
                 self.now, _, _, kind, region, request = heappop(self.events)
                 pool = self.pools[region]
                 pool.integrate_load(self.now)
@@ -150,7 +188,7 @@ class LiveSimulation:
                 elif kind == 'complete':
                     pool.running -= 1
                     self.returning += 1
-                    self._push(self.now + self.client_latency_ms[region] / 2000,
+                    self._push(self.now + request[2] / 2000,
                                'response', region, request)
                     if pool.waiting:
                         self._start(region, pool.waiting.popleft())
@@ -164,12 +202,13 @@ class LiveSimulation:
                     pool.responses.append(response)
             else:
                 self.now = self.next_arrival
-                request = (self.now, self.rng.uniform(self.service_min, self.service_max))
+                service = self.rng.uniform(self.service_min, self.service_max)
                 self.offered += 1
                 if self.online_regions:
-                    region = self.routing.choose()
+                    region, rtt = self._route()
+                    request = (self.now, service, rtt)
                     self.pools[region].flying += 1
-                    self._push(self.now + self.client_latency_ms[region] / 2000,
+                    self._push(self.now + rtt / 2000,
                                'dispatch', region, request)
                 else:
                     self.rejected += 1

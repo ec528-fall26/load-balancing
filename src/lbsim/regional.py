@@ -17,7 +17,8 @@ class RegionalSimulation(LiveSimulation):
         super().__init__([Region(**r) for r in config['regions']], config['latency_ms'],
             arrival_rate=config['arrival_rate'], service_min=config['service_min'],
             service_max=config['service_max'], source=config['source'],
-            policy=config['policy'], seed=config['seed'], client_latency_ms=config['client_latency_ms'])
+            policy=config['policy'], seed=config['seed'], client_latency_ms=config['client_latency_ms'],
+            client_weights=config.get('client_weights'), client_migration=config.get('client_migration', False))
         self.responses = deque(maxlen=response_window)
         for p in self.pools:
             p.responses = deque(maxlen=response_window)
@@ -45,7 +46,7 @@ class RegionalSimulation(LiveSimulation):
             client_rtt_ms=r['Network RTT (ms)'], completed=r['Completed'], rejected=r['Rejected'],
             recent_p95_response_time=self.p95(p.responses) if p.responses else None,
             response_window_count=len(p.responses)) for r,p in zip(rows,self.pools)]
-        return dict(topology='regions', model='aggregate_regional_pools',
+        snapshot = dict(topology='regions', model='aggregate_regional_pools',
             config={**self.config, 'arrival_rate': self.arrival_rate},
             simulation_time=self.now, arrival_rate=self.arrival_rate,
             totals=dict(offered=self.offered, completed=self.completed, rejected=self.rejected,
@@ -59,6 +60,10 @@ class RegionalSimulation(LiveSimulation):
             history_limit=self.history.maxlen, telemetry='immediate',
             retention=dict(pending_events=len(self.events), response_values=len(values),
                            history_points=len(self.history)))
+        if self.clients:
+            snapshot['client_traffic'] = self.clients.report(self.arrival_rate)
+            snapshot['client_migration_events'] = list(self.clients.changes)
+        return snapshot
 
 
 def run_regional(config):
