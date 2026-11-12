@@ -183,6 +183,13 @@ test("regional continuous sessions reconnect, preserve active settings, drain, r
   await expect(
     page.getByRole("button", { name: "Resume session", exact: true }),
   ).toBeVisible();
+  const region = page.getByLabel("Region ap-northeast-1", { exact: true });
+  await region.getByRole("button", { name: "Take ap-northeast-1 offline" }).click();
+  await expect(region.getByText("Offline", { exact: true })).toBeVisible();
+  await page.reload();
+  await expect(region.getByText("Offline", { exact: true })).toBeVisible();
+  await region.getByRole("button", { name: "Restore ap-northeast-1" }).click();
+  await expect(region.getByText("Offline", { exact: true })).toHaveCount(0);
   const paused = await page.getByText(/^Simulated time:/).innerText();
   await page.reload();
   await expect(

@@ -57,6 +57,7 @@ export type RegionalSummary = {
     running: number;
     waiting: number;
     outbound: number;
+    online?: boolean;
     queue_limit: number;
     cpu_occupancy: number;
     compute: number;
@@ -169,7 +170,10 @@ export function acceptRegionalSummary(
         c(r.waiting) &&
         c(r.queue_limit) &&
         r.waiting <= r.queue_limit &&
-        r.free_slots === r.slots - r.running &&
+        (r.online === undefined || typeof r.online === "boolean") &&
+        (r.online === false
+          ? r.free_slots === 0 && r.running === 0 && r.waiting === 0 && r.outbound === 0
+          : r.free_slots === r.slots - r.running) &&
         c(r.outbound) &&
         n(r.cpu_occupancy) &&
         r.cpu_occupancy <= 1 &&

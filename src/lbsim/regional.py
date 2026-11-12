@@ -37,7 +37,8 @@ class RegionalSimulation(LiveSimulation):
             bins = [dict(start=low+i*width, end=low+(i+1)*width, count=0) for i in range(count)]
             for v in values:
                 bins[min(count-1, int((v-low)/width))]['count'] += 1
-        regions = [dict(name=r['Region'], slots=r['Slots'], free_slots=r['Free'],
+        regions = [dict(name=r['Region'], slots=r['Slots'], online=p.online,
+            free_slots=r['Free'] if p.online else 0,
             running=r['Running'], waiting=r['Queued'], outbound=r['In transit'],
             queue_limit=p.region.queue_limit, cpu_occupancy=r['CPU / slots (%)']/100,
             compute=r['Compute (×)'], load_averages=[r['Load 1m'],r['Load 5m'],r['Load 15m']],

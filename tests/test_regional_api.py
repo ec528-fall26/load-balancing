@@ -57,6 +57,26 @@ class RegionalAPITests(unittest.TestCase):
             self.assertEqual(c.delete(url).status_code,200)
             self.assertEqual(c.get(url+'/snapshot').status_code,404)
 
+    def test_region_commands_update_paused_session_and_invalid_index_keeps_worker(self):
+        with TestClient(create_app()) as client:
+            created = client.post('/v1/sessions', json={'config': CONFIG, 'paused': True})
+            self.assertEqual(created.status_code, 201, created.text)
+            path = f"/v1/sessions/{created.json()['session_id']}/commands"
+
+            invalid = client.post(path, json={'action': 'fail_region', 'value': 2})
+            self.assertEqual(invalid.status_code, 422)
+            for action, online, free_slots in (
+                ('fail_region', False, 0), ('restore_region', True, 1)
+            ):
+                response = client.post(path, json={'action': action, 'value': 0})
+                self.assertEqual(response.status_code, 200, response.text)
+                snapshot = response.json()
+                self.assertEqual(snapshot['status'], 'paused')
+                self.assertEqual(snapshot['regions'][0]['online'], online)
+                self.assertEqual(snapshot['regions'][0]['free_slots'], free_slots)
+                self.assertTrue(snapshot['regions'][1]['online'])
+                self.conserve(snapshot)
+
     def test_invalid_regional_contracts_fail_before_workers_start(self):
         bad=[{'source':True},{'source':2},{'policy':'least_active'},{'seed':True},{'service_min':0},{'service_min':2},
              {'latency_ms':[[0]]},{'latency_ms':[[0,-1],[1,0]]},{'latency_ms':[[0,True],[1,0]]},
