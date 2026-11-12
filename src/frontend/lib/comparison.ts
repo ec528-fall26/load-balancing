@@ -1,4 +1,5 @@
 import { policies } from "./engine";
+import { regionalPolicies } from "./policy-metadata";
 import type { Config, Run } from "./engine";
 import type { RegionalConfig, RegionalRun } from "./regions";
 import { validConfig } from "./saved-setups";
@@ -77,13 +78,7 @@ export function settings(config: CompareConfig): Setting[] {
       label: "Routing policy",
       group: "Routing",
       value: config.policy,
-      options: regional
-        ? {
-            round_robin: "Round robin across regions",
-            least_loaded: "Least loaded region",
-            nearest: "Nearest region",
-          }
-        : policies,
+      options: regional ? regionalPolicies : policies,
     },
   ];
   if (!regional) {
@@ -231,7 +226,7 @@ export function validCompareConfig(value: unknown): value is CompareConfig {
     Array.isArray(c.client_latency_ms) &&
     c.client_latency_ms.length === c.regions.length &&
     c.client_latency_ms.every((n) => num(n) && n >= 0 && n <= 60000) &&
-    ["round_robin", "least_loaded", "nearest"].includes(c.policy) &&
+    Object.hasOwn(regionalPolicies, c.policy) &&
     int(c.seed, 0, 2 ** 32 - 1) &&
     num(c.arrival_rate) &&
     c.arrival_rate >= 0 &&

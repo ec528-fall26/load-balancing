@@ -106,6 +106,24 @@ class LeastLoadedRegionPolicy(RoutingPolicy):
             self.context.latency_ms[i], i))
 
 
+class NearestUnderLoadPolicy(RoutingPolicy):
+    """Nearest region below the overload threshold; least loaded when all are above it.
+
+    Load is the same signal as least_loaded: (running + queued + outbound) / slots.
+    Keeps traffic local while there is room and spills over only under load.
+    """
+    THRESHOLD = 0.9
+
+    def choose(self):
+        context = self.context
+        def load(i):
+            return context.demand(i) / context.capacity(i)
+        available = [i for i in range(context.count) if load(i) < self.THRESHOLD]
+        if available:
+            return min(available, key=lambda i: (context.latency_ms[i], i))
+        return min(range(context.count), key=lambda i: (load(i), context.latency_ms[i], i))
+
+
 @dataclass(frozen=True)
 class PolicyDefinition:
     strategy: type[RoutingPolicy]
@@ -133,6 +151,8 @@ POLICY_REGISTRY = MappingProxyType({
         ('single_pool', 'Power of two choices')),),
     'nearest': PolicyDefinition(NearestRegionPolicy, (
         ('regions', 'Nearest region'),)),
+    'nearest_under_load': PolicyDefinition(NearestUnderLoadPolicy, (
+        ('regions', 'Nearest region under 90% load'),)),
 })
 
 

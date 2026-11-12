@@ -23,7 +23,7 @@ class RegionalAPITests(unittest.TestCase):
             self.assertEqual(response.status_code,200)
             for p in response.json()['presets']:
                 checked_regional_config({**CONFIG,**{k:v for k,v in p.items() if k!='id'}},Limits(),SessionLimits(),continuous=True)
-            for policy in ('round_robin','least_loaded','nearest'):
+            for policy in ('round_robin','least_loaded','nearest','nearest_under_load'):
                 config={**CONFIG,'policy':policy,'duration':1}
                 r=c.post('/v1/regions/run',json={'config':config})
                 self.assertEqual(r.status_code,200,r.text)
