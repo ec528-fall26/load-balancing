@@ -78,12 +78,14 @@ class RunStore:
         try:
             states=[[0,0,0,0,0,0] for _ in range(config['server_count'])]
             running=waiting=completed=rejected=offered=io_waiting=outstanding=io_active=io_queued=0
+            # Requests dropped by a failed server and not yet re-routed (same timestamp only).
+            in_transit=0
             idle=config['server_count']
             with closing(sqlite3.connect(path)) as db:
                 db.execute('PRAGMA journal_mode=OFF')
                 db.execute('CREATE TABLE events (seq INTEGER PRIMARY KEY, at REAL, sid INTEGER, running INTEGER, waiting INTEGER, action TEXT, request INTEGER, offered INTEGER, completed INTEGER, rejected INTEGER, total_running INTEGER, total_waiting INTEGER, idle INTEGER, io INTEGER, outstanding INTEGER, total_io INTEGER, total_outstanding INTEGER, io_active INTEGER, io_queued INTEGER, total_io_active INTEGER, total_io_queued INTEGER)')
                 def rows():
-                    nonlocal running,waiting,completed,rejected,offered,idle,io_waiting,outstanding,io_active,io_queued
+                    nonlocal running,waiting,completed,rejected,offered,idle,io_waiting,outstanding,io_active,io_queued,in_transit
                     for seq,e in enumerate(summary['events']):
                         at,sid,active,queued,action,request=e[:6]
                         io=e[6] if len(e)>6 else 0
@@ -91,12 +93,14 @@ class RunStore:
                         io_run=e[8] if len(e)>8 else io
                         io_queue=e[9] if len(e)>9 else 0
                         old=states[sid]
+                        if action=='server_down':in_transit+=old[0]+old[1]
+                        elif action in ('rerouted','reroute_rejected'):in_transit-=1
                         idle+=int(unfinished==0)-int(old[3]==0)
                         io_waiting+=io-old[2];outstanding+=unfinished-old[3]
                         io_active+=io_run-old[4];io_queued+=io_queue-old[5]
                         running+=active-old[0];waiting+=queued-old[1];states[sid]=[active,queued,io,unfinished,io_run,io_queue]
-                        completed+=action=='completed';rejected+=action=='rejected';offered+=action in ('started','queued','rejected')
-                        assert offered==completed+rejected+running+waiting+io_waiting
+                        completed+=action=='completed';rejected+=action in ('rejected','reroute_rejected');offered+=action in ('started','queued','rejected')
+                        assert offered==completed+rejected+running+waiting+io_waiting+in_transit
                         yield (seq,at,sid,active,queued,action,request,offered,completed,rejected,running,waiting,idle,io,unfinished,io_waiting,outstanding,io_run,io_queue,io_active,io_queued)
                 db.executemany('INSERT INTO events VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',rows())
                 db.execute('CREATE INDEX time_order ON events(at,seq)')

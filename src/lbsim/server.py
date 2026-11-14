@@ -70,6 +70,11 @@ class Server:
         self._waiting: deque[Request] = deque()
         self._waiting_ids: set[int] = set()
         self._last_time = 0.0
+        self._up = True
+
+    @property
+    def up(self) -> bool:
+        return self._up
 
     @property
     def running(self) -> tuple[Execution, ...]:
@@ -99,8 +104,11 @@ class Server:
 
     def submit(self, request: Request, now: float) -> Admission:
         self._check_time(now)
-        if now != request.arrival_time:
-            raise ValueError("submit at the request's arrival time")
+        if not self._up:
+            raise ValueError("server is down")
+        # Re-routed requests are submitted after arrival and keep their original arrival time.
+        if now < request.arrival_time:
+            raise ValueError("cannot submit before the request's arrival time")
         if any(e.completion_time <= now for e in self._running.values()):
             raise ValueError("process pending completions before arrivals")
         if request.id in self._running or request.id in self._waiting_ids:
@@ -135,3 +143,24 @@ class Server:
             self._running[started.request.id] = started
         self._last_time = now
         return Completion(finished, started)
+
+    def fail(self, now: float) -> list[Request]:
+        """Go down and return dropped work: running (by start time), then queued (FIFO)."""
+        self._check_time(now)
+        if not self._up:
+            raise ValueError("server is already down")
+        running = sorted(self._running.values(), key=lambda e: (e.start_time, e.request.id))
+        dropped = [e.request for e in running] + list(self._waiting)
+        self._running.clear()
+        self._waiting.clear()
+        self._waiting_ids.clear()
+        self._up = False
+        self._last_time = now
+        return dropped
+
+    def recover(self, now: float) -> None:
+        self._check_time(now)
+        if self._up:
+            raise ValueError("server is already up")
+        self._up = True
+        self._last_time = now

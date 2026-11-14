@@ -19,6 +19,9 @@ class RoutingContext:
     capacity: Callable[[int], int] | None = None
     latency_ms: tuple[float, ...] = ()
     routing_rng: Random | None = None
+    # Health check: None means every target is always up. Engines only call
+    # choose() while at least one target is available.
+    available: Callable[[int], bool] | None = None
 
 
 class RoutingPolicy(ABC):
@@ -39,28 +42,39 @@ class RoundRobinPolicy(RoutingPolicy):
         self.next_target = 0
 
     def choose(self):
-        target = self.next_target
-        self.next_target = (target + 1) % self.context.count
-        return target
+        available = self.context.available
+        for _ in range(self.context.count):
+            target = self.next_target
+            self.next_target = (target + 1) % self.context.count
+            if available is None or available(target):
+                return target
+        raise ValueError("no target is available")
 
 
 class LeastActiveRequestsPolicy(RoutingPolicy):
     """Running requests only; a bounded indexed tree preserves O(log n) updates.
 
     Waiting requests do not contribute. Equal counts favor the lowest index.
+    Unavailable targets count as infinitely loaded.
     """
     def __init__(self, context):
         super().__init__(context)
         self.width = 1 << (context.count - 1).bit_length()
         self.tree = [(inf, 0)] * (2 * self.width)
         for i in range(context.count):
-            self.tree[self.width + i] = (context.running(i), i)
+            self.tree[self.width + i] = self._leaf(i)
         for i in range(self.width - 1, 0, -1):
             self.tree[i] = min(self.tree[2 * i], self.tree[2 * i + 1])
 
+    def _leaf(self, target):
+        available = self.context.available
+        if available is not None and not available(target):
+            return (inf, target)
+        return (self.context.running(target), target)
+
     def update(self, target):
         i = self.width + target
-        self.tree[i] = (self.context.running(target), target)
+        self.tree[i] = self._leaf(target)
         while i > 1:
             i //= 2
             self.tree[i] = min(self.tree[2 * i], self.tree[2 * i + 1])
@@ -72,7 +86,8 @@ class LeastActiveRequestsPolicy(RoutingPolicy):
 class LeastOutstandingPolicy(LeastActiveRequestsPolicy):
     """Fewest unfinished admitted requests, including CPU queue and I/O wait."""
     def __init__(self, context):
-        demand_context = RoutingContext(context.count, context.demand)
+        demand_context = RoutingContext(context.count, context.demand,
+                                        available=context.available)
         super().__init__(demand_context)
 
 
@@ -89,7 +104,14 @@ class PowerOfTwoChoicesPolicy(RoutingPolicy):
     def choose(self):
         if self.context.count == 1:
             return 0
-        a, b = self.rng.sample(range(self.context.count), 2)
+        candidates = range(self.context.count)
+        available = self.context.available
+        # Only filter when something is down, so all-up runs draw exactly as before.
+        if available is not None and not all(available(i) for i in candidates):
+            candidates = [i for i in candidates if available(i)]
+            if len(candidates) == 1:
+                return candidates[0]
+        a, b = self.rng.sample(candidates, 2)
         return a if self.context.running(a) <= self.context.running(b) else b
 
 

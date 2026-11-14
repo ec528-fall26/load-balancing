@@ -16,6 +16,8 @@ from lbsim.policies import RoutingContext, create_policy
 
 class ContinuousSimulation:
     def __init__(self, config, *, response_window=2000, history_points=240):
+        if "reliabilities" in config:
+            raise ValueError("Live simulations do not support server reliability outages yet.")
         self.config = dict(config)
         count = config["server_count"]
         rates = config.get("processing_rates", [1.0] * count)

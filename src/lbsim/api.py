@@ -106,6 +106,7 @@ class ExportRequest(BaseModel):
 def checked_config(values, limits):
     allowed = {'server_count', 'concurrency', 'queue_limit', 'arrival_rate', 'duration',
                'service_min', 'service_max', 'seed', 'policy', 'processing_rates',
+               'reliabilities', 'mean_repair_time',
                'request_model', 'io_fraction', 'outstanding_limit', 'io_capacity', 'io_heavy_probability'}
     extra = sorted(set(values) - allowed)
     if extra:
