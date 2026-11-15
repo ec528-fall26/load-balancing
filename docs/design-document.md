@@ -489,6 +489,15 @@ deterministic results can be checked separately from machine-dependent timings.
 | Expected runtime | A few seconds on a local CPU. |
 | Expected output | `Validated 54 runs on 9 shared traces.` See the [reference analysis](../experiments/results/a-02/analysis.md). |
 
+### Experiment 8: server availability validation
+
+| | |
+| --- | --- |
+| Supports | Server outages (availability, MTTR) behave as the model claims in one-shot runs and continuous sessions. |
+| Command | `uv run python experiments/validate_availability.py --output experiments/results/availability-validation-rerun` |
+| Expected runtime | About 40 seconds on a local CPU. |
+| Expected output | `28 of 28 availability checks passed`; e.g. 36.0% of arrivals should find both of two 40%-available servers down, measured 35.9% ± 0.5% over 50 seeds. See the [reference report](../experiments/results/availability-validation/report.md). |
+
 ## Demo 3 experiments
 
 Run these from the repository root after `uv sync --locked`. Use a quiet local

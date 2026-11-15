@@ -1,0 +1,339 @@
+{
+  "generated": "2026-11-15T05:53:32+00:00",
+  "python": "3.12.1",
+  "seeds": 50,
+  "tolerance_standard_errors": 4,
+  "elapsed_seconds": 37.4,
+  "passed": 28,
+  "total": 28,
+  "convergence": [
+    {
+      "window": 60.0,
+      "cycles": 2.9999999999999996,
+      "mean": 0.9041578770833099,
+      "spread": 0.06703004599172255,
+      "theory_spread": 0.07348469228349533
+    },
+    {
+      "window": 600.0,
+      "cycles": 29.999999999999996,
+      "mean": 0.9004297879038728,
+      "spread": 0.02221464877941346,
+      "theory_spread": 0.023237900077244498
+    },
+    {
+      "window": 6000.0,
+      "cycles": 299.99999999999994,
+      "mean": 0.9007170116408012,
+      "spread": 0.0074410155143515575,
+      "theory_spread": 0.0073484692283495336
+    },
+    {
+      "window": 60000.0,
+      "cycles": 2999.9999999999995,
+      "mean": 0.9000807787965077,
+      "spread": 0.0024923969839290797,
+      "theory_spread": 0.0023237900077244496
+    }
+  ],
+  "checks": {
+    "1. Availability converges to the setting": [
+      {
+        "name": "Availability 0.5 (20,000 s window)",
+        "expected": 0.5,
+        "measured": 0.49933741548962923,
+        "ci95": 0.0011185064866799346,
+        "se": 0.0005706665748367014,
+        "samples": 50,
+        "unit": "",
+        "passed": true
+      },
+      {
+        "name": "Availability 0.8 (20,000 s window)",
+        "expected": 0.8,
+        "measured": 0.799465779016019,
+        "ci95": 0.0011523843028186614,
+        "se": 0.0005879511749074803,
+        "samples": 50,
+        "unit": "",
+        "passed": true
+      },
+      {
+        "name": "Availability 0.95 (20,000 s window)",
+        "expected": 0.95,
+        "measured": 0.949982988084856,
+        "ci95": 0.0006362924512269704,
+        "se": 0.0003246390057280461,
+        "samples": 50,
+        "unit": "",
+        "passed": true
+      },
+      {
+        "name": "Spread after 300 cycles = A(1-A)sqrt(2/n)",
+        "expected": 0.0073484692283495336,
+        "measured": 0.0074410155143515575,
+        "ci95": null,
+        "samples": 200,
+        "unit": "",
+        "passed": true
+      },
+      {
+        "name": "Spread after 3,000 cycles = A(1-A)sqrt(2/n)",
+        "expected": 0.0023237900077244496,
+        "measured": 0.0024923969839290797,
+        "ci95": null,
+        "samples": 200,
+        "unit": "",
+        "passed": true
+      }
+    ],
+    "2. Up and down periods are exponential": [
+      {
+        "name": "Up period mean",
+        "expected": 18.000000000000004,
+        "measured": 18.025655896643975,
+        "ci95": 0.15939150713054376,
+        "se": 0.08132219751558355,
+        "samples": 49907,
+        "unit": "s",
+        "passed": true
+      },
+      {
+        "name": "Up period std / mean (exponential: 1)",
+        "expected": 1.0,
+        "measured": 1.0078566407292566,
+        "ci95": null,
+        "samples": 49907,
+        "unit": "",
+        "passed": true
+      },
+      {
+        "name": "Up periods fit an exponential (KS distance; theory column = 1% critical value)",
+        "expected": 0.007296370389364657,
+        "measured": 0.0023723515462067413,
+        "ci95": null,
+        "samples": 49907,
+        "unit": "",
+        "passed": true,
+        "note": "passes below the 1% critical value"
+      },
+      {
+        "name": "Down period mean",
+        "expected": 2.0,
+        "measured": 2.0111713244819702,
+        "ci95": 0.017617897120477226,
+        "se": 0.008988723020651646,
+        "samples": 49907,
+        "unit": "s",
+        "passed": true
+      },
+      {
+        "name": "Down period std / mean (exponential: 1)",
+        "expected": 1.0,
+        "measured": 0.9984576809827115,
+        "ci95": null,
+        "samples": 49907,
+        "unit": "",
+        "passed": true
+      },
+      {
+        "name": "Down periods fit an exponential (KS distance; theory column = 1% critical value)",
+        "expected": 0.007296370389364657,
+        "measured": 0.006154062089614998,
+        "ci95": null,
+        "samples": 49907,
+        "unit": "",
+        "passed": true,
+        "note": "passes below the 1% critical value"
+      }
+    ],
+    "3. Every server down at once = product of (1 - A)": [
+      {
+        "name": "Time with every server down (A = 0.4, 0.4)",
+        "expected": 0.36,
+        "measured": 0.3585185712547912,
+        "ci95": 0.004920942524934197,
+        "se": 0.002510684961701121,
+        "samples": 50,
+        "unit": "",
+        "passed": true
+      },
+      {
+        "name": "Arrivals finding no server up (A = 0.4, 0.4)",
+        "expected": 0.36,
+        "measured": 0.35882,
+        "ci95": 0.0049826788261380485,
+        "se": 0.002542183074560229,
+        "samples": 50,
+        "unit": "",
+        "passed": true
+      },
+      {
+        "name": "Time with every server down (A = 0.5, 0.6, 0.7)",
+        "expected": 0.06000000000000001,
+        "measured": 0.05755027022500934,
+        "ci95": 0.002140108497629887,
+        "se": 0.0010918920906274933,
+        "samples": 50,
+        "unit": "",
+        "passed": true
+      },
+      {
+        "name": "Arrivals finding no server up (A = 0.5, 0.6, 0.7)",
+        "expected": 0.06000000000000001,
+        "measured": 0.057646666666666666,
+        "ci95": 0.002195271427409376,
+        "se": 0.001120036442555804,
+        "samples": 50,
+        "unit": "",
+        "passed": true
+      }
+    ],
+    "4. Failures per window = T / (MTBF + MTTR)": [
+      {
+        "name": "Failures in 6,000 s (A = 0.9, MTTR = 2.0 s)",
+        "expected": 299.99999999999994,
+        "measured": 300.64,
+        "ci95": 4.936824825735666,
+        "se": 2.518788176395748,
+        "samples": 50,
+        "unit": "",
+        "passed": true
+      },
+      {
+        "name": "Failures in 6,000 s (A = 0.5, MTTR = 1.0 s)",
+        "expected": 3000.0,
+        "measured": 3002.96,
+        "ci95": 9.810867574277005,
+        "se": 5.005544680753574,
+        "samples": 50,
+        "unit": "",
+        "passed": true
+      }
+    ],
+    "5. Trends": [
+      {
+        "name": "Lower availability -> more rejections (A = 0.95, 0.8, 0.6, 0.4)",
+        "expected": null,
+        "measured": [
+          0.0001,
+          0.008133333333333333,
+          0.07109166666666666,
+          0.233825
+        ],
+        "ci95": null,
+        "samples": 20,
+        "unit": "",
+        "passed": true
+      },
+      {
+        "name": "Same availability, longer MTTR -> fewer outages (MTTR = 0.5, 2, 8 s)",
+        "expected": null,
+        "measured": [
+          2393.5,
+          596.95,
+          150.8
+        ],
+        "ci95": null,
+        "samples": 20,
+        "unit": "",
+        "passed": true
+      },
+      {
+        "name": "... but the same downtime (MTTR = 0.5 s)",
+        "expected": 0.2,
+        "measured": 0.19951553126221633,
+        "ci95": 0.0023259201426344585,
+        "se": 0.0011866939503237034,
+        "samples": 20,
+        "unit": "",
+        "passed": true
+      },
+      {
+        "name": "... but the same downtime (MTTR = 2.0 s)",
+        "expected": 0.2,
+        "measured": 0.20034541703331937,
+        "ci95": 0.004566717553700543,
+        "se": 0.0023299579355615017,
+        "samples": 20,
+        "unit": "",
+        "passed": true
+      },
+      {
+        "name": "... but the same downtime (MTTR = 8.0 s)",
+        "expected": 0.2,
+        "measured": 0.20510846657513757,
+        "ci95": 0.01258008480508845,
+        "se": 0.006418410614841046,
+        "samples": 20,
+        "unit": "",
+        "passed": true
+      },
+      {
+        "name": "1 server(s) at A = 0.6: arrivals finding none up (theory 0.4^1)",
+        "expected": 0.4,
+        "measured": 0.40523333333333333,
+        "ci95": 0.012029291797366908,
+        "se": 0.00613739377416679,
+        "samples": 20,
+        "unit": "",
+        "passed": true
+      },
+      {
+        "name": "2 server(s) at A = 0.6: arrivals finding none up (theory 0.4^2)",
+        "expected": 0.16000000000000003,
+        "measured": 0.16265000000000002,
+        "ci95": 0.008512023362925772,
+        "se": 0.004342869062717231,
+        "samples": 20,
+        "unit": "",
+        "passed": true
+      },
+      {
+        "name": "3 server(s) at A = 0.6: arrivals finding none up (theory 0.4^3)",
+        "expected": 0.06400000000000002,
+        "measured": 0.06509166666666667,
+        "ci95": 0.004464362497464999,
+        "se": 0.0022777359680943876,
+        "samples": 20,
+        "unit": "",
+        "passed": true
+      },
+      {
+        "name": "4 server(s) at A = 0.6: arrivals finding none up (theory 0.4^4)",
+        "expected": 0.025600000000000005,
+        "measured": 0.0261,
+        "ci95": 0.002366260375305872,
+        "se": 0.0012072757016866695,
+        "samples": 20,
+        "unit": "",
+        "passed": true
+      },
+      {
+        "name": "More servers -> fewer 'every server was down' rejections",
+        "expected": null,
+        "measured": [
+          0.40523333333333333,
+          0.16265000000000002,
+          0.06509166666666667,
+          0.0261
+        ],
+        "ci95": null,
+        "samples": 20,
+        "unit": "",
+        "passed": true
+      }
+    ],
+    "6. Continuous sessions match one-shot runs": [
+      {
+        "name": "Continuous = one-shot: same outages and 'no server up' rejections (10 seeds, 300 s)",
+        "expected": 0,
+        "measured": 0,
+        "ci95": null,
+        "samples": 10,
+        "unit": "mismatched seeds",
+        "passed": true
+      }
+    ]
+  }
+}

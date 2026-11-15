@@ -18,6 +18,22 @@ high IDs. Takes a few seconds and ends with `Validated 54 runs on 9 shared trace
 Reference results and interpretation: [analysis](results/a-02/analysis.md). Requires
 A-01 processing rates
 
+## Availability: validate server outages against theory
+
+```sh
+uv run python experiments/validate_availability.py --output experiments/results/availability-validation-rerun
+```
+
+From the repository root after installing dependencies, this takes about 40
+seconds and runs 28 checks over 50 seeds: measured availability converges to
+the configured value (spread A(1-A)sqrt(2/n)), up/down periods are exponential
+(mean, std/mean and a Kolmogorov-Smirnov fit), every server is down at once a
+fraction prod(1 - A) of the time, failures per window match T / (MTBF + MTTR),
+expected trends hold, and continuous sessions see the same outages as one-shot
+runs. Expect `28 of 28 availability checks passed`; the command exits with
+status 1 if any check fails. Writes `report.md`, `results.json` and two period
+histograms. See the [reference report](results/availability-validation/report.md).
+
 ## D3-04/05: reproduce saved runs and compare results
 
 ```sh
