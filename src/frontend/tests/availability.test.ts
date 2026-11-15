@@ -4,6 +4,8 @@ import { defaults } from "../lib/engine";
 import { changedSettings, settingValue } from "../lib/comparison";
 import { validConfig } from "../lib/saved-setups";
 import {
+  allDownTime,
+  downIntervals,
   formatDuration,
   formatPercent,
   formatAvailabilities,
@@ -189,5 +191,37 @@ test("comparison shows availability as a setting without false changes", () => {
   assert.equal(
     settingValue({ ...flaky, mean_repair_time: [1, 4] }, "mean_repair_time"),
     "1, 4 s",
+  );
+});
+
+test("outage intervals are clipped to the arrival window", () => {
+  assert.deepEqual(
+    downIntervals([[2, 4], [9, 13], [12, 15]], 10),
+    [[2, 4], [9, 10]],
+  );
+  assert.deepEqual(downIntervals([], 10), []);
+});
+
+test("all-down time counts only moments when every server is down", () => {
+  // Overlap of [2, 6] and [4, 8] is 2 s.
+  assert.equal(allDownTime({ 0: [[2, 6]], 1: [[4, 8]] }, 2, 10), 2);
+  // No overlap.
+  assert.equal(allDownTime({ 0: [[1, 2]], 1: [[3, 4]] }, 2, 10), 0);
+  // Several overlaps: [1, 3]∩[2, 5] = 1 s, [6, 9]∩[7, 12] clipped to 10 = 2 s.
+  assert.equal(
+    allDownTime({ 0: [[1, 3], [6, 9]], 1: [[2, 5], [7, 12]] }, 2, 10),
+    3,
+  );
+  // Touching intervals do not overlap.
+  assert.equal(allDownTime({ 0: [[1, 3]], 1: [[3, 5]] }, 2, 10), 0);
+  // A server that never fails keeps the service up.
+  assert.equal(allDownTime({ 0: [[0, 10]], 1: [] }, 2, 10), 0);
+  assert.equal(allDownTime({ 0: [[0, 10]] }, 2, 10), 0);
+  // A single server: all-down time is its own downtime inside the window.
+  assert.equal(allDownTime({ 0: [[1, 2], [8, 14]] }, 1, 10), 3);
+  // Three servers must all be down.
+  assert.equal(
+    allDownTime({ 0: [[0, 6]], 1: [[2, 8]], 2: [[5, 9]] }, 3, 10),
+    1,
   );
 });

@@ -9,6 +9,7 @@ and restart from scratch, keeping their original arrival time.
 
 import unittest
 from random import Random
+from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
@@ -189,6 +190,9 @@ class EngineOutageTests(unittest.TestCase):
         self.assertEqual(sorted(e.request.id for e in completed), [0, 3])
         self.assertEqual(rejected, [1, 2])
         self.assertEqual([e[4] for e in events if e[0] == .1], ["completed", "server_down"])
+        # Arrivals while every server is down get their own status.
+        self.assertEqual([(e[4], e[5]) for e in events if e[5] in (1, 2)],
+                         [("no_server_up", 1), ("no_server_up", 2)])
 
     def test_reroute_rejected_when_no_server_can_take_it(self):
         events = []
@@ -281,7 +285,8 @@ class SummaryAndIntegrationTests(unittest.TestCase):
 
     def test_summary_reports_outages_only_when_configured(self):
         plain = run_simulation(BASE)
-        for key in ("rerouted_count", "outages", "per_server_availability"):
+        for key in ("rerouted_count", "outages", "per_server_availability",
+                    "rerouted_by_server"):
             self.assertNotIn(key, plain)
         summary = run_simulation(self.CONFIG)
         self.assertEqual(summary["outages"][0], [])
@@ -293,6 +298,59 @@ class SummaryAndIntegrationTests(unittest.TestCase):
         self.assertEqual(summary["rerouted_count"],
                          sum(e[4] in ("rerouted", "reroute_rejected") for e in summary["events"]))
         self.assertGreater(summary["rerouted_count"], 0)
+        by_server = summary["rerouted_by_server"]
+        self.assertEqual(sorted(by_server), [0, 1, 2])
+        self.assertEqual(by_server[0], {"rerouted": 0, "rejected": 0})
+        self.assertEqual(sum(c["rerouted"] + c["rejected"] for c in by_server.values()),
+                         summary["rerouted_count"])
+
+    def test_rerouted_by_server_counts_requests_moved_off_each_failed_server(self):
+        # Same scenario as the engine worked example: server 1 down 0.6–2.0 s,
+        # its running request is re-routed (queued) onto server 0.
+        config = dict(server_count=2, concurrency=1, queue_limit=2, policy="round_robin",
+                      arrival_rate=4.0, duration=1.0, service_min=1.0, service_max=1.0,
+                      seed=7, availabilities=[1.0, .5])
+        with patch("lbsim.simulation.outage_schedule", return_value={0: [], 1: [(.6, 2.0)]}):
+            summary = run_simulation(config)
+        self.assertEqual(summary["rerouted_by_server"],
+                         {0: {"rerouted": 0, "rejected": 0}, 1: {"rerouted": 1, "rejected": 0}})
+        # With no queue space anywhere, the dropped request is rejected instead.
+        config = {**config, "server_count": 1, "queue_limit": 1, "arrival_rate": 1.0,
+                  "service_min": 5.0, "service_max": 5.0, "availabilities": [.5]}
+        with patch("lbsim.simulation.outage_schedule", return_value={0: [(1.0, 2.0)]}):
+            summary = run_simulation(config)
+        self.assertEqual(summary["rerouted_by_server"], {0: {"rerouted": 0, "rejected": 1}})
+        self.assertEqual(summary["rerouted_count"], 1)
+        self.assertEqual(summary["rejected_breakdown"],
+                         {"queue_full": 0, "no_server_up": 0, "reroute_rejected": 1})
+
+    def test_rejected_breakdown_accounts_for_every_rejection(self):
+        # Two servers down 40% of the time each: many arrivals find no server up.
+        config = dict(server_count=2, concurrency=1, queue_limit=10, policy="round_robin",
+                      arrival_rate=1.0, duration=60.0, service_min=.1, service_max=1.0,
+                      seed=42, availabilities=[.4, .4], mean_repair_time=1.0)
+        summary = run_simulation(config)
+        breakdown = summary["rejected_breakdown"]
+        self.assertEqual(sum(breakdown.values()), summary["rejected_count"])
+        self.assertGreater(breakdown["no_server_up"], 0)
+        self.assertEqual(breakdown["reroute_rejected"],
+                         sum(c["rejected"] for c in summary["rerouted_by_server"].values()))
+        # Busy queues: full-queue rejections are counted separately.
+        busy = run_simulation({**config, "arrival_rate": 30.0, "queue_limit": 1})
+        self.assertGreater(busy["rejected_breakdown"]["queue_full"], 0)
+        self.assertEqual(sum(busy["rejected_breakdown"].values()), busy["rejected_count"])
+
+    def test_recorded_run_counts_no_server_up_rejections(self):
+        config = dict(server_count=2, concurrency=1, queue_limit=10, policy="round_robin",
+                      arrival_rate=1.0, duration=60.0, service_min=.1, service_max=1.0,
+                      seed=42, availabilities=[.4, .4], mean_repair_time=1.0)
+        expected = run_simulation(config)
+        with TestClient(create_app()) as client:
+            response = client.post("/v1/runs", json={"config": config})
+            self.assertEqual(response.status_code, 201, response.text)
+            summary = response.json()["summary"]
+        self.assertEqual(summary["rejected_count"], expected["rejected_count"])
+        self.assertEqual(summary["rejected_breakdown"], expected["rejected_breakdown"])
 
     def test_summary_is_deterministic(self):
         self.assertEqual(run_simulation(self.CONFIG), run_simulation(self.CONFIG))

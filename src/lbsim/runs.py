@@ -99,7 +99,7 @@ class RunStore:
                         io_waiting+=io-old[2];outstanding+=unfinished-old[3]
                         io_active+=io_run-old[4];io_queued+=io_queue-old[5]
                         running+=active-old[0];waiting+=queued-old[1];states[sid]=[active,queued,io,unfinished,io_run,io_queue]
-                        completed+=action=='completed';rejected+=action in ('rejected','reroute_rejected');offered+=action in ('started','queued','rejected')
+                        completed+=action=='completed';rejected+=action in ('rejected','reroute_rejected','no_server_up');offered+=action in ('started','queued','rejected','no_server_up')
                         assert offered==completed+rejected+running+waiting+io_waiting+in_transit
                         yield (seq,at,sid,active,queued,action,request,offered,completed,rejected,running,waiting,idle,io,unfinished,io_waiting,outstanding,io_run,io_queue,io_active,io_queued)
                 db.executemany('INSERT INTO events VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',rows())

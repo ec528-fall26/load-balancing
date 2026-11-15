@@ -28,6 +28,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Notice } from "./surface";
 import { AvailabilityNote } from "./availability-note";
+import { OutageTimeline } from "./outage-timeline";
 import { repairTime } from "@/lib/availability";
 export const seconds = (v: number | null) =>
   v === null ? "N/A" : `${v.toFixed(3)} s`;
@@ -75,6 +76,32 @@ export function Results({ run }: { run: Run }) {
             <dd className="mt-1 text-2xl font-semibold tabular-nums">
               {value}
             </dd>
+            {label === "Rejected requests" && s.rejected_breakdown && (
+              <dd data-testid="rejected-breakdown" className="mt-2">
+                <p className="text-xs text-muted-foreground">
+                  Why requests were rejected
+                </p>
+                <ul className="mt-1 flex flex-col gap-0.5 text-xs text-muted-foreground">
+                  {(
+                    [
+                      [s.rejected_breakdown.no_server_up, "every server was down"],
+                      [
+                        s.rejected_breakdown.reroute_rejected,
+                        "dropped when their server failed",
+                      ],
+                      [s.rejected_breakdown.queue_full, "queue full (overload)"],
+                    ] as const
+                  ).map(([count, text]) => (
+                    <li key={text}>
+                      <strong className="text-foreground tabular-nums">
+                        {count.toLocaleString()}
+                      </strong>{" "}
+                      {text}
+                    </li>
+                  ))}
+                </ul>
+              </dd>
+            )}
           </div>
         ))}
       </dl>
@@ -160,17 +187,21 @@ export function Results({ run }: { run: Run }) {
                   {[
                     [
                       "Re-routed requests",
-                      (s.rerouted_count ?? 0).toLocaleString(),
+                      Object.values(s.rerouted_by_server ?? {})
+                        .reduce((n, m) => n + m.rerouted, 0)
+                        .toLocaleString(),
+                    ],
+                    [
+                      "Dropped by a failure",
+                      Object.values(s.rerouted_by_server ?? {})
+                        .reduce((n, m) => n + m.rejected, 0)
+                        .toLocaleString(),
                     ],
                     [
                       "Outages",
                       rows
                         .reduce((n, r) => n + outageCount(r.id), 0)
                         .toLocaleString(),
-                    ],
-                    [
-                      "Lowest availability",
-                      `${(Math.min(...Object.values(availability)) * 100).toFixed(1)}%`,
                     ],
                   ].map(([label, value]) => (
                     <div key={label}>
@@ -181,13 +212,18 @@ export function Results({ run }: { run: Run }) {
                     </div>
                   ))}
                 </dl>
+                <OutageTimeline
+                  summary={s}
+                  serverCount={c.server_count}
+                  duration={c.duration}
+                />
                 <AvailabilityNote config={c} />
                 <p className="caption">
-                  Measured availability is the share of the arrival window each
-                  server was up; over a short window it can differ from the
-                  configured availability. Per-server values are under Server
-                  details. Re-routed requests restart on another server and keep
-                  their original arrival time.
+                  % down is measured over the arrival window; over a short
+                  window it can differ from the configured availability.
+                  Re-routed requests were moved off a server when it failed and
+                  restarted elsewhere, keeping their original arrival time;
+                  dropped ones found no server with room.
                 </p>
               </CardContent>
             </Card>
@@ -228,6 +264,8 @@ export function Results({ run }: { run: Run }) {
                     <TableHead>MTTR (s)</TableHead>
                     <TableHead>Measured availability (%)</TableHead>
                     <TableHead>Outages</TableHead>
+                    <TableHead>Re-routed</TableHead>
+                    <TableHead>Dropped by failure</TableHead>
                   </>
                 )}
               </TableRow>
@@ -245,6 +283,12 @@ export function Results({ run }: { run: Run }) {
                         {((availability[String(r.id)] ?? 1) * 100).toFixed(2)}
                       </TableCell>
                       <TableCell>{outageCount(r.id)}</TableCell>
+                      <TableCell>
+                        {s.rerouted_by_server?.[String(r.id)]?.rerouted ?? 0}
+                      </TableCell>
+                      <TableCell>
+                        {s.rerouted_by_server?.[String(r.id)]?.rejected ?? 0}
+                      </TableCell>
                     </>
                   )}
                 </TableRow>

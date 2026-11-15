@@ -88,7 +88,11 @@ export function Datacenter({ run }: { run: Run }) {
     if (event[0] > now) break;
     states[event[1]] = [event[2], event[3],event[6]??0,event[7]??event[2]+event[3],event[8]??event[6]??0,event[9]??0];
     completed += Number(event[4] === "completed");
-    rejected += Number(event[4] === "rejected" || event[4] === "reroute_rejected");
+    rejected += Number(
+      event[4] === "rejected" ||
+        event[4] === "reroute_rejected" ||
+        event[4] === "no_server_up",
+    );
     latest = event;
   }
   if (run.run_id && remote) {
@@ -281,6 +285,8 @@ export function Datacenter({ run }: { run: Run }) {
                   <>Server {latest[1]} {latest[4] === "server_down" ? "went down" : "recovered"}</>
                 ) : latest[4] === "rerouted" || latest[4] === "reroute_rejected" ? (
                   <>Request {latest[5]} was re-routed after an outage{latest[4] === "rerouted" ? ` to server ${latest[1]}` : " but no server could take it"}</>
+                ) : latest[4] === "no_server_up" ? (
+                  <>Request {latest[5]} was rejected: every server was down</>
                 ) : (<>Request {latest[5]}{" "}
                 {config.request_model==="cpu_io"?({cpu_to_io:"finished CPU stage 1",io_started:"started shared I/O",io_to_cpu:"returned from I/O",started:"started CPU work",queued:"joined the CPU queue",completed:"completed",rejected:"was rejected"} as Record<string,string>)[latest[4]]??latest[4]:latest[4]} on server {latest[1]}</>)}
               </p>

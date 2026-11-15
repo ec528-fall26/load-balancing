@@ -22,7 +22,7 @@ class Playback:
             _, server_id, running, queued, action, _ = event
             self.servers[server_id] = (running, queued)
             self.completed += action == 'completed'
-            self.rejected += action == 'rejected'
+            self.rejected += action in ('rejected', 'no_server_up', 'reroute_rejected')
             self.latest = event
             self.cursor += 1
         self.time = now

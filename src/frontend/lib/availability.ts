@@ -143,3 +143,41 @@ export function formatServers(servers: number[], total: number): string {
     return `Servers ${servers[0]}–${servers.at(-1)}`;
   return `${servers.length === 1 ? "Server" : "Servers"} ${servers.join(", ")}`;
 }
+
+export type Interval = [number, number];
+
+/** Outage intervals clipped to the arrival window [0, duration]; empty ones dropped. */
+export function downIntervals(intervals: Interval[], duration: number): Interval[] {
+  return intervals
+    .map(([start, end]): Interval => [Math.max(0, start), Math.min(end, duration)])
+    .filter(([start, end]) => end > start);
+}
+
+/**
+ * Seconds of the arrival window during which every server was down at once,
+ * i.e. the whole service was unavailable. Each server's intervals do not overlap.
+ */
+export function allDownTime(
+  outages: Record<string, Interval[]>,
+  serverCount: number,
+  duration: number,
+): number {
+  const servers = Array.from({ length: serverCount }, (_, sid) =>
+    downIntervals(outages[String(sid)] ?? [], duration),
+  );
+  if (!serverCount || servers.some((intervals) => !intervals.length)) return 0;
+  // Sweep: +1 when a server goes down, −1 when it recovers; ups sort first at ties.
+  const changes = servers
+    .flat()
+    .flatMap(([start, end]): [number, number][] => [[start, 1], [end, -1]])
+    .sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  let down = 0;
+  let total = 0;
+  let previous = 0;
+  for (const [time, delta] of changes) {
+    if (down === serverCount) total += time - previous;
+    down += delta;
+    previous = time;
+  }
+  return total;
+}

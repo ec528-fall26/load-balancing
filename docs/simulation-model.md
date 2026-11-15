@@ -231,8 +231,11 @@ default 1) let servers fail during one-shot runs of the simple request model.
   queued requests are re-routed through the policy and restart, keeping their
   original arrival time; a request no server can take is rejected. When every
   server is down, arrivals are rejected.
-- Playback records add statuses `server_down`, `server_up`, `rerouted`, and
-  `reroute_rejected`. Summaries add `rerouted_count`, `outages`, and
-  `per_server_availability`.
+- Playback records add statuses `server_down`, `server_up`, `rerouted`,
+  `reroute_rejected` (a dropped request no server could take), and
+  `no_server_up` (an arrival rejected because every server was down). Summaries
+  add `rerouted_count`, `outages`, `per_server_availability`,
+  `rerouted_by_server`, and `rejected_breakdown` (`queue_full`, `no_server_up`,
+  `reroute_rejected`, summing to `rejected_count`).
 - With every availability at 1 the fields are dropped from the config and
   results are identical to runs without them.

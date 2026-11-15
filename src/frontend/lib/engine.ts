@@ -46,6 +46,14 @@ export type Summary = {
   rerouted_count?: number;
   outages?: Record<string, [number, number][]>;
   per_server_availability?: Record<string, number>;
+  /** Requests moved off each server because it failed. */
+  rerouted_by_server?: Record<string, { rerouted: number; rejected: number }>;
+  /** Why requests were rejected; the three counts sum to rejected_count. */
+  rejected_breakdown?: {
+    queue_full: number;
+    no_server_up: number;
+    reroute_rejected: number;
+  };
   events: Event[];
 };
 export type Run = {

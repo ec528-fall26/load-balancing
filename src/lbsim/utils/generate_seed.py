@@ -135,7 +135,8 @@ def route(server_count: int, concurrency: int, queue_limit: int, policy: str, ar
                 # Every server is down: nothing can accept the request.
                 rejected.append(req.id)
                 if events is not None:
-                    events.append((now, server_map[0].id, server_map[0].running_count, server_map[0].waiting_count, "rejected", req.id))
+                    # Its own status, so outage rejections are distinguishable from full queues.
+                    events.append((now, server_map[0].id, server_map[0].running_count, server_map[0].waiting_count, "no_server_up", req.id))
                 continue
 
             target_server = server_map[routing.choose()]
