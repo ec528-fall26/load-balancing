@@ -1,15 +1,15 @@
 import random
 from collections import deque
-from lbsim.reliability import outage_schedule
+from lbsim.availability import outage_schedule
 from lbsim.server import Request, Server
 from lbsim.policies import RoutingContext, create_policy, supports_policy
 
 def route(server_count: int, concurrency: int, queue_limit: int, policy: str, arrival_rate: float, duration: float, service_min: float, service_max: float, seed: int, events: list | None = None,
-          processing_rates: tuple[float, ...] | None = None, reliabilities: tuple[float, ...] | None = None,
+          processing_rates: tuple[float, ...] | None = None, availabilities: tuple[float, ...] | None = None,
           mean_repair_time: float = 1.0, outages: dict | None = None):
     """Run the batch engine and return (completed executions, rejected request IDs).
 
-    `reliabilities` generates a seeded outage schedule (see lbsim.reliability);
+    `availabilities` generates a seeded outage schedule (see lbsim.availability);
     `outages` supplies one directly as {server_id: [(down, up), ...]}. At equal
     timestamps a completion is handled first, then a server going down or up,
     then an arrival.
@@ -18,17 +18,17 @@ def route(server_count: int, concurrency: int, queue_limit: int, policy: str, ar
         raise ValueError("Select a supported routing policy.")
     if processing_rates is not None and len(processing_rates) != server_count:
         raise ValueError("processing_rates needs one value per server")
-    if reliabilities is not None and len(reliabilities) != server_count:
-        raise ValueError("reliabilities needs one value per server")
-    if outages is None and reliabilities is not None:
-        outages = outage_schedule(reliabilities, mean_repair_time, duration, seed)
+    if availabilities is not None and len(availabilities) != server_count:
+        raise ValueError("availabilities needs one value per server")
+    if outages is None and availabilities is not None:
+        outages = outage_schedule(availabilities, mean_repair_time, duration, seed)
     rng = random.Random(seed)
     server_map = {}
     for i in range(server_count):
         # Rates only change execution time; the seeded trace below is identical.
         rate = 1.0 if processing_rates is None else processing_rates[i]
-        reliability = None if reliabilities is None else float(reliabilities[i])
-        server_map[i] = Server(i, concurrency, queue_limit, None, reliability, processing_rate=rate)
+        availability = None if availabilities is None else float(availabilities[i])
+        server_map[i] = Server(i, concurrency, queue_limit, None, availability, processing_rate=rate)
 
     # Pre-store all requests
     requests = deque()

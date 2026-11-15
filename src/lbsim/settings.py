@@ -52,21 +52,26 @@ def validate_config(values: Mapping) -> dict:
                 errors.append("processing_rates: must have one rate per server")
             if any(type(r) not in (int, float) or not isfinite(r) or r <= 0 for r in rates):
                 errors.append("processing_rates: each rate must be finite and greater than zero")
-    reliabilities = values.get("reliabilities")
+    availabilities = values.get("availabilities")
     repair = values.get("mean_repair_time", 1.0)
-    if reliabilities is not None:
-        if type(reliabilities) not in (list, tuple):
-            errors.append("reliabilities: must be a list with one value per server")
+    if availabilities is not None:
+        if type(availabilities) not in (list, tuple):
+            errors.append("availabilities: must be a list with one value per server")
         else:
-            if type(values.get("server_count")) is int and len(reliabilities) != values["server_count"]:
-                errors.append("reliabilities: must have one value per server")
+            if type(values.get("server_count")) is int and len(availabilities) != values["server_count"]:
+                errors.append("availabilities: must have one value per server")
             if any(type(r) not in (int, float) or not isfinite(r) or not 0 < r <= 1
-                   for r in reliabilities):
-                errors.append("reliabilities: each value must be greater than 0 and at most 1")
+                   for r in availabilities):
+                errors.append("availabilities: each value must be greater than 0 and at most 1")
         if model == 'cpu_io':
-            errors.append("reliabilities: server outages require the simple request model")
-    if type(repair) not in (int, float) or not isfinite(repair) or repair <= 0:
-        errors.append("mean_repair_time: must be finite and greater than zero")
+            errors.append("availabilities: server outages require the simple request model")
+    # One shared repair time, or one per server like availabilities.
+    repairs = repair if type(repair) in (list, tuple) else [repair]
+    if type(repair) in (list, tuple) and type(values.get("server_count")) is int \
+            and len(repair) != values["server_count"]:
+        errors.append("mean_repair_time: use one value, or one value per server")
+    if not repairs or any(type(r) not in (int, float) or not isfinite(r) or r <= 0 for r in repairs):
+        errors.append("mean_repair_time: each value must be finite and greater than zero")
     if errors:
         raise ValueError("; ".join(errors))
     keys = ("server_count", "concurrency", "queue_limit", "arrival_rate", "duration",
@@ -75,10 +80,12 @@ def validate_config(values: Mapping) -> dict:
     # All-1.0 rates are the uniform model, so they keep the original nine-field config.
     if rates is not None and any(r != 1 for r in rates):
         config["processing_rates"] = tuple(float(r) for r in rates)
-    # Fully reliable fleets are the original model and keep the original config.
-    if reliabilities is not None and any(r < 1 for r in reliabilities):
-        config["reliabilities"] = tuple(float(r) for r in reliabilities)
-        config["mean_repair_time"] = float(repair)
+    # Always-available fleets are the original model and keep the original config.
+    if availabilities is not None and any(r < 1 for r in availabilities):
+        config["availabilities"] = tuple(float(r) for r in availabilities)
+        # A list of equal values is the same as one shared value.
+        config["mean_repair_time"] = (float(repairs[0]) if all(r == repairs[0] for r in repairs)
+                                      else tuple(float(r) for r in repairs))
     if model == 'cpu_io':
         config.update(request_model=model, io_fraction=fraction, outstanding_limit=cap, io_capacity=io_capacity)
         if mix is not None: config["io_heavy_probability"] = mix

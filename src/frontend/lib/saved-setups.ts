@@ -150,6 +150,27 @@ export function validConfig(value: unknown): value is Config {
     if(c.io_capacity!==undefined && (!Number.isSafeInteger(c.io_capacity)||c.io_capacity<1||c.io_capacity>4096)) return false;
     if(c.io_heavy_probability!==undefined && (typeof c.io_heavy_probability!=="number"||!Number.isFinite(c.io_heavy_probability)||c.io_heavy_probability<0||c.io_heavy_probability>1))return false;
   } else if(c.io_fraction!==undefined || c.outstanding_limit!==undefined || c.io_capacity!==undefined || c.io_heavy_probability!==undefined) return false;
+  if (
+    c.availabilities !== undefined &&
+    (c.request_model === "cpu_io" ||
+      !Array.isArray(c.availabilities) ||
+      c.availabilities.length !== c.server_count ||
+      !c.availabilities.every(
+        (n) => typeof n === "number" && Number.isFinite(n) && n > 0 && n <= 1,
+      ))
+  )
+    return false;
+  if (c.mean_repair_time !== undefined) {
+    const repairs = Array.isArray(c.mean_repair_time)
+      ? c.mean_repair_time
+      : [c.mean_repair_time];
+    if (
+      (Array.isArray(c.mean_repair_time) &&
+        c.mean_repair_time.length !== c.server_count) ||
+      !repairs.every((n) => typeof n === "number" && Number.isFinite(n) && n > 0)
+    )
+      return false;
+  }
   return (
     c.processing_rates === undefined ||
     (Array.isArray(c.processing_rates) &&

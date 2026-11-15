@@ -16,6 +16,16 @@ import type { RegionalTopology } from "@/lib/regions";
 import { RegionalSettings } from "@/components/regional-settings";
 import { RequestModelFields } from "@/components/request-model-fields";
 import { NumberField } from "@/components/number-field";
+import { AvailabilityFields } from "@/components/availability-fields";
+import {
+  formatDuration,
+  formatAvailabilities,
+  formatRepairTimes,
+  hasOutages,
+  outagesSupported,
+  repairTime,
+  resizeAvailabilities,
+} from "@/lib/availability";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -171,11 +181,14 @@ export function LabControls(p: Props) {
                     />
                   </>
                 ) : single ? (
+                  <>
                   <FieldGroup className="grid gap-4 sm:grid-cols-2">
                     <NumberField
                       label="Server count"
                       value={c.server_count}
-                      onChange={(n) => p.onChange({ ...c, server_count: n })}
+                      onChange={(n) =>
+                        p.onChange(resizeAvailabilities({ ...c, server_count: n }))
+                      }
                     />
                     <NumberField
                       label="Slots per server"
@@ -191,6 +204,17 @@ export function LabControls(p: Props) {
                       />
                     )}
                   </FieldGroup>
+                  <Separator />
+                  {outagesSupported(c, p.execution) ? (
+                    <AvailabilityFields config={c} onChange={p.onChange} />
+                  ) : (
+                    <FieldDescription>
+                      Server availability (random outages) can be set for
+                      one-shot runs with the simple request model.
+                      {hasOutages(c) && " This run ignores the availability you set."}
+                    </FieldDescription>
+                  )}
+                  </>
                 ) : (
                   <RegionalSettings
                     value={p.regional}
@@ -397,6 +421,22 @@ export function LabControls(p: Props) {
                             ? "Mixed CPU / I/O"
                             : "CPU → I/O → CPU",
                       ],
+                      ...(single && hasOutages(c) && outagesSupported(c, p.execution)
+                        ? [
+                            [
+                              "Availability",
+                              `${
+                                c.availabilities!.every((r) => r === c.availabilities![0])
+                                  ? formatAvailabilities(c.availabilities)
+                                  : "Per server"
+                              } · MTTR ${
+                                formatRepairTimes(c.mean_repair_time).includes(",")
+                                  ? "per server"
+                                  : formatDuration(repairTime(c))
+                              }`,
+                            ],
+                          ]
+                        : []),
                       ...(p.execution === "one_shot"
                         ? [
                             [

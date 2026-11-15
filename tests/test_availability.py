@@ -1,7 +1,8 @@
-"""Server reliability: random outages, health-checked routing and re-routing.
+"""Server availability: random outages, health-checked routing and re-routing.
 
-Reliability A is the long-run fraction of time a server is up. Down periods
-average `mean_repair_time` (MTTR); up periods average MTTR * A / (1 - A).
+Each server's availability A is the long-run fraction of time it is up.
+Down periods average `mean_repair_time` (MTTR, shared or one per server); up
+periods average MTTR * A / (1 - A).
 Requests running or queued on a failing server are re-routed to an up server
 and restart from scratch, keeping their original arrival time.
 """
@@ -15,7 +16,7 @@ from lbsim.api import create_app
 from lbsim.continuous import ContinuousSimulation
 from lbsim.exports import build_exports
 from lbsim.policies import RoutingContext, create_policy
-from lbsim.reliability import outage_schedule
+from lbsim.availability import outage_schedule
 from lbsim.server import Request, Server
 from lbsim.settings import validate_config
 from lbsim.simulation import run_simulation
@@ -111,7 +112,7 @@ class PolicyAvailabilityTests(unittest.TestCase):
 
 
 class OutageScheduleTests(unittest.TestCase):
-    def test_fully_reliable_servers_never_fail(self):
+    def test_always_available_servers_never_fail(self):
         self.assertEqual(outage_schedule((1.0, 1.0), 2.0, 100.0, 1), {0: [], 1: []})
 
     def test_deterministic_per_seed(self):
@@ -132,13 +133,24 @@ class OutageScheduleTests(unittest.TestCase):
                 self.assertGreaterEqual(end, start)
                 previous_end = end
 
-    def test_long_run_fraction_up_matches_reliability(self):
+    def test_long_run_fraction_up_matches_availability(self):
         duration = 50_000.0
-        for reliability in (.5, .8, .95):
-            with self.subTest(reliability=reliability):
+        for availability in (.5, .8, .95):
+            with self.subTest(availability=availability):
                 down = sum(min(end, duration) - start for start, end in
-                           outage_schedule((reliability,), 1.0, duration, 2)[0])
-                self.assertAlmostEqual(1 - down / duration, reliability, delta=.02)
+                           outage_schedule((availability,), 1.0, duration, 2)[0])
+                self.assertAlmostEqual(1 - down / duration, availability, delta=.02)
+
+    def test_per_server_repair_times_set_each_servers_outage_length(self):
+        schedule = outage_schedule((.9, .9), (.5, 4.0), 50_000.0, 6)
+        for sid, repair in ((0, .5), (1, 4.0)):
+            intervals = schedule[sid]
+            mean = sum(end - start for start, end in intervals) / len(intervals)
+            self.assertAlmostEqual(mean, repair, delta=repair * .1)
+
+    def test_shared_repair_time_matches_a_list_of_equal_values(self):
+        self.assertEqual(outage_schedule((.8, .6), 2.0, 300.0, 3),
+                         outage_schedule((.8, .6), (2.0, 2.0), 300.0, 3))
 
     def test_mean_repair_time_sets_outage_length(self):
         for repair in (.5, 4.0):
@@ -210,7 +222,7 @@ class EngineOutageTests(unittest.TestCase):
                 plain_events, aware_events = [], []
                 plain = route(**config, events=plain_events)
                 aware = route(**config, events=aware_events,
-                              reliabilities=(1.0, 1.0, 1.0), mean_repair_time=2.0)
+                              availabilities=(1.0, 1.0, 1.0), mean_repair_time=2.0)
                 self.assertEqual(plain, aware)
                 self.assertEqual(plain_events, aware_events)
 
@@ -219,31 +231,43 @@ class ConfigTests(unittest.TestCase):
     def base(self, **extra):
         return {**BASE, **extra}
 
-    def test_all_reliable_keeps_the_original_config(self):
-        self.assertEqual(validate_config(self.base(reliabilities=[1, 1.0, 1])),
+    def test_all_available_keeps_the_original_config(self):
+        self.assertEqual(validate_config(self.base(availabilities=[1, 1.0, 1])),
                          validate_config(self.base()))
-        self.assertEqual(validate_config(self.base(reliabilities=[1, 1, 1], mean_repair_time=3)),
+        self.assertEqual(validate_config(self.base(availabilities=[1, 1, 1], mean_repair_time=3)),
                          validate_config(self.base()))
 
-    def test_unreliable_servers_are_kept_with_default_repair_time(self):
-        config = validate_config(self.base(reliabilities=[1, .5, .9]))
-        self.assertEqual(config["reliabilities"], (1.0, .5, .9))
+    def test_servers_with_outages_are_kept_with_default_repair_time(self):
+        config = validate_config(self.base(availabilities=[1, .5, .9]))
+        self.assertEqual(config["availabilities"], (1.0, .5, .9))
         self.assertEqual(config["mean_repair_time"], 1.0)
-        config = validate_config(self.base(reliabilities=[1, .5, .9], mean_repair_time=4))
+        config = validate_config(self.base(availabilities=[1, .5, .9], mean_repair_time=4))
         self.assertEqual(config["mean_repair_time"], 4.0)
 
-    def test_invalid_reliability_settings_are_rejected(self):
+    def test_repair_time_may_be_one_value_per_server(self):
+        config = validate_config(self.base(availabilities=[1, .5, .9], mean_repair_time=[1, 2, 3]))
+        self.assertEqual(config["mean_repair_time"], (1.0, 2.0, 3.0))
+        # Equal values collapse to the shared form.
+        config = validate_config(self.base(availabilities=[1, .5, .9], mean_repair_time=[2, 2, 2]))
+        self.assertEqual(config["mean_repair_time"], 2.0)
+        summary = run_simulation(self.base(availabilities=[1, .5, .9], mean_repair_time=[1, 2, 3]))
+        self.assertIn("per_server_availability", summary)
+
+    def test_invalid_availability_settings_are_rejected(self):
         bad = [
-            dict(reliabilities=[1, 0, 1]),
-            dict(reliabilities=[1, 1.5, 1]),
-            dict(reliabilities=[1, float("nan"), 1]),
-            dict(reliabilities=[1, True, 1]),
-            dict(reliabilities=[1, .5]),
-            dict(reliabilities=".5"),
-            dict(reliabilities=[1, .5, 1], mean_repair_time=0),
-            dict(reliabilities=[1, .5, 1], mean_repair_time=float("inf")),
-            dict(reliabilities=[1, .5, 1], mean_repair_time="2"),
-            dict(reliabilities=[1, .5, 1], request_model="cpu_io", outstanding_limit=4),
+            dict(availabilities=[1, 0, 1]),
+            dict(availabilities=[1, 1.5, 1]),
+            dict(availabilities=[1, float("nan"), 1]),
+            dict(availabilities=[1, True, 1]),
+            dict(availabilities=[1, .5]),
+            dict(availabilities=".5"),
+            dict(availabilities=[1, .5, 1], mean_repair_time=0),
+            dict(availabilities=[1, .5, 1], mean_repair_time=float("inf")),
+            dict(availabilities=[1, .5, 1], mean_repair_time="2"),
+            dict(availabilities=[1, .5, 1], mean_repair_time=[1, 2]),
+            dict(availabilities=[1, .5, 1], mean_repair_time=[1, 0, 2]),
+            dict(availabilities=[1, .5, 1], mean_repair_time=[]),
+            dict(availabilities=[1, .5, 1], request_model="cpu_io", outstanding_limit=4),
         ]
         for extra in bad:
             with self.subTest(extra=extra):
@@ -253,7 +277,7 @@ class ConfigTests(unittest.TestCase):
 
 class SummaryAndIntegrationTests(unittest.TestCase):
     # Up periods average ~2.3 s and 4 s, so a 20 s run reliably sees outages.
-    CONFIG = {**BASE, "reliabilities": [1.0, .7, .8], "mean_repair_time": 1.0}
+    CONFIG = {**BASE, "availabilities": [1.0, .7, .8], "mean_repair_time": 1.0}
 
     def test_summary_reports_outages_only_when_configured(self):
         plain = run_simulation(BASE)
@@ -273,7 +297,7 @@ class SummaryAndIntegrationTests(unittest.TestCase):
     def test_summary_is_deterministic(self):
         self.assertEqual(run_simulation(self.CONFIG), run_simulation(self.CONFIG))
 
-    def test_recorded_run_api_accepts_reliability(self):
+    def test_recorded_run_api_accepts_availability(self):
         expected = run_simulation(self.CONFIG)
         with TestClient(create_app()) as client:
             response = client.post("/v1/runs", json={"config": self.CONFIG})
@@ -282,11 +306,11 @@ class SummaryAndIntegrationTests(unittest.TestCase):
             for key in ("completed_count", "rejected_count", "rerouted_count"):
                 self.assertEqual(summary[key], expected[key])
 
-    def test_unsupported_paths_reject_reliability(self):
+    def test_unsupported_paths_reject_availability(self):
         config = validate_config(self.CONFIG)
-        with self.assertRaisesRegex(ValueError, "reliab"):
+        with self.assertRaisesRegex(ValueError, "outage"):
             build_exports(config, run_simulation(config))
-        with self.assertRaisesRegex(ValueError, "reliab"):
+        with self.assertRaisesRegex(ValueError, "outage"):
             ContinuousSimulation(config)
 
 

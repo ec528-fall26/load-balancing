@@ -31,6 +31,11 @@ import {
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Config, defaults, engineRequest, Run } from "@/lib/engine";
 import { Results, seconds } from "@/components/results";
+import {
+  hasOutages,
+  outagesSupported,
+  withoutOutages,
+} from "@/lib/availability";
 import previewRun from "@/lib/preview-run.json";
 import { Button } from "@/components/ui/button";
 import {
@@ -502,7 +507,13 @@ export default function SimulationWorkspace({
     try {
       const result = await engineRequest<Run>(
         operation,
-        operation === "run" ? { config } : { configuration: saved?.text },
+        operation === "run"
+          ? {
+              config: outagesSupported(config, "one_shot")
+                ? config
+                : withoutOutages(config),
+            }
+          : { configuration: saved?.text },
       );
       setRun(result);
       setPreview(false);
@@ -720,7 +731,14 @@ export default function SimulationWorkspace({
                   return;
                 }
                 if (execution === "continuous") {
-                  if (await live.create(draftConfig)) {
+                  // Live sessions do not model outages.
+                  if (
+                    await live.create(
+                      topology === "regions"
+                        ? draftConfig
+                        : withoutOutages(config),
+                    )
+                  ) {
                     setLabExecution("continuous");
                     setLabTopology(topology);
                     setLabName(setupName);
@@ -954,7 +972,8 @@ export default function SimulationWorkspace({
                 </Panel>
                 {run.run_id &&
                   run.config.request_model !== "cpu_io" &&
-                  !run.config.processing_rates?.some((rate) => rate !== 1) && (
+                  !run.config.processing_rates?.some((rate) => rate !== 1) &&
+                  !hasOutages(run.config) && (
                     <Panel title="Download run">
                       <p className="caption mb-4">
                         Download the last completed run&apos;s configuration and

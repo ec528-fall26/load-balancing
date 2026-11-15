@@ -10,6 +10,10 @@ export type Config = {
   service_max: number;
   seed: number;
   processing_rates?: number[];
+  /** Fraction of time each server is up (0–1]; omitted means servers never fail. */
+  availabilities?: number[];
+  /** Average outage length in seconds (MTTR): one shared value or one per server. */
+  mean_repair_time?: number | number[];
   request_model?: "simple" | "cpu_io";
   io_fraction?: number;
   outstanding_limit?: number;
@@ -38,6 +42,10 @@ export type Summary = {
   p95_response_time: number | null;
   response_times: number[];
   per_server_utilization: Record<string, number>;
+  /** Present only for runs with server outages. */
+  rerouted_count?: number;
+  outages?: Record<string, [number, number][]>;
+  per_server_availability?: Record<string, number>;
   events: Event[];
 };
 export type Run = {

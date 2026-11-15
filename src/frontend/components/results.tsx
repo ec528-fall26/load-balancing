@@ -27,6 +27,8 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Notice } from "./surface";
+import { AvailabilityNote } from "./availability-note";
+import { repairTime } from "@/lib/availability";
 export const seconds = (v: number | null) =>
   v === null ? "N/A" : `${v.toFixed(3)} s`;
 export function Results({ run }: { run: Run }) {
@@ -49,6 +51,8 @@ export function Results({ run }: { run: Run }) {
     [s.per_server_utilization],
   );
   const total = s.completed_count + s.rejected_count;
+  const availability = s.per_server_availability;
+  const outageCount = (id: number) => s.outages?.[String(id)]?.length ?? 0;
   return (
     <div className="flex min-w-0 flex-col gap-6">
       <div className="flex flex-wrap items-center gap-2">
@@ -143,6 +147,51 @@ export function Results({ run }: { run: Run }) {
               </CardContent>
             </Card>
           </div>
+          {availability && (
+            <Card className="min-w-0">
+              <CardHeader>
+                <CardTitle>Server outages</CardTitle>
+                <CardDescription>
+                  How did random server failures affect this run?
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-4">
+                <dl className="grid grid-cols-2 gap-6 xl:grid-cols-3">
+                  {[
+                    [
+                      "Re-routed requests",
+                      (s.rerouted_count ?? 0).toLocaleString(),
+                    ],
+                    [
+                      "Outages",
+                      rows
+                        .reduce((n, r) => n + outageCount(r.id), 0)
+                        .toLocaleString(),
+                    ],
+                    [
+                      "Lowest availability",
+                      `${(Math.min(...Object.values(availability)) * 100).toFixed(1)}%`,
+                    ],
+                  ].map(([label, value]) => (
+                    <div key={label}>
+                      <dt className="text-sm text-muted-foreground">{label}</dt>
+                      <dd className="mt-1 text-xl font-semibold tabular-nums">
+                        {value}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+                <AvailabilityNote config={c} />
+                <p className="caption">
+                  Measured availability is the share of the arrival window each
+                  server was up; over a short window it can differ from the
+                  configured availability. Per-server values are under Server
+                  details. Re-routed requests restart on another server and keep
+                  their original arrival time.
+                </p>
+              </CardContent>
+            </Card>
+          )}
           <Card className="min-w-0">
             <CardHeader>
               <CardTitle>Per-server utilization</CardTitle>
@@ -173,6 +222,14 @@ export function Results({ run }: { run: Run }) {
               <TableRow>
                 <TableHead>Server ID</TableHead>
                 <TableHead>Slot utilization (%)</TableHead>
+                {availability && (
+                  <>
+                    <TableHead>Configured availability</TableHead>
+                    <TableHead>MTTR (s)</TableHead>
+                    <TableHead>Measured availability (%)</TableHead>
+                    <TableHead>Outages</TableHead>
+                  </>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -180,6 +237,16 @@ export function Results({ run }: { run: Run }) {
                 <TableRow key={r.id}>
                   <TableCell>{r.id}</TableCell>
                   <TableCell>{r.utilization.toFixed(2)}</TableCell>
+                  {availability && (
+                    <>
+                      <TableCell>{c.availabilities?.[r.id] ?? 1}</TableCell>
+                      <TableCell>{repairTime(c, r.id)}</TableCell>
+                      <TableCell>
+                        {((availability[String(r.id)] ?? 1) * 100).toFixed(2)}
+                      </TableCell>
+                      <TableCell>{outageCount(r.id)}</TableCell>
+                    </>
+                  )}
                 </TableRow>
               ))}
             </TableBody>

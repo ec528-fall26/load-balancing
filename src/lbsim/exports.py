@@ -39,8 +39,8 @@ def build_exports(config: dict, summary: dict) -> RunExports:
     if "processing_rates" in config:
         raise ValueError("Exports do not support per-server processing rates yet "
                          "(schema version 1 has nine settings).")
-    if "reliabilities" in config:
-        raise ValueError("Exports do not support server reliability outages yet "
+    if "availabilities" in config:
+        raise ValueError("Exports do not support server outages yet "
                          "(schema version 1 has nine settings).")
     metrics = {key: summary[key] for key in (
         "completed_count", "rejected_count", "mean_response_time",
