@@ -218,13 +218,6 @@ export function Results({ run }: { run: Run }) {
                   duration={c.duration}
                 />
                 <AvailabilityNote config={c} />
-                <p className="caption">
-                  % down is measured over the arrival window; over a short
-                  window it can differ from the configured availability.
-                  Re-routed requests were moved off a server when it failed and
-                  restarted elsewhere, keeping their original arrival time;
-                  dropped ones found no server with room.
-                </p>
               </CardContent>
             </Card>
           )}
