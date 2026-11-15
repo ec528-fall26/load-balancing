@@ -2,22 +2,27 @@
 
 Uses the same Server admission/completion behavior as one-shot runs. No request
 trace or completed execution list is retained. The service owns advancement.
+
+Server outages (optional `availabilities` / `mean_repair_time`) follow the same
+seeded up/down streams as one-shot runs, drawn one period at a time as servers
+change state. `fail_server` takes a server down immediately for exactly its MTTR.
+At equal times a completion is handled first, then a server change, then an
+arrival, matching the one-shot engine.
 """
 
 from collections import deque
-from heapq import heappop, heappush
+from heapq import heapify, heappop, heappush
 from math import ceil, inf, isfinite
 from random import Random
 from time import perf_counter
 
+from lbsim.availability import down_period, repair_times, server_rng, up_period
 from lbsim.server import Request, Server
 from lbsim.policies import RoutingContext, create_policy
 
 
 class ContinuousSimulation:
     def __init__(self, config, *, response_window=2000, history_points=240):
-        if "availabilities" in config:
-            raise ValueError("Live simulations do not support server outages yet.")
         self.config = dict(config)
         count = config["server_count"]
         rates = config.get("processing_rates", [1.0] * count)
@@ -34,7 +39,30 @@ class ContinuousSimulation:
         self.routing = create_policy(config["policy"], RoutingContext(
             count, lambda i: self.servers[i].running_count,
             demand=lambda i: self.servers[i].running_count+self.servers[i].waiting_count,
-            routing_rng=Random(config["seed"] + 1000000)))
+            routing_rng=Random(config["seed"] + 1000000),
+            # Health check; with every server up, routing is unchanged.
+            available=lambda i: self.servers[i].up))
+        # Outages. Telemetry appears only once outages are possible, so sessions
+        # without them keep their original snapshots.
+        self.availabilities = [float(a) for a in config.get("availabilities", [1.0] * count)]
+        self.mttr = repair_times(config.get("mean_repair_time", 1.0), count)
+        self.outage_rngs = [server_rng(config["seed"], sid) for sid in range(count)]
+        self.outages_enabled = "availabilities" in config
+        self.transitions = []  # (time, sequence, server, "down" | "up")
+        self.next_change = [None] * count  # sequence of each server's live transition
+        self.transition_sequence = 0
+        self.up_count = count
+        self.down_since = [None] * count
+        self.downtime = [0.0] * count
+        self.outage_count = [0] * count
+        self.rerouted_from = [0] * count
+        self.dropped_from = [0] * count
+        self.rerouted = self.reroute_rejected = self.no_server_up = 0
+        for sid, availability in enumerate(self.availabilities):
+            if availability < 1:
+                self._schedule(
+                    up_period(self.outage_rngs[sid], availability, self.mttr[sid]),
+                    sid, "down")
         self.active = [0] * count
         self.queued = [0] * count
         self.areas = [0.0] * count
@@ -57,6 +85,96 @@ class ContinuousSimulation:
     def _touch(self, sid):
         self.areas[sid] += (self.now - self.area_times[sid]) * self.active[sid]
         self.area_times[sid] = self.now
+
+    def _schedule(self, time, sid, kind):
+        """Make this the server's only live transition; older ones become stale."""
+        self.transition_sequence += 1
+        self.next_change[sid] = self.transition_sequence
+        heappush(self.transitions, (time, self.transition_sequence, sid, kind))
+
+    def _go_down(self, sid, recover_at):
+        self._touch(sid)
+        dropped = self.servers[sid].fail(self.now)
+        self.running -= self.active[sid]
+        self.waiting -= self.queued[sid]
+        if self.active[sid]:
+            self.pending = [p for p in self.pending if p[1] != sid]
+            heapify(self.pending)
+        self.active[sid] = self.queued[sid] = 0
+        self.up_count -= 1
+        self.down_since[sid] = self.now
+        self.outage_count[sid] += 1
+        self.routing.update(sid)
+        self._schedule(recover_at, sid, "up")
+        # Running then queued work goes back through the load balancer and
+        # restarts, keeping its original arrival time.
+        for request in dropped:
+            self._reroute(request, sid)
+
+    def _reroute(self, request, failed):
+        if self.up_count == 0:
+            self.rejected += 1
+            self.reroute_rejected += 1
+            self.dropped_from[failed] += 1
+            return
+        target = self.routing.choose()
+        self._touch(target)
+        admission = self.servers[target].submit(request, self.now)
+        if admission.status == "started":
+            self.active[target] += 1
+            self.running += 1
+            heappush(self.pending, (admission.execution.completion_time, target, request.id))
+        elif admission.status == "queued":
+            self.queued[target] += 1
+            self.waiting += 1
+        self.routing.update(target)
+        if admission.status == "rejected":
+            self.rejected += 1
+            self.reroute_rejected += 1
+            self.dropped_from[failed] += 1
+        else:
+            self.rerouted += 1
+            self.rerouted_from[failed] += 1
+
+    def _go_up(self, sid):
+        self.servers[sid].recover(self.now)
+        self.up_count += 1
+        self.downtime[sid] += self.now - self.down_since[sid]
+        self.down_since[sid] = None
+        self.routing.update(sid)
+        availability = self.availabilities[sid]
+        if availability < 1:
+            self._schedule(
+                self.now + up_period(self.outage_rngs[sid], availability, self.mttr[sid]),
+                sid, "down")
+        else:
+            self.next_change[sid] = None
+
+    def _transition(self):
+        time, sequence, sid, kind = heappop(self.transitions)
+        if sequence != self.next_change[sid]:
+            return  # replaced by a manual failure
+        self._time(time)
+        if kind == "down":
+            self._go_down(sid, self.now + down_period(self.outage_rngs[sid], self.mttr[sid]))
+        else:
+            self._go_up(sid)
+
+    def fail_server(self, sid):
+        """Take a server down now for exactly its MTTR. Invalid or down: no-op."""
+        if type(sid) is not int or not 0 <= sid < len(self.servers) or not self.servers[sid].up:
+            return False
+        self.outages_enabled = True
+        self._go_down(sid, self.now + self.mttr[sid])
+        return True
+
+    def _availability(self, sid):
+        if not self.now:
+            return 1.0
+        down = self.downtime[sid]
+        if self.down_since[sid] is not None:
+            down += self.now - self.down_since[sid]
+        return 1 - down / self.now
 
     def set_rate(self, rate):
         if (
@@ -81,14 +199,17 @@ class ContinuousSimulation:
             perf_counter() + budget_seconds if budget_seconds is not None else inf
         )
         processed = 0
-        while (
-            min(self.next_arrival, self.pending[0][0] if self.pending else inf)
-            <= target
-        ):
+        while True:
+            next_completion = self.pending[0][0] if self.pending else inf
+            next_transition = self.transitions[0][0] if self.transitions else inf
+            if min(self.next_arrival, next_completion, next_transition) > target:
+                break
             if processed >= max_events or perf_counter() >= deadline:
                 return False
             processed += 1
-            if self.pending and self.pending[0][0] <= self.next_arrival:
+            if next_transition < next_completion and next_transition <= self.next_arrival:
+                self._transition()
+            elif self.pending and next_completion <= self.next_arrival:
                 now, sid, rid = heappop(self.pending)
                 self._time(now)
                 self._touch(sid)
@@ -112,6 +233,16 @@ class ContinuousSimulation:
                     self.active[sid] -= 1
                     self.running -= 1
                 self.routing.update(sid)
+            elif self.up_count == 0:
+                # Every server is down. Still draw the service time so the
+                # request stream stays aligned with one-shot runs.
+                self._time(self.next_arrival)
+                self.rng.uniform(self.config["service_min"], self.config["service_max"])
+                self.offered += 1
+                self.rejected += 1
+                self.no_server_up += 1
+                self.arrival_index += 1
+                self.next_arrival = self.anchor + self.arrival_index / self.rate
             else:
                 self._time(self.next_arrival)
                 rid = self.offered
@@ -152,6 +283,8 @@ class ContinuousSimulation:
                 rejected=self.rejected,
                 running=self.running,
                 waiting=self.waiting,
+                **(dict(servers_down=len(self.servers) - self.up_count)
+                   if self.outages_enabled else {}),
             )
         )
 
@@ -187,9 +320,34 @@ class ContinuousSimulation:
                     mean_slot_utilization=area / (self.now * self.config["concurrency"])
                     if self.now
                     else 0.0,
+                    **(dict(
+                        up=self.servers[sid].up,
+                        measured_availability=self._availability(sid),
+                        outage_count=self.outage_count[sid],
+                        rerouted=self.rerouted_from[sid],
+                        dropped=self.dropped_from[sid],
+                    ) if self.outages_enabled else {}),
                 )
             )
+        outages = {}
+        if self.outages_enabled:
+            outages = dict(
+                outages=dict(
+                    servers_down=len(self.servers) - self.up_count,
+                    outage_count=sum(self.outage_count),
+                    rerouted=self.rerouted,
+                    reroute_rejected=self.reroute_rejected,
+                    no_server_up=self.no_server_up,
+                ),
+                # Every rejection falls in exactly one bucket.
+                rejected_breakdown=dict(
+                    queue_full=self.rejected - self.no_server_up - self.reroute_rejected,
+                    no_server_up=self.no_server_up,
+                    reroute_rejected=self.reroute_rejected,
+                ),
+            )
         return dict(
+            **outages,
             simulation_time=self.now,
             config=self.config,
             arrival_rate=self.rate,

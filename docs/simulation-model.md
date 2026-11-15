@@ -217,14 +217,25 @@ seeded workloads between policies. Whole-run invariants cover both policies.
 
 Optional config fields `availabilities` (one value in (0, 1] per server) and
 `mean_repair_time` (MTTR in seconds, one shared value or one per server,
-default 1) let servers fail during one-shot runs of the simple request model.
+default 1) let servers fail in one-shot runs and continuous sessions of the
+simple request model.
 
 - Availability A is the long-run fraction of time a server is up. Each server
   alternates up and down periods drawn from exponential distributions with
   means MTBF = MTTR × A / (1 − A) and MTTR, so MTBF / (MTBF + MTTR) = A.
-- The schedule (`outage_schedule` in `src/lbsim/availability.py`) is generated
-  before the run from its own seeded generator, so the request trace and
-  routing draws are unchanged. Every server starts up.
+- Each server draws its periods from its own seeded stream
+  (`src/lbsim/availability.py`), separate from the request trace and routing
+  draws. Every server starts up. One-shot runs generate the whole window first
+  (`outage_schedule`); continuous sessions (`ContinuousSimulation`) draw the
+  next period whenever a server goes down or up. With the same seed, a
+  continuous session's first T seconds have the same outages as a T-second
+  one-shot run.
+- Continuous sessions also accept the `fail_server` command (value: server
+  number). It takes that server down immediately for exactly its MTTR (1 s when
+  no availability is configured); invalid or already-down servers are ignored.
+  Session snapshots gain `outages`, `rejected_breakdown`, and per-server `up`,
+  `measured_availability`, `outage_count`, `rerouted`, and `dropped` once
+  outages are possible.
 - At equal timestamps a completion is handled first, then a server going down
   or up, then an arrival.
 - Routing policies skip down servers. When a server fails, its running and

@@ -205,12 +205,12 @@ export function LabControls(p: Props) {
                     )}
                   </FieldGroup>
                   <Separator />
-                  {outagesSupported(c, p.execution) ? (
+                  {outagesSupported(c) ? (
                     <AvailabilityFields config={c} onChange={p.onChange} />
                   ) : (
                     <FieldDescription>
-                      Server availability (random outages) can be set for
-                      one-shot runs with the simple request model.
+                      Server availability (random outages) can be set for the
+                      simple request model.
                       {hasOutages(c) && " This run ignores the availability you set."}
                     </FieldDescription>
                   )}
@@ -421,7 +421,7 @@ export function LabControls(p: Props) {
                             ? "Mixed CPU / I/O"
                             : "CPU → I/O → CPU",
                       ],
-                      ...(single && hasOutages(c) && outagesSupported(c, p.execution)
+                      ...(single && hasOutages(c) && outagesSupported(c)
                         ? [
                             [
                               "Availability",

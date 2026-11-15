@@ -6,6 +6,9 @@ import type { Config } from "./engine";
  * `mean_repair_time` the MTTR (shared or per server); MTBF follows from both.
  */
 
+/** A one-shot config, or a continuous one (which has no arrival window). */
+export type OutageConfig = Omit<Config, "duration"> & { duration?: number };
+
 // Matches the Python default in lbsim/settings.py.
 export const DEFAULT_REPAIR_TIME = 1;
 
@@ -20,7 +23,7 @@ export function formatPercent(fraction: number): string {
 }
 
 /** Mean time to recover for one server: a shared value or that server's own. */
-export function repairTime(config: Config, sid = 0): number {
+export function repairTime(config: OutageConfig, sid = 0): number {
   const value = config.mean_repair_time ?? DEFAULT_REPAIR_TIME;
   return Array.isArray(value) ? value[sid] : value;
 }
@@ -38,13 +41,13 @@ export function formatRepairTimes(value: number | number[] | undefined): string 
 }
 
 /** True when at least one server can go down. */
-export function hasOutages(config: Config): boolean {
+export function hasOutages(config: OutageConfig): boolean {
   return !!config.availabilities?.some((r) => r < 1);
 }
 
-/** Outages are modeled only for one-shot runs of the simple request model. */
-export function outagesSupported(config: Config, execution: string): boolean {
-  return execution === "one_shot" && config.request_model !== "cpu_io";
+/** Outages are modeled for the simple request model, one-shot or continuous. */
+export function outagesSupported(config: OutageConfig): boolean {
+  return config.request_model !== "cpu_io";
 }
 
 export function withoutOutages(config: Config): Config {
@@ -76,7 +79,7 @@ export function resizeAvailabilities(config: Config): Config {
   return { ...config, availabilities: Array(config.server_count).fill(values[0]) };
 }
 
-export function availabilityError(config: Config): string | null {
+export function availabilityError(config: OutageConfig): string | null {
   const values = config.availabilities;
   if (values) {
     if (values.some((v) => !Number.isFinite(v) || v <= 0 || v > 1))
@@ -99,12 +102,12 @@ export type OutageGroup = {
   servers: number[];
   mtbf: number;
   mttr: number;
-  /** Expected outages per server during the arrival window. */
-  expectedOutages: number;
+  /** Expected outages per server during the arrival window; null without one. */
+  expectedOutages: number | null;
 };
 
 /** One note per distinct (availability, MTTR) pair below 1, by availability then MTTR. */
-export function availabilityNotes(config: Config): OutageGroup[] {
+export function availabilityNotes(config: OutageConfig): OutageGroup[] {
   if (availabilityError(config) || !hasOutages(config)) return [];
   const groups = new Map<string, { availability: number; mttr: number; servers: number[] }>();
   config.availabilities!.forEach((availability, sid) => {
@@ -124,7 +127,8 @@ export function availabilityNotes(config: Config): OutageGroup[] {
         servers,
         mtbf: up,
         mttr,
-        expectedOutages: config.duration / (up + mttr),
+        expectedOutages:
+          config.duration === undefined ? null : config.duration / (up + mttr),
       };
     });
 }

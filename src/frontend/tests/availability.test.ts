@@ -92,9 +92,9 @@ test("notes group servers by availability with MTBF, MTTR and expected outages",
     ],
   );
   close(notes[0].mtbf, 2);
-  close(notes[0].expectedOutages, 15);
+  close(notes[0].expectedOutages!, 15);
   close(notes[1].mtbf, 18);
-  close(notes[1].expectedOutages, 3);
+  close(notes[1].expectedOutages!, 3);
   assert.deepEqual(availabilityNotes({ ...config, availabilities: [1, 1, 1, 1] }), []);
   assert.deepEqual(availabilityNotes({ ...config, availabilities: [0.5] }), []);
   // Missing MTTR uses the backend default of 1 s.
@@ -152,13 +152,12 @@ test("durations and server lists read naturally", () => {
   assert.equal(formatServers([1, 3], 8), "Servers 1, 3");
 });
 
-test("outages only apply to one-shot simple runs and can be stripped", () => {
+test("outages apply to the simple request model and can be stripped", () => {
   const config = { ...defaults, availabilities: [0.9, 0.9], mean_repair_time: 2 };
   assert.ok(hasOutages(config));
   assert.ok(!hasOutages({ ...defaults, availabilities: [1, 1] }));
-  assert.ok(outagesSupported(config, "one_shot"));
-  assert.ok(!outagesSupported(config, "continuous"));
-  assert.ok(!outagesSupported({ ...config, request_model: "cpu_io" }, "one_shot"));
+  assert.ok(outagesSupported(config));
+  assert.ok(!outagesSupported({ ...config, request_model: "cpu_io" }));
   assert.deepEqual(withoutOutages(config), defaults);
 });
 

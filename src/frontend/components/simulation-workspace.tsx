@@ -509,7 +509,7 @@ export default function SimulationWorkspace({
         operation,
         operation === "run"
           ? {
-              config: outagesSupported(config, "one_shot")
+              config: outagesSupported(config)
                 ? config
                 : withoutOutages(config),
             }
@@ -731,12 +731,13 @@ export default function SimulationWorkspace({
                   return;
                 }
                 if (execution === "continuous") {
-                  // Live sessions do not model outages.
                   if (
                     await live.create(
                       topology === "regions"
                         ? draftConfig
-                        : withoutOutages(config),
+                        : outagesSupported(config)
+                          ? config
+                          : withoutOutages(config),
                     )
                   ) {
                     setLabExecution("continuous");

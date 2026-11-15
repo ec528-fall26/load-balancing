@@ -1,5 +1,5 @@
-import type { Config } from "@/lib/engine";
 import {
+  type OutageConfig,
   formatDuration,
   formatPercent,
   formatServers,
@@ -8,7 +8,7 @@ import {
 import { Notice } from "@/components/surface";
 
 /** Explains the MTBF and MTTR implied by each availability. */
-export function AvailabilityNote({ config }: { config: Config }) {
+export function AvailabilityNote({ config }: { config: OutageConfig }) {
   const notes = availabilityNotes(config);
   if (!notes.length) return null;
   return (
@@ -24,8 +24,13 @@ export function AvailabilityNote({ config }: { config: Config }) {
               : up for about an avg <strong>{formatDuration(n.mtbf)}</strong> between
               failures (MTBF), down about{" "}
               <strong>{formatDuration(n.mttr)}</strong> per failure (MTTR), so
-              about {formatPercent(1 - n.availability)} downtime. Expected failures in {formatDuration(config.duration)} arrival window:{" "}
-              <strong>{+n.expectedOutages.toFixed(1)}</strong>.
+              about {formatPercent(1 - n.availability)} downtime.
+              {n.expectedOutages !== null && config.duration !== undefined && (
+                <>
+                  {" "}Expected failures in {formatDuration(config.duration)} arrival window:{" "}
+                  <strong>{+n.expectedOutages.toFixed(1)}</strong>.
+                </>
+              )}
             </li>
           ))}
         </ul>

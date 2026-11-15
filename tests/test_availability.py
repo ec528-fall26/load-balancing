@@ -364,12 +364,13 @@ class SummaryAndIntegrationTests(unittest.TestCase):
             for key in ("completed_count", "rejected_count", "rerouted_count"):
                 self.assertEqual(summary[key], expected[key])
 
-    def test_unsupported_paths_reject_availability(self):
+    def test_exports_reject_availability(self):
         config = validate_config(self.CONFIG)
         with self.assertRaisesRegex(ValueError, "outage"):
             build_exports(config, run_simulation(config))
-        with self.assertRaisesRegex(ValueError, "outage"):
-            ContinuousSimulation(config)
+        # Continuous sessions support outages (see test_continuous_availability.py).
+        config.pop("duration")
+        ContinuousSimulation(config)
 
 
 if __name__ == "__main__":

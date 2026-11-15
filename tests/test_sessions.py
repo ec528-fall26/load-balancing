@@ -231,7 +231,12 @@ class SessionTests(unittest.TestCase):
                 {"action": "set_rate", "value": True},
                 {"action": "set_rate"},
                 {"action": "set_rate", "value": 10**400},
-                {"action": "fail_server", "value": 0},
+                {"action": "fail_server", "value": -1},
+                {"action": "fail_server", "value": 1.5},
+                {"action": "fail_server", "value": 1000},
+                {"action": "fail_server", "value": True},
+                {"action": "fail_server"},
+                {"action": "fail_node", "value": 0},
             ):
                 response = client.post(f"/v1/sessions/{sid}/commands", json=body)
                 self.assertEqual(response.status_code, 422, response.text)

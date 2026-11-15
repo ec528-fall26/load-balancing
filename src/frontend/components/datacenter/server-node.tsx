@@ -17,8 +17,11 @@ export type ServerSnapshot = {
   ioQueued?: number;
   outstanding?: number;
   outstandingLimit?: number;
+  /** True while the server is down in an outage. */
+  down?: boolean;
 };
 export function serverStatus(server: ServerSnapshot) {
+  if (server.down) return { label: "Down", variant: "destructive" as const };
   if(server.outstandingLimit!==undefined && (server.outstanding??0)>=server.outstandingLimit) return {label:"Admission full",variant:"destructive" as const};
   if (server.queued > 0 && server.queued >= server.queueLimit)
     return { label: "Queue full", variant: "destructive" as const };
@@ -101,8 +104,9 @@ export function ServerNode({
   const status = serverStatus(server);
   return (
     <article
-      aria-label={`Server ${server.id} visualization`}
-      className="min-w-0 rounded-md border bg-background"
+      aria-label={`Server ${server.id} visualization${server.down ? " (down)" : ""}`}
+      data-down={server.down || undefined}
+      className="min-w-0 rounded-md border bg-background data-[down]:border-destructive/60 data-[down]:bg-destructive/5"
     >
       <Button
         variant="ghost"
@@ -121,7 +125,7 @@ export function ServerNode({
           <ChevronRight data-icon="inline-end" />
         </span>
       </Button>
-      <div className="px-3 pb-3">
+      <div className="px-3 pb-3 in-data-[down]:opacity-50">
         {averages ? (
           <div className="flex flex-col gap-2">
             <div className="flex justify-between gap-3 text-xs">

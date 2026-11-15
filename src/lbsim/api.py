@@ -163,7 +163,7 @@ class SessionRequest(BaseModel):
 
 class SessionCommand(BaseModel):
     model_config = ConfigDict(extra='forbid')
-    action: Literal['pause', 'resume', 'set_rate', 'set_speed']
+    action: Literal['pause', 'resume', 'set_rate', 'set_speed', 'fail_server']
     value: StrictFloat | StrictInt | None = None
 
 
@@ -244,6 +244,9 @@ def checked_command(action, value, session_limits):
     if action in ('pause', 'resume'):
         if value is not None:
             raise APIError(422, 'INVALID_COMMAND', 'Pause/resume commands do not take a value.')
+    elif action == 'fail_server':
+        if type(value) is not int or not 0 <= value < 1000:
+            raise APIError(422, 'INVALID_COMMAND', 'Choose a server number from 0 to 999.')
     elif not finite_number(value):
         raise APIError(422, 'INVALID_COMMAND', 'Command value must be finite.')
     elif action == 'set_rate' and not 0 <= value <= session_limits.max_arrival_rate:
