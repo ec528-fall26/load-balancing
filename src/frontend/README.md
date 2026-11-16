@@ -34,12 +34,11 @@ callouts, empty states, and playback widgets. Compose application behavior in
 `components/` rather than creating another set of styled HTML controls.
 
 Charts use the shadcn `ChartContainer` and tooltip components with Recharts v3.
-Vega is no longer a frontend dependency. Response samples are counted into at
-most 20 histogram bins before rendering; the p95 line uses the engine's exact
-reported percentile. Utilization uses bars for up to 40 servers and a line for
-larger pools. These rendering choices do not alter the engine metrics or bound
-the API response size. Playback still follows recorded events, not a running
-continuous simulation.
+Recorded runs and live sessions receive at most 20 histogram bins from Python.
+The p95 line uses the engine's reported percentile for the corresponding
+sample window. Utilization uses bars for up to 40 servers and a line for
+larger pools. One-shot playback seeks within a recording, while live views
+update from bounded worker snapshots.
 
 Add components with `npx shadcn@latest add <component>`. Use semantic theme
 variables in `app/globals.css`, built-in variants, and Lucide icons. The source

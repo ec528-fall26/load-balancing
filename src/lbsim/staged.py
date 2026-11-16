@@ -15,6 +15,9 @@ from time import perf_counter
 from lbsim.continuous import ContinuousSimulation
 from lbsim.policies import RoutingContext, create_policy
 
+CPU_HEAVY_IO_FRACTION = .1
+IO_HEAVY_IO_FRACTION = .9
+
 
 @dataclass
 class Work:
@@ -172,7 +175,11 @@ class StagedSimulation(ContinuousSimulation):
                 demand = self.rng.uniform(self.config['service_min'], self.config['service_max'])
                 fraction = self.config['io_fraction']
                 if 'io_heavy_probability' in self.config:
-                    fraction = .9 if self.type_rng.random() < self.config['io_heavy_probability'] else .1
+                    fraction = (
+                        IO_HEAVY_IO_FRACTION
+                        if self.type_rng.random() < self.config['io_heavy_probability']
+                        else CPU_HEAVY_IO_FRACTION
+                    )
                 self.workload_digest.update(pack("!qddd", rid, self.now, demand, fraction))
                 self.offered += 1
                 if self.outstanding[sid] >= self.config['outstanding_limit']:

@@ -29,38 +29,6 @@ import {
   AccordionContent,
 } from "@/components/ui/accordion";
 import { Notice } from "@/components/surface";
-export const initialRegions: RegionalTopology = {
-  regions: [
-    {
-      name: "us-east-1",
-      servers: 10,
-      slots_per_server: 4,
-      compute: 1,
-      queue_per_server: 10,
-    },
-    {
-      name: "us-east-2",
-      servers: 10,
-      slots_per_server: 4,
-      compute: 1,
-      queue_per_server: 10,
-    },
-    {
-      name: "us-west-1",
-      servers: 10,
-      slots_per_server: 4,
-      compute: 1,
-      queue_per_server: 10,
-    },
-  ],
-  latency_ms: [
-    [2, 12, 75],
-    [12, 2, 65],
-    [75, 65, 2],
-  ],
-  client_latency_ms: [2, 12, 75],
-  source: 0,
-};
 export function RegionalSettings({
   value,
   onChange,

@@ -314,6 +314,7 @@ class SummaryAndIntegrationTests(unittest.TestCase):
             summary = run_simulation(config)
         self.assertEqual(summary["rerouted_by_server"],
                          {0: {"rerouted": 0, "rejected": 0}, 1: {"rerouted": 1, "rejected": 0}})
+        self.assertAlmostEqual(summary["per_server_utilization"][1], .35)
         # With no queue space anywhere, the dropped request is rejected instead.
         config = {**config, "server_count": 1, "queue_limit": 1, "arrival_rate": 1.0,
                   "service_min": 5.0, "service_max": 5.0, "availabilities": [.5]}
@@ -323,6 +324,16 @@ class SummaryAndIntegrationTests(unittest.TestCase):
         self.assertEqual(summary["rerouted_count"], 1)
         self.assertEqual(summary["rejected_breakdown"],
                          {"queue_full": 0, "no_server_up": 0, "reroute_rejected": 1})
+
+    def test_interrupted_execution_counts_toward_utilization_but_not_latency(self):
+        config = {**BASE, "server_count": 1, "concurrency": 1, "arrival_rate": 1.0,
+                  "duration": 1.0, "service_min": 1.0, "service_max": 1.0,
+                  "availabilities": [.5]}
+        with patch("lbsim.simulation.outage_schedule", return_value={0: [(.5, 1.5)]}):
+            summary = run_simulation(config)
+        self.assertEqual((summary["completed_count"], summary["rejected_count"]), (0, 1))
+        self.assertEqual(summary["per_server_utilization"], {0: .5})
+        self.assertIsNone(summary["p95_response_time"])
 
     def test_rejected_breakdown_accounts_for_every_rejection(self):
         # Two servers down 40% of the time each: many arrivals find no server up.
@@ -363,6 +374,21 @@ class SummaryAndIntegrationTests(unittest.TestCase):
             summary = response.json()["summary"]
             for key in ("completed_count", "rejected_count", "rerouted_count"):
                 self.assertEqual(summary[key], expected[key])
+            path = f"/v1/runs/{response.json()['run_id']}"
+            start, _ = expected["outages"][1][0]
+            snapshot = client.get(f"{path}/snapshot", params={"time": start}).json()
+            eligible_idle = [
+                row for row in snapshot["servers"]["items"]
+                if row["running"] == row["waiting"] == 0
+                and not any(lo <= start < hi for lo, hi in expected["outages"][row["id"]])
+            ]
+            self.assertLess(len(eligible_idle), sum(
+                row["running"] == row["waiting"] == 0 for row in snapshot["servers"]["items"]
+            ))
+            self.assertEqual(snapshot["idle_servers"], len(eligible_idle))
+            page = client.get(f"{path}/events", params={"offset": 1_000_000})
+            self.assertEqual(page.status_code, 200)
+            self.assertEqual(page.json()["items"], [])
 
     def test_exports_reject_availability(self):
         config = validate_config(self.CONFIG)

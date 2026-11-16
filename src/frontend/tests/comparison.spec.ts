@@ -1,5 +1,25 @@
 import { test, expect } from "@playwright/test";
 
+test("Compare keeps a continuous draft and preserves an explicit variant window", async ({ page }) => {
+  await page.goto("/setup");
+  await page.getByLabel("Execution", { exact: true }).click();
+  await page.getByRole("option", { name: "Continuous", exact: true }).click();
+  await page.getByRole("spinbutton", { name: "Requests per second", exact: true }).fill("10000");
+  await page.getByRole("button", { name: "Compare current setup", exact: true }).click();
+
+  const baseline = page.getByRole("region", { name: "Baseline configuration", exact: true });
+  await expect(baseline).toContainText("10,000 requests/s");
+  const variant = page.getByRole("region", { name: "Variant A configuration", exact: true });
+  await variant.getByLabel("Change a setting", { exact: true }).click();
+  await page.getByRole("option", { name: "Arrival window", exact: true }).click();
+  await variant.getByRole("spinbutton", { name: "Arrival window", exact: true }).fill("1");
+  await baseline.getByRole("spinbutton", { name: "Comparison window (s)", exact: true }).fill("2");
+  await expect(variant.getByRole("spinbutton", { name: "Arrival window", exact: true })).toHaveValue("1.00");
+  await baseline.getByRole("spinbutton", { name: "Comparison traffic (requests/s)", exact: true }).fill("10");
+  await page.getByRole("button", { name: "Run comparison", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("Comparison complete.");
+});
+
 test("lab draft comparison runs baseline and two variants, retaining results on failure", async ({
   page, request,
 }) => {

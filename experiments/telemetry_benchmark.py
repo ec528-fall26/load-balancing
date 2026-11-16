@@ -116,11 +116,11 @@ def request_sample(client,url,method='GET',body=None):
 
 
 def main(args):
-    OUT.mkdir(parents=True,exist_ok=True)
+    args.results_dir.mkdir(parents=True, exist_ok=True)
     report=dict(recorded_at_utc=datetime.now(timezone.utc).isoformat(),git_head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),python=sys.version,platform=platform.platform(),cpu=platform.processor(),versions={p:importlib.metadata.version(p) for p in ('fastapi','uvicorn','httpx')},methodology=dict(servers=100,slots_per_server=4,queue_per_server=10,policy='round_robin',service_seconds=[.1,1.],one_shot_requests=100000,engine_continuous_cutoff_seconds=100,api_poll_delay_after_completion=.5,live_wall_seconds=args.seconds,regional_high_rate_soak_seconds=args.soak,isolated_backend=args.backend,isolated_proxy=args.frontend,api_pid=args.api_pid),engine=[],one_shot_api=[],live_api=[])
     report['source_hashes']={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in [ROOT/'src/lbsim/regional_engine.py',ROOT/'src/lbsim/continuous.py',ROOT/'src/lbsim/sessions.py',ROOT/'src/lbsim/api.py',Path(__file__)]}
     report['git_dirty']=bool(subprocess.check_output(['git','status','--porcelain'],cwd=ROOT))
-    def save(): (OUT/'api-engine.json').write_text(json.dumps(report,indent=2)+'\n')
+    def save(): (args.results_dir/'api-engine.json').write_text(json.dumps(report,indent=2)+'\n')
     if not args.skip_engine:
         for topology in ('single_pool','regions'):
             for rate in (1000,10000):
@@ -208,6 +208,8 @@ if __name__=='__main__':
     parser.add_argument('--seconds',type=float,default=20)
     parser.add_argument('--soak',type=float,default=130)
     parser.add_argument('--skip-engine',action='store_true')
+    parser.add_argument('--results-dir', type=Path, default=OUT,
+                        help='Directory for api-engine.json. Use a separate path for reruns.')
     args=parser.parse_args()
     if args.worker:print(json.dumps(engine_worker(args.worker[0],int(args.worker[1]),int(args.worker[2]),args.worker[3])))
     else:

@@ -7,11 +7,13 @@ from lbsim.server import Execution
 
 
 def summarize(completed: Iterable[Execution], rejected_ids: Iterable[int], *,
-              duration: float, server_capacities: Mapping[int, int]) -> dict:
+              duration: float, server_capacities: Mapping[int, int],
+              interrupted: Iterable[tuple[int, float, float]] = ()) -> dict:
     """Return counts, latency seconds and utilization fractions for every server.
 
     Pass all completed executions, including work finished during draining.
     Capacities map actual server IDs to their number of concurrent slots.
+    Interrupted attempts contribute occupancy only, as (server ID, start, stop).
     """
     if not isfinite(duration) or duration <= 0:
         raise ValueError("duration must be finite and positive")
@@ -33,6 +35,12 @@ def summarize(completed: Iterable[Execution], rejected_ids: Iterable[int], *,
             raise ValueError("execution times must be finite and ordered")
         latencies.append(end - execution.request.arrival_time)
         occupied[execution.server_id].append(max(0.0, min(end, duration) - max(start, 0.0)))
+    for server_id, start, stop in interrupted:
+        if server_id not in occupied:
+            raise ValueError("interrupted attempt references an unknown server")
+        if not isfinite(start) or not isfinite(stop) or stop < start:
+            raise ValueError("interrupted attempt times must be finite and ordered")
+        occupied[server_id].append(max(0.0, min(stop, duration) - max(start, 0.0)))
     latencies.sort()
     return {
         "completed_count": len(executions),

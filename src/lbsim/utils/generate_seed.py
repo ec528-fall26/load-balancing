@@ -6,13 +6,14 @@ from lbsim.policies import RoutingContext, create_policy, supports_policy
 
 def route(server_count: int, concurrency: int, queue_limit: int, policy: str, arrival_rate: float, duration: float, service_min: float, service_max: float, seed: int, events: list | None = None,
           processing_rates: tuple[float, ...] | None = None, availabilities: tuple[float, ...] | None = None,
-          mean_repair_time: float = 1.0, outages: dict | None = None):
+          mean_repair_time: float = 1.0, outages: dict | None = None, *,
+          interrupted: list[tuple[int, float, float]] | None = None):
     """Run the batch engine and return (completed executions, rejected request IDs).
 
     `availabilities` generates a seeded outage schedule (see lbsim.availability);
     `outages` supplies one directly as {server_id: [(down, up), ...]}. At equal
     timestamps a completion is handled first, then a server going down or up,
-    then an arrival.
+    then an arrival. `interrupted` collects occupied intervals up to failure.
     """
     if not supports_policy(policy):
         raise ValueError("Select a supported routing policy.")
@@ -55,7 +56,8 @@ def route(server_count: int, concurrency: int, queue_limit: int, policy: str, ar
         server_count, lambda i: server_map[i].running_count,
         demand=lambda i: server_map[i].running_count+server_map[i].waiting_count,
         routing_rng=random.Random(seed + 1000000),
-        available=(lambda i: server_map[i].up) if transitions else None))
+        available=(lambda i: server_map[i].up) if transitions else None,
+        all_available=lambda: up_count == server_count))
 
     # Continue until there are no more requests, pending completions or outages
     while requests or pending or transitions:
@@ -99,6 +101,8 @@ def route(server_count: int, concurrency: int, queue_limit: int, policy: str, ar
                 if events is not None:
                     events.append((now, server.id, server.running_count, server.waiting_count, "server_up", None))
                 continue
+            if interrupted is not None:
+                interrupted.extend((server_id, attempt.start_time, now) for attempt in server.running)
             dropped = server.fail(now)
             up_count -= 1
             gone = {r.id for r in dropped}

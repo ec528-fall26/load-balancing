@@ -18,6 +18,7 @@ jobs:
           cache-dependency-path: src/frontend/package-lock.json
       - run: uv sync --locked
       - run: uv run --locked python -m unittest discover -s tests
+      - run: uv run --locked python scripts/generate_policy_metadata.py --check
       - run: npm ci
         working-directory: src/frontend
       - run: npm run build

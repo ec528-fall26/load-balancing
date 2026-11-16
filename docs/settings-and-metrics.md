@@ -1,12 +1,12 @@
 # Settings form and summary metrics
 
-The app connects the settings form, simulator, metrics and result display (D2-11) on `dev`.
+This guide describes the bundled Streamlit frontend. Use the [quick start](../README.md#quick-start) for the current Next.js Lab.
 
 ## Run locally
 
 ```sh
 uv sync --locked
-PYTHONPATH=src uv run streamlit run src/lbsim/app.py
+uv run --locked streamlit run src/lbsim/app.py
 uv run python -m unittest discover -s tests -v
 ```
 
@@ -18,15 +18,12 @@ as a plain dictionary in `st.session_state["config"]`.
 
 The results come from the selected configuration after all accepted requests
 finish. A new run replaces the previous configuration and summary. Invalid
-settings clear the previous results. The form supports round-robin and
-least-active-requests. Least-active-requests reads current running counts before
+settings clear the previous results. The form lists the single-pool policies provided by the routing registry. Least-active-requests reads current running counts before
 each decision and breaks ties by lowest server ID. Waiting requests do not count;
 a full selected server rejects the request without trying another server.
 
 The current prototype uses `int(arrival_rate * duration)` requests with evenly
-spaced arrivals starting at time zero and uniform service durations. This is
-Daniel's initial workload model; exponential arrivals remain a proposal for team
-review. Each run uses its own server objects and seeded random generator.
+spaced arrivals starting at time zero and uniform service durations. Each run uses its own server objects and seeded random generator.
 `lbsim.simulation.run_simulation(config)` validates inputs, runs the event loop,
 and returns the metrics summary. It can also be called from experiment scripts.
 

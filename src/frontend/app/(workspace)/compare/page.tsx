@@ -46,6 +46,7 @@ import {
   settingValue,
   isRegional,
   validCompareConfig,
+  validWorkspaceConfig,
   COMPARE_DRAFT_KEY,
   WORKSPACE_DRAFT_KEY,
   compactRun,
@@ -114,9 +115,10 @@ function RoutingComparison() {
             "This lab setup is unavailable in this tab. Choose a baseline below.",
           );
         const draft = JSON.parse(raw);
-        if (draft.version !== 1 || !validCompareConfig(draft.config))
+        const execution = draft?.execution === "continuous" ? "continuous" : "one_shot";
+        if (draft?.version !== 1 || !validWorkspaceConfig(draft.config, execution))
           throw new Error(
-            "The lab setup needs valid settings and a bounded arrival window of at most 100,000 requests. Adjust it in Lab, then compare again.",
+            "This Lab setup could not be loaded. Choose a baseline or edit the setup.",
           );
         const name = typeof draft.name === "string" ? draft.name : "Lab setup";
         setBase(structuredClone(draft.config));
@@ -124,7 +126,7 @@ function RoutingComparison() {
         setSource("draft");
         setDraftBaseline({ name, config: structuredClone(draft.config) });
         setVariants([clone(draft.config)]);
-        setFromContinuous(draft.execution === "continuous");
+        setFromContinuous(execution === "continuous");
       } catch (e) {
         setError((e as Error).message);
       }
@@ -157,6 +159,16 @@ function RoutingComparison() {
   function update(id: string, patch: Partial<Variant>) {
     setVariants((current) =>
       current.map((v) => (v.id === id ? { ...v, ...patch } : v)),
+    );
+  }
+  function updateSharedWorkload(key: "arrival_rate" | "duration", value: number) {
+    setBase((config) => ({ ...config, [key]: value }));
+    setVariants((current) =>
+      current.map((variant) =>
+        variant.fields.includes(key)
+          ? variant
+          : { ...variant, config: { ...variant.config, [key]: value } },
+      ),
     );
   }
   async function compare() {
@@ -331,19 +343,19 @@ function RoutingComparison() {
                         </SelectContent>
                       </Select>
                     </Field>
+                    {fromContinuous && source === "draft" && (
+                      <NumberField
+                        label="Comparison traffic (requests/s)"
+                        value={base.arrival_rate}
+                        step={0.01}
+                        onChange={(rate) => updateSharedWorkload("arrival_rate", rate)}
+                      />
+                    )}
                     <NumberField
                       label="Comparison window (s)"
                       value={base.duration}
                       step={0.01}
-                      onChange={(duration) => {
-                        setBase((c) => ({ ...c, duration }));
-                        setVariants((current) =>
-                          current.map((v) => ({
-                            ...v,
-                            config: { ...v.config, duration },
-                          })),
-                        );
-                      }}
+                      onChange={(duration) => updateSharedWorkload("duration", duration)}
                     />
                   </FieldGroup>
                   <p className="caption">

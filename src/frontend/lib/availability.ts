@@ -1,4 +1,4 @@
-import type { Config } from "./engine";
+import { validServerCount, type Config } from "./engine";
 
 /*
  * Server availability A is the long-run fraction of time a server is up:
@@ -64,7 +64,9 @@ export function parseAvailabilities(
 ): number[] | undefined {
   if (!text.trim()) return undefined;
   const values = text.split(",").map((v) => (v.trim() ? Number(v.trim()) : NaN));
-  return values.length === 1 ? Array(serverCount).fill(values[0]) : values;
+  return values.length === 1 && validServerCount(serverCount)
+    ? Array(serverCount).fill(values[0])
+    : values;
 }
 
 export function formatAvailabilities(values?: number[]): string {
@@ -75,7 +77,8 @@ export function formatAvailabilities(values?: number[]): string {
 /** Keep a single shared availability in step with the server count. */
 export function resizeAvailabilities(config: Config): Config {
   const values = config.availabilities;
-  if (!values?.length || !values.every((v) => v === values[0])) return config;
+  if (!validServerCount(config.server_count) || !values?.length ||
+      !values.every((v) => v === values[0])) return config;
   return { ...config, availabilities: Array(config.server_count).fill(values[0]) };
 }
 

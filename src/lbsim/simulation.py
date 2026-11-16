@@ -16,11 +16,13 @@ def run_simulation(values: dict) -> dict:
     if "availabilities" in config:
         outages = outage_schedule(config["availabilities"], config["mean_repair_time"],
                                   config["duration"], config["seed"])
-    completed, rejected = route(**config, events=events, outages=outages)
+    interrupted = []
+    completed, rejected = route(**config, events=events, outages=outages, interrupted=interrupted)
     summary = summarize(
         completed, rejected,
         duration=config['duration'],
         server_capacities={i: config['concurrency'] for i in range(config['server_count'])},
+        interrupted=interrupted,
     )
     summary['events'] = events
     summary['response_times'] = [e.completion_time - e.request.arrival_time for e in completed]

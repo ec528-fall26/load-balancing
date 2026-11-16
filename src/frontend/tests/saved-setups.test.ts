@@ -87,3 +87,19 @@ test("CPU/I/O saves preserve stages and reject invalid admission or I/O settings
   for(const changes of [{io_fraction:1},{outstanding_limit:0},{request_model:'simple'},{outstanding_limit:1000000}])
     assert.ok(!validConfig({...saved.config,...changes}));
 });
+
+test("new saves follow Python arrival limits while older one-shot saves remain editable", () => {
+  for (const arrival_rate of [0, 100_000.5]) {
+    const config = { ...defaults, arrival_rate, duration: 1 };
+    assert.equal(validConfig(config), false);
+    assert.throws(() => saveSetup("New one-shot", config), /valid configuration/);
+    values.set(LIBRARY_KEY, JSON.stringify({
+      version: 1,
+      items: [{ id: "legacy", name: "Older setup", config, updatedAt: "2026-11-16T00:00:00Z" }],
+    }));
+    assert.deepEqual(readSetups()[0].config, config);
+  }
+  assert.equal(validConfig({ ...defaults, arrival_rate: 100_000, duration: 1 }), true);
+  assert.equal(validConfig({ ...defaults, arrival_rate: 0 }, "continuous"), true);
+  assert.equal(validConfig({ ...defaults, arrival_rate: 100_000.5 }, "continuous"), false);
+});

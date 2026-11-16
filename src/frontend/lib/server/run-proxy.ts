@@ -32,7 +32,9 @@ export function proxyRecording(
           ? v.length <= 32 &&
             /^\d+(\.\d+)?([eE][+-]?\d{1,3})?$/.test(v) &&
             Number.isFinite(Number(v))
-          : /^\d{1,6}$/.test(v)),
+          : k === "offset"
+            ? /^\d{1,16}$/.test(v) && Number.isSafeInteger(Number(v))
+            : /^\d{1,6}$/.test(v)),
     )
   )
     return Promise.resolve(

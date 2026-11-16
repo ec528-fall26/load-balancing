@@ -1,8 +1,8 @@
 # Simulation model
 
-Shared contract for D2-01, describing the current Demo 2 implementation.
-Ready for team review; optional extensions are listed separately.
-All times are simulated seconds. No wall-clock sleeps are used.
+This document describes the current simulator. The first sections cover simple
+one-shot runs. See the later sections for routing, CPU/I/O, sharding, and
+server availability. Times shown by the engine are in simulated seconds.
 
 ## Data
 
@@ -18,11 +18,11 @@ Server count and concurrency are positive integers. Queue limit is a nonnegative
 integer counting waiting requests only. Duration, rate and service bounds are
 positive finite numbers, with `service_min <= service_max`. Arrival times are
 finite and nonnegative. IDs are unique within a run. The seed is an integer.
-All servers initially have identical capacity; concurrency is the only server
-size setting. Hardware types remain an optional extension; server outages are
-described under "Server availability and outages" below.
+Concurrency sets the number of slots per server. Optional `processing_rates`
+scale service speed without changing slot count. See
+[Server availability and outages](#server-availability-and-outages) for failure and repair behavior.
 
-The connected prototype currently uses `int(arrival_rate * duration)` requests
+The simple one-shot workload uses `int(arrival_rate * duration)` requests
 with evenly spaced arrivals starting at zero. Service durations are uniform
 between the configured bounds. Each run uses a local seeded generator.
 
@@ -30,22 +30,19 @@ between the configured bounds. Each run uses a local seeded generator.
 
 The public entry point is `run_simulation(values: dict) -> dict` in
 `src/lbsim/simulation.py`. It validates the configuration and returns the run
-summary. The lower-level engine is
-`route(server_count, concurrency, queue_limit, policy, arrival_rate, duration,
-service_min, service_max, seed, events=None) -> (completed, rejected)` in
-`src/lbsim/utils/generate_seed.py`. Callers of `route` must validate their inputs.
+summary. The lower-level `route` in `src/lbsim/utils/generate_seed.py` takes the
+validated configuration and optional event and outage data. Use
+`run_simulation` for validation and aggregation.
 `completed` contains `Execution` objects in completion order; `rejected` contains
 request IDs in arrival order. Pass a list as `events` to collect playback records.
 Configuration and these raw lists are not included in the public summary.
 Generated count is `completed_count + rejected_count` after draining.
 
-Round-robin is implemented inside `route`, using a counter to select server IDs
-`0, 1, ..., server_count - 1` repeatedly. There is no separate `select_server`
-function. Least-active-requests selects the minimum `(running_count, server_id)`
-from current server state at each arrival. Both policies leave admission to the
-selected server: neither skips full servers nor retries. Waiting requests do not
-count toward load, so ties can select a full queue even when another server has
-waiting space.
+The [routing registry](#routing-strategies) selects a target before admission.
+Round robin cycles through eligible server IDs. Least active selects the minimum
+`(running_count, server_id)`. Waiting work does not affect that choice, so a tie
+can select a full queue. Least outstanding includes queued work in its load
+signal. With availability enabled, routing selects from servers that are up.
 
 - Pending completions are sorted by `(completion_time, server_id, request_id)`.
 - Completions are processed before arrivals at the same timestamp.
@@ -57,20 +54,10 @@ waiting space.
 Playback records are tuples
 `(time, server_id, running_count, waiting_count, status, request_id)`. Counts
 reflect server state after the event, including any queued request started by a
-completion. Status is `started`, `queued`, `rejected`, or `completed`. Starting
+completion. For a simple run without outages, status is `started`, `queued`, `rejected`,
+or `completed`. Starting
 queued work is represented by the completion's updated counts, rather than a
 separate `started` record.
-
-## Optional extensions
-
-Both `round_robin` and `least_active_requests` are implemented in the engine and
-available in the UI. Policy-comparison experiments remain a separate task.
-
-Exponential interarrival times and hardware types are also optional. The
-current engine creates servers with `size=None`, which does not affect
-execution. Any future
-traffic generator must create the complete seeded trace before routing so policy
-comparisons use identical requests.
 
 ## Server processing rates (A-01)
 
@@ -85,13 +72,14 @@ half the time. Rate 0.5 takes twice as long
 - Rates change only execution time. The seeded trace (arrivals and service
   times) is identical, uniform and mixed fleets can be compared on the same
   requests
-- Neither policy reads rates. Least-active-requests counts running requests
-  only. A faster server frees slots sooner it's picked more often, and
-  ties still go to the lowest server ID
+- Round robin and least active do not read rates when choosing a target. Faster
+  service can free a slot earlier. Least-active ties still favor the lowest ID.
 - Utilization is still occupied slot time in the arrival window. A fast server
   at 100% does more work than a slow one at 100%
-- Not yet in the UI or exports. Exports refuse a run with mixed rates rather
-  than silently dropping them (schema version 1 has nine settings)
+- On **Setup → Infrastructure**, enter one comma-separated multiplier per
+  server in **Processing rates**. When resizing a custom fleet, existing
+  server IDs retain their rates and new servers start at 1×. Version-one
+  exports reject mixed rates because the format cannot represent them.
 
 Worked example (`tests/test_processing_rates.py`): 2 servers, 1 slot, 1 waiting
 place, 4 requests/s for 1 s (arrivals at 0, 0.25, 0.5, 0.75), service 1.0 s,
@@ -131,7 +119,9 @@ including those completed during draining. Report mean and nearest-rank p95
 
 Per-server utilization is occupied slot-seconds within `[0, duration]`, divided
 by `concurrency * duration`. Clip execution intervals to that window; draining
-must not inflate utilization. This is modeled slot occupancy, not measured CPU.
+does not contribute after the window ends. An interrupted attempt counts until
+the outage stops it and contributes no completion latency. This measures modeled
+slot occupancy.
 After draining, `completed + rejected == generated`, and every server is idle.
 
 ## Data examples
@@ -208,10 +198,9 @@ uv run python -m unittest discover -s tests -v
 ```
 
 `tests/test_server.py` checks the hand-written server trace above.
-The server lifecycle, fixed-interval workload generator, both routing policies,
-metrics and UI are connected. `tests/test_policies.py` checks changing load,
+`tests/test_policies.py` checks changing load,
 completion-before-arrival routing, ties, full queues, multiple slots and identical
-seeded workloads between policies. Whole-run invariants cover both policies.
+seeded workloads between policies.
 
 ## Routing strategies
 
@@ -224,7 +213,7 @@ sampling, completion handling and queues remain engine responsibilities.
 
 | Identifier | Topology | Selection and ties |
 | --- | --- | --- |
-| `round_robin` | Single pool and regions | Advance through target indices from zero, including after rejection. |
+| `round_robin` | Single pool and regions | Advance through eligible target indices from zero, including after rejection. |
 | `least_active_requests` | Single pool | Fewest running requests, then lowest server ID. Waiting work is excluded; no fallback on rejection. |
 | `least_loaded` | Regions | Minimum `(running + queued + outbound in transit) / slots`, then client RTT, then region index. |
 | `nearest` | Regions | Minimum client RTT, then region index. |
@@ -258,7 +247,7 @@ does not automatically implement it for a different target model.
 ### Verification
 
 ```sh
-PYTHONPATH=src uv run python -m unittest discover -s tests -q
+uv run --locked python -m unittest discover -s tests -q
 npm run typecheck --prefix src/frontend
 npm run test:api --prefix src/frontend
 ```
@@ -266,7 +255,7 @@ npm run test:api --prefix src/frontend
 `tests/test_policy_parity.py` checks 171 snapshots against SHA-256 fingerprints
 captured before this refactor at `58cfcd3`. It covers batch and incremental
 single-pool runs with both policies, three seeds, mixed compute rates, zero and
-bounded queues and multiple slots; all three regional policies with travel;
+bounded queues and multiple slots; the three then-existing regional policies with travel;
 small event budgets, traffic-rate changes and full draining. The fingerprints
 include exact metrics and event/state data, not just outcome counts. Existing
 policy, saved-run/replay, API and engine tests remain intact. Registry tests also
@@ -381,7 +370,7 @@ than dropping settings. No silent schema migration is introduced.
 
 ```sh
 uv sync --locked
-PYTHONPATH=src uv run python -m unittest discover -s tests -q
+uv run --locked python -m unittest discover -s tests -q
 npm --prefix src/frontend ci
 npm --prefix src/frontend run typecheck
 npm --prefix src/frontend run test:library
@@ -397,7 +386,8 @@ CPU/I/O experiment, compute multipliers, FIFO, minimum-policy load signals,
 capacity/conservation, paging, rate changes, bounded retention and API validation.
 The pre-refactor simple-model snapshot fingerprints remain in the full suite.
 
-The backend suite reports **128 tests, OK**. `tests/test_shared_io.py` adds exact
+See the [verification commands](../README.md#verification) for the current suite.
+`tests/test_shared_io.py` checks exact
 shared-dependency timelines, FIFO/capacity invariants, mixed-workload identity,
 resource accounting and bounded retention. Browser checks cover dedicated Setup/Lab navigation,
 direct template editing, shared I/O pressure, saved configurations, playback
@@ -452,8 +442,8 @@ strategy; the event loop executes each per-request data-plane choice.
 After installing the repository's locked dependencies:
 
 ```sh
-PYTHONPATH=src uv run python experiments/compare_cpu_io.py --output experiments/results/a-24-rerun
-PYTHONPATH=src uv run python -m unittest discover -s tests -q
+uv run --locked python experiments/compare_cpu_io.py --output experiments/results/a-24-rerun
+uv run --locked python -m unittest discover -s tests -q
 ```
 
 The experiment takes seconds on a local CPU. It compares eight one-slot servers,
@@ -489,9 +479,8 @@ one cause. Successful-request p95 stays around 119 ms, hiding the rejection gap
 if reported alone.
 
 P2C is not universally better: with CPU-heavy work at 100 requests/s, round robin
-rejects 7.27% versus P2C's 11.17%. These workload-specific outcomes motivate a
-future comparison with an outstanding-request signal; that fourth policy is not
-part of this small slice. Adding CPU/I/O stages does not establish fault tolerance.
+rejects 7.27% versus P2C's 11.17%. This standalone experiment evaluates those three policies. The main Lab
+also supports least outstanding. Adding CPU/I/O stages does not establish fault tolerance.
 
 ### Main Lab extension
 
@@ -511,7 +500,8 @@ The earlier A-04 probe increased work with fan-out and answers a different
 workload question.
 
 Each parent first queues for coordinator CPU. It sends one coalesced call or
-two or four parallel calls, then releases the coordinator slot while waiting. Shard
+two or four calls in parallel or in series, then releases the coordinator slot
+while waiting. Shard
 placement rotates by parent ID so the one-shard case uses the same four-server
 fleet. Every shard has a CPU slot, an I/O slot and an eight-request admission
 limit. A shard call queues for CPU, releases it during I/O, then returns to the
@@ -564,8 +554,8 @@ From the repository root with Python 3.12 and the locked environment:
 
 ```sh
 uv sync --locked
-PYTHONPATH=src uv run python experiments/compare_fanout_pipeline.py > /tmp/fanout-pipeline.json
-PYTHONPATH=src uv run python -m unittest discover -s tests -p 'test_fanout_pipeline.py' -v
+uv run --locked python experiments/compare_fanout_pipeline.py > /tmp/fanout-pipeline.json
+uv run --locked python -m unittest discover -s tests -p 'test_fanout_pipeline.py' -v
 ```
 
 The experiment runs in seconds on a laptop. It needs no external services.

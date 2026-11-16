@@ -1,4 +1,10 @@
 import { serverPolicies } from "./policy-metadata";
+export const MAX_SINGLE_POOL_SERVERS = 1_000;
+
+export function validServerCount(count: number): boolean {
+  return Number.isSafeInteger(count) && count >= 1 && count <= MAX_SINGLE_POOL_SERVERS;
+}
+
 export type Config = {
   server_count: number;
   concurrency: number;

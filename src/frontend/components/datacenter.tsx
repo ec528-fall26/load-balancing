@@ -121,6 +121,9 @@ export function Datacenter({ run }: { run: Run }) {
     utilization,
     active: states[id]?.[0] ?? 0,
     queued: states[id]?.[1] ?? 0,
+    down: mode === "Playback" && (summary.outages?.[id]?.some(
+      ([start, end]) => start <= displayedNow && displayedNow < end,
+    ) ?? false),
     slots: config.concurrency,
     queueLimit: config.queue_limit,
     processingRate: config.processing_rates?.[Number(id)] ?? 1,

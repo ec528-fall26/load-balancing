@@ -2,7 +2,7 @@ import { policies } from "./engine";
 import { regionalPolicies } from "./policy-metadata";
 import type { Config, Run } from "./engine";
 import type { RegionalConfig, RegionalRun } from "./regions";
-import { validConfig } from "./saved-setups";
+import { validConfig, type ExecutionMode } from "./saved-setups";
 import {
   DEFAULT_REPAIR_TIME,
   formatAvailabilities,
@@ -217,8 +217,16 @@ export function updateSetting(
   return next;
 }
 export function validCompareConfig(value: unknown): value is CompareConfig {
+  return validWorkspaceConfig(value, "one_shot", false);
+}
+
+export function validWorkspaceConfig(
+  value: unknown,
+  execution: ExecutionMode,
+  allowLegacyOneShot = true,
+): value is CompareConfig {
   if (!value || typeof value !== "object") return false;
-  if (!("topology" in value)) return validConfig(value);
+  if (!("topology" in value)) return validConfig(value, execution, allowLegacyOneShot);
   const c = value as RegionalConfig;
   const num = (n: unknown): n is number =>
     typeof n === "number" && Number.isFinite(n);
@@ -264,7 +272,7 @@ export function validCompareConfig(value: unknown): value is CompareConfig {
     num(c.duration) &&
     c.duration > 0 &&
     c.duration <= 3600 &&
-    c.arrival_rate * c.duration <= 100000 &&
+    (execution === "continuous" || c.arrival_rate * c.duration <= 100000) &&
     num(c.service_min) &&
     num(c.service_max) &&
     c.service_min > 0 &&

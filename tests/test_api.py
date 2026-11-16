@@ -24,6 +24,17 @@ def crashed_worker(connection, config):
 
 
 class APITests(unittest.TestCase):
+    def test_mixed_cpu_io_checks_every_stage_profile_with_nonzero_probability(self):
+        with TestClient(create_app(runner=lambda *_: {})) as client:
+            config = {**CONFIG, 'request_model': 'cpu_io', 'outstanding_limit': 2,
+                      'service_min': 4000, 'service_max': 4000, 'processing_rates': [.2, .2]}
+            for probability, expected in ((0, 422), (.5, 422), (1, 200)):
+                with self.subTest(probability=probability):
+                    result = client.post('/v1/run', json={
+                        'config': {**config, 'io_heavy_probability': probability},
+                    })
+                    self.assertEqual(result.status_code, expected, result.text)
+
     def test_http_matches_direct_engine_for_both_policies_and_mixed_rates(self):
         with TestClient(create_app()) as client:
             for policy in ('round_robin', 'least_active_requests'):

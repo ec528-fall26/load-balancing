@@ -23,6 +23,7 @@ class RoutingContext:
     # Health check: None means every target is always up. Engines only call
     # choose() while at least one target is available.
     available: Callable[[int], bool] | None = None
+    all_available: Callable[[], bool] | None = None
 
 
 class RoutingPolicy(ABC):
@@ -116,7 +117,10 @@ class PowerOfTwoChoicesPolicy(RoutingPolicy):
         candidates = range(self.context.count)
         available = self.context.available
         # Only filter when something is down, so all-up runs draw exactly as before.
-        if available is not None and not all(available(i) for i in candidates):
+        if available is not None and not (
+            self.context.all_available() if self.context.all_available else
+            all(available(i) for i in candidates)
+        ):
             candidates = [i for i in candidates if available(i)]
             if len(candidates) == 1:
                 return candidates[0]

@@ -90,9 +90,11 @@ export function ComparisonResults({ cases }: { cases: CompletedCase[] }) {
         </p>
       </div>
       <Notice>
-        {changed.some((key) => key !== "policy")
-          ? "Inputs other than routing policy differ. These deltas reflect all listed changes, not an isolated policy effect."
-          : "Only the routing policy differs. Workload, capacity, service times and seed match."}{" "}
+        {changed.length === 0
+          ? "The compared cases used equivalent effective settings."
+          : changed.some((key) => key !== "policy")
+            ? "Inputs other than routing policy differ. These deltas reflect all listed changes, not an isolated policy effect."
+            : "Only the routing policy differs. Workload, capacity, service times and seed match."}{" "}
         These are single seeded runs, not statistical estimates.
         {regional &&
           " Regional means include all completions; each p95 uses only that case’s latest 2,000 completions. Regional compute is pooled and RTT assumptions are illustrative."}

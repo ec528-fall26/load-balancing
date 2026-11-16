@@ -9,24 +9,17 @@
 
 ## Python engine API (A-05)
 
-The API wraps the existing seeded simulation engine. It does not change routing,
-queueing, draining, metrics, or processing-rate behavior. The Next.js proxy connects the one-shot Run action. [Continuous sessions](#continuous-api-sessions--a-08) add a separate service-owned clock and bounded telemetry contract (A-08). Regional APIs remain A-09.
+The API calls the same seeded engine as the experiment scripts. For one-shot Lab
+runs, Next.js proxies compact recordings. The API also serves
+[continuous sessions](#continuous-api-sessions--a-08) and
+[regional workloads](#regional-api-and-frontend).
 
 ### Start locally
 
-From the repository root:
-
-```sh
-uv sync --locked
-PYTHONPATH=src uv run uvicorn lbsim.api:app --host 127.0.0.1 --port 8000 --workers 1
-```
-
-Health: `http://127.0.0.1:8000/health`. Interactive API reference:
-`http://127.0.0.1:8000/docs`. OpenAPI: `/openapi.json`.
-
-Use one API worker. Admission limits are in-process and are not shared across
-multiple API workers. The service binds locally; public hosting, authentication,
-and persistent sessions are outside A-05.
+Start one Python API process with the [quick start](../README.md#quick-start).
+Use `http://127.0.0.1:8000/health` to check readiness and limits, or
+`http://127.0.0.1:8000/docs` for the interactive schema. OpenAPI JSON is at
+`/openapi.json`. Admission limits and temporary state belong to each API process.
 
 ### Run a simulation
 
@@ -76,7 +69,7 @@ the API waits in a thread so the async request loop remains available. The child
 is terminated and reaped on timeout. Each request starts a fresh child, so a
 failed run does not leave a broken persistent executor. Completed traces remain
 bounded by the workload limits; they are still included in this first endpoint.
-Snapshot aggregation and separate playback transfer belong to A-11.
+The [recordings endpoint](#bounded-one-shot-responses-and-recorded-playback) uses bounded summaries and separate playback transfer.
 
 All errors share an envelope:
 
@@ -104,8 +97,8 @@ Unknown routes and unsupported methods use the same envelope with 404/405.
 ### Checks
 
 ```sh
-PYTHONPATH=src uv run python -m unittest discover -s tests -p test_api.py -v
-PYTHONPATH=src uv run python -m unittest discover -s tests
+uv run --locked python -m unittest discover -s tests -p test_api.py -v
+uv run --locked python -m unittest discover -s tests
 ```
 
 API tests exercise both policies with mixed compute speeds against exact direct
@@ -117,17 +110,12 @@ admission, health during an active run, timeout/crash cleanup, and slot recovery
 The Python service owns each session's clock and mutable engine in a separate
 spawned process. Polling reads state; it does not step the simulation. This
 first slice supports individual servers in one pool, using the existing
-round-robin and least-active-request admission semantics. Regional contracts
-are A-09 and Next.js live controls are A-10. The Next.js lab now connects single-pool and regional live sessions as documented in [live-frontend.md](#live-sessions-in-the-nextjs-lab--a-10). One-shot execution remains separate.
+single-pool admission semantics. The [regional API](#regional-api-and-frontend)
+and [Next.js Lab controls](#live-sessions-in-the-nextjs-lab--a-10) share the
+same session lifecycle.
 
-Run one API process locally:
-
-```sh
-PYTHONPATH=src uv run uvicorn lbsim.api:app --host 127.0.0.1 --port 8000 --workers 1
-```
-
-Interactive reference: `http://127.0.0.1:8000/docs`. `/health` includes the
-one-shot limits and a separate `live_limits` object.
+Use the [local API](#start-locally) for these requests. `/health` reports the
+separate `live_limits` object.
 
 ### HTTP contract
 
@@ -166,12 +154,17 @@ The returned `session_id` is opaque. Commands are:
 {"action":"resume"}
 {"action":"set_rate","value":0}
 {"action":"set_speed","value":2}
+{"action":"fail_server","value":0}
+{"action":"fail_region","value":0}
+{"action":"restore_region","value":0}
 ```
 
 Pause/resume do not accept values. Rate is finite, 0–100,000 requests/s;
 speed is 0.25–10 simulated seconds per wall second. Booleans and numeric strings
 are rejected as values. Zero traffic allows outstanding work to drain while
-the clock runs; pausing instead freezes all processing.
+the clock runs; pausing freezes processing. `fail_server` targets a zero-based
+server index in a simple single-pool session and uses that server’s configured
+mean repair time. The regional commands use a zero-based region index.
 
 The seed and policy are fixed for the life of a session. Create a new session
 to change topology, capacities, policy or service distribution. Effective
@@ -189,7 +182,7 @@ service time (`service_time / processing_rate`) must be 1 ns–3,600 seconds.
 - A traffic change schedules its next arrival relative to the current processed
   simulation time. Commands are ordered under one session lock and take effect
   at the reported `simulation_time`, never in the middle of an engine event.
-- The worker wakes about every 50 ms and processes at most 2,000 events or 10 ms
+- The worker wakes about every 50 ms and processes at most 20,000 events or 10 ms
   of engine work per advance. The deadline is checked between events. An
   individual event or snapshot operation cannot be preempted mid-operation.
 - The clock targets wall elapsed time multiplied by speed. Under overload,
@@ -207,8 +200,9 @@ page, history and recent command metadata. A revision changes when processed
 engine state advances or a control command is applied. Polls do not count as
 commands. Clients can use session ID/revision to ignore stale responses.
 
-`offered = completed + rejected + running + waiting`. There is no failure count
-because server/network failure injection is not implemented in A-08.
+For the simple single pool, `offered = completed + rejected + running + waiting`.
+Availability-enabled snapshots also expose outages and rejection reasons.
+Staged and regional snapshots include their additional outstanding states.
 
 | Data | Retention / meaning |
 | --- | --- |
@@ -224,7 +218,7 @@ because server/network failure injection is not implemented in A-08.
 
 `command_sequence` is the lifetime count. `command_log_limit` and
 `command_log_truncated` explicitly identify incomplete retained command history.
-The bounded command list is not yet a durable replay log; A-22 owns that work.
+The command log is bounded in memory and disappears when the session ends.
 No growing request trace or completed-response list is retained or returned.
 Snapshots never include raw response-time samples.
 
@@ -236,9 +230,8 @@ GET query parameters:
 
 Create and command responses also use a bounded default page/history. Every
 response includes the server total and pagination metadata. Use polling around
-2 Hz initially; SSE/WebSockets are not required for this contract. Work on
-one-shot payload pagination and broader browser/regional scale measurements
-remains in A-11.
+2 Hz initially. The [playback scale experiment](design-document.md#recorded-playback-and-scale)
+measures current one-shot paging and live telemetry.
 
 ### Lifecycle and resource bounds
 
@@ -269,17 +262,16 @@ Typical errors use the existing versioned error envelope:
 
 Expired/failed IDs have a bounded 128-entry tombstone cache. Once evicted they
 return 404. DELETE returns 200 for a live session; a repeated delete returns 404.
-Sessions are in memory and do not survive API restart. Multiple Uvicorn workers,
-public authentication/ownership, persistence, regional travel, failures, retries
-and frontend live controls are outside this slice. IDs are not authentication;
-keep the service bound to localhost until a public ownership contract exists.
+Sessions live in memory and expire when the state API restarts. Keep one
+state API worker. Session IDs grant access to that temporary state. The API
+does not provide user accounts or authenticate session ownership.
 
 ### Verification
 
 ```sh
-PYTHONPATH=src uv run python -m unittest discover -s tests -p 'test_continuous.py' -v
-PYTHONPATH=src uv run python -m unittest discover -s tests -p 'test_sessions.py' -v
-PYTHONPATH=src uv run python -m unittest discover -s tests
+uv run --locked python -m unittest discover -s tests -p 'test_continuous.py' -v
+uv run --locked python -m unittest discover -s tests -p 'test_sessions.py' -v
+uv run --locked python -m unittest discover -s tests
 ```
 
 Tests cover one-shot parity for both policies and mixed compute rates,
@@ -288,8 +280,6 @@ continuation, no-poll clock progression, pause/resume/drain, command ordering,
 admission, TTL/lifetime expiry, restart loss, validation, pagination, worker
 crash/timeout recovery, tombstone retention and shutdown reaping.
 
-
-The original A-08 exclusions above describe its single-pool slice. The A-09 extension adds aggregate regional pools and client RTT travel through the same lifecycle; see [regional-api.md](#regional-api-and-frontend).
 
 ## Regional API and frontend
 
@@ -346,16 +336,11 @@ Snapshots include total offered/completed/rejected/running/waiting/in-transit co
 
 The lifetime mean uses all completions. Global and regional p95 use their respective latest 2,000 completions. Global histogram bins are at most 20; history retains at most 240 samples. Continuous queries default to 120 history samples. No full request trace is retained or transferred. One-shot history is also a bounded tail, not a complete replay.
 
-On Setup choose **Topology → Regions**, load a preset, edit capacities/compute and source/client/matrix RTTs, then independently select **Execution → One-shot / Continuous**. Regional cards show current capacity separately from task outcomes. Continuous controls, non-overlapping polling, stale-revision rejection and reconnect reuse A-10. Setup edits affect the next start; Lab live controls affect the active session. Draft topology/execution changes leave the active worker running. Starting a replacement continuous session explicitly stops the old worker first.
+On Setup choose **Topology → Regions**, load a preset, edit capacities/compute and source/client/matrix RTTs, then independently select **Execution → One-shot / Continuous**. Regional cards show current capacity separately from task outcomes. Continuous controls, non-overlapping polling, stale-revision rejection and reconnect reuse A-10. Setup edits affect the next start; Lab live controls affect the active session. Draft topology/execution changes leave the active worker running. The API retires the old worker after its replacement starts successfully.
 
-Regional browser saves, replay and CSV exports remain unavailable pending a versioned regional export schema. Lab-to-Compare transfer now supports regional configurations for bounded baseline/variant runs; this does not introduce a saved regional-results schema. No database persistence, failure injection, retries or cloud deployment is added here. Broad scale measurements remain A-11.
+Regional browser saves, replay and CSV exports remain unavailable pending a versioned regional export schema. Lab-to-Compare transfer now supports regional configurations for bounded baseline/variant runs; this does not introduce a saved regional-results schema. Regional sessions support manual outages and optional client migration. Database persistence and retries are outside the regional model.
 
-Launch the two processes using [live-frontend.md](#live-sessions-in-the-nextjs-lab--a-10). Existing Streamlit code and the original uncommitted local prototypes are preserved.
-
-
-### Local verification — November 2
-
-The production frontend build and TypeScript pass; 98 Python tests and 12 Node API/client tests pass. All 23 browser tests cover the existing single-pool/library/comparison flows plus regional one-shot, regional continuous reconnect/control/drain/restart and desktop/mobile behavior. The three regional tests were repeated after the final editor-height adjustment, including an expanded-content visibility assertion. Original prototype tests were ported to the new regional engine; API tests exercise normalization, malformed inputs, seeded parity, travel, capacity, conservation, shared session admission and progress without browser reads. Broad scale benchmarks are not claimed.
+Use the [Lab quick start](../README.md#quick-start) and the [regional walkthrough](design-document.md#continuous-regional-outages-and-client-migration).
 
 #### Manual datacenter outages
 
@@ -381,7 +366,7 @@ The Next.js Run action now uses `POST /v1/runs` rather than the full-trace legac
 - `POST /v1/runs` — same validated single-pool config body as `/v1/run`; returns `201` with the compact result. Uses the same one-run admission gate, request/runtime limits and isolated worker.
 - `GET /v1/runs/{run_id}` — retrieve the immutable compact result.
 - `GET /v1/runs/{run_id}/events?offset=0&limit=500` — at most 1,000 events per page, ordered by immutable zero-based sequence. Each item contains `sequence` and the original event tuple. `next_offset` is null at the end. Equal timestamps retain the original engine order. Paging does not rerun the simulation.
-- `GET /v1/runs/{run_id}/snapshot?time=1.25&server_offset=0&server_limit=32` — inclusive state after all events at or before the requested time. Time is capped at the recording end. Returns global request totals, idle count, latest event and at most 64 server rows. Exact floating-point timestamps are passed without decimal truncation.
+- `GET /v1/runs/{run_id}/snapshot?time=1.25&server_offset=0&server_limit=32` — inclusive state after all events at or before the requested time. Time is capped at the recording end. Returns global request totals, the count of healthy idle servers, the latest event and at most 64 server rows. Exact floating-point timestamps are passed without decimal truncation.
 - `DELETE /v1/runs/{run_id}` — delete this recording and its trace file.
 
 Unknown/deleted recordings return `404 RUN_NOT_FOUND`. Expired or evicted recordings return `410 RUN_EXPIRED` while their bounded tombstone remains. Cache loss on API restart also returns 404. The frontend keeps completed summary metrics visible and asks users to rerun when playback expires.
@@ -390,7 +375,7 @@ Unknown/deleted recordings return `404 RUN_NOT_FOUND`. Expired or evicted record
 
 Recordings are temporary process-owned data, not user database saves. Event rows are stored in an indexed SQLite file in a private temporary directory. The browser and retained result metadata do not hold full traces. Prefix totals are recorded alongside stable event sequence numbers; server snapshots use indexed per-server lookups rather than transferring/replaying every preceding event in JavaScript.
 
-Defaults: at most four retained runs, a 64 MiB retained-file budget and ten minutes of absolute retention from creation. Reads do not renew retention. Creating a new recording may evict the oldest recording, including a recording currently being viewed. `playback.expires_in_seconds` describes the advertised creation-time retention limit, not a renewed lease. A periodic sweeper removes expired files; shutdown deletes the temporary directory. The quota applies to retained files; creation also needs a staging file and the existing bounded engine result in memory before registration. Generation remains capped at 100,000 requests/200,000 events.
+Defaults: at most four retained runs, a 64 MiB retained-file budget and ten minutes of absolute retention from creation. Reads do not renew retention. Creating a new recording may evict the oldest recording, including a recording currently being viewed. `playback.expires_in_seconds` describes the advertised creation-time retention limit, not a renewed lease. A periodic sweeper removes expired files; shutdown deletes the temporary directory. The quota applies to retained files; creation also needs a staging file and the existing bounded engine result in memory before registration. Generation remains capped at 100,000 offered requests. The event count depends on the model and outage schedule.
 
 This reduces transfer and retained trace memory; it does not eliminate transient engine/IPC allocation. The cache is not durable across API restarts and is not authentication or a replacement for A-17 account/database persistence.
 
@@ -400,7 +385,7 @@ This reduces transfer and retained trace memory; it does not eliminate transient
 
 Overview consumes server-supplied histogram bins. Datacenter playback requests one server page at the selected time, with sequential reads no more often than every 250 ms after a completed read. Seeks/page changes cancel obsolete requests, and expired recordings stop retrying. The displayed state timestamp reflects the returned snapshot. The seek slider snaps its final half-step to the exact end to avoid leaving the last completion behind due to step rounding.
 
-The regional preset **Scale · 1,000 servers / 12 datacenters** exposes the supported size limit in the UI: 4,000 slots, mixed compute and illustrative client RTTs up to 450 ms. Larger topology requests are rejected explicitly; limits were not raised.
+The regional preset **Scale · 1,000 servers / 12 datacenters** contains 4,000 slots, mixed compute and illustrative client RTTs up to 450 ms. Custom regional configurations can have up to 100,000 servers, 400,000 slots, and 1,000,000 waiting places across at most 12 regions.
 
 ### Evidence
 
@@ -523,7 +508,8 @@ uv run python -m unittest discover -s tests -v
 
 ### Replay an exported configuration (D3-04)
 
-1. In the sidebar, open **Replay a saved run** and upload the original
+1. In the Next.js Lab, select **Single server pool** on **Setup**. Open
+   **Replay a saved run** under **Saved run tools** and upload the original
    configuration JSON from D3-03.
 2. Inspect the displayed settings, including policy and seed. They are independent
    of the editable simulation form; loading a file does not overwrite the form.
@@ -549,7 +535,7 @@ consistency with the saved export, not a trusted author or source revision.
 
 ### Compare two saved result sets (D3-05)
 
-Open **Compare saved results** beneath the main results and upload an original
+Open **Compare saved results** in the same **Saved run tools** card and upload an original
 results CSV into each of **Run A** and **Run B**. An active simulation and the
 configuration JSON files are not required. Comparison uses the configurations
 already repeated in each CSV and does not run a simulation or replace active
@@ -619,9 +605,8 @@ The lab connects to the A-08 continuous API through same-origin Next.js routes.
 The Python worker owns the simulation clock; browser polling only reads bounded
 snapshots. The one-shot Run path and recorded playback remain separate.
 
-Start Python as documented in [continuous-api.md](#continuous-api-sessions--a-08), then start
-Next.js from `src/frontend/`. `LBSIM_API_URL` remains server-only and defaults to
-`http://127.0.0.1:8000`. Open `http://127.0.0.1:3000/setup`.
+Start the Lab using the [quick start](../README.md#quick-start).
+`LBSIM_API_URL` is server-side and defaults to `http://127.0.0.1:8000`.
 
 ### Controls
 
@@ -631,13 +616,13 @@ Next.js from `src/frontend/`. `LBSIM_API_URL` remains server-only and defaults t
   Drain affect the active worker. Speed and Restart session live under Session
   options. Restart uses the active configuration.
 - Edit configuration returns to Setup without stopping the session. Draft edits
-  affect the next run. Replace continuous session explicitly stops the current
-  worker and creates a new session from the draft.
+  affect the next run. Replace continuous session starts a worker from the draft
+  and retires the current worker after the replacement is ready.
 
 Editable settings are distinct from the active configuration shown below the
 live view. Setup edits do not silently reconfigure an existing worker. Browser
-library saves remain configuration/seed records; they do not persist a live
-worker, its history, or execution mode.
+library saves preserve the configuration, seed, and execution mode. Live
+workers and their telemetry are temporary.
 
 ### Reconnection and lifecycle
 
@@ -649,7 +634,7 @@ workspace state, so navigating between them preserves the current results.
 
 Leaving the workspace cancels polling but does not delete a worker. The API continues
 until explicit Stop, idle/absolute expiry, process restart, or failure. API
-session IDs are not authentication; this remains a local service.
+session IDs identify temporary state and are not user authentication.
 
 Not-found, expired and failed sessions detach, clear the stored ID, stop polling,
 and leave a labeled last snapshot. A new session can be started. Transient API
@@ -700,8 +685,8 @@ and mobile start/mode switching. Test-created sessions are deleted afterward.
 Regional browser tests also cover preset selection, source/RTT/compute edits,
 fully drained one-shot results, validation errors preserving prior results,
 continuous reconnect, active versus draft settings, restart, topology cleanup
-and mobile overflow. A-11 retains broader frontend/payload scale benchmarks;
-fault injection remains separate.
+and mobile overflow. The [experiments](design-document.md#4-running-the-experiments)
+cover availability, regional outages, and scale.
 
 
 ### Regional extension

@@ -1,12 +1,15 @@
-import { defaults, policies, type Config } from "./engine";
+import { defaults, policies, validServerCount, type Config } from "./engine";
+export type ExecutionMode = "one_shot" | "continuous";
+
 export type SavedSetup = {
   id: string;
   name: string;
   config: Config;
   updatedAt: string;
+  execution?: ExecutionMode;
 };
 export type Template = {
-  execution?: "one_shot" | "continuous";
+  execution?: ExecutionMode;
   id: string;
   name: string;
   description: string;
@@ -112,7 +115,11 @@ const numericKeys = [
   "service_max",
   "seed",
 ] as const;
-export function validConfig(value: unknown): value is Config {
+export function validConfig(
+  value: unknown,
+  execution: ExecutionMode = "one_shot",
+  allowLegacyOneShot = false,
+): value is Config {
   if (!value || typeof value !== "object") return false;
   const c = value as Config;
   if (
@@ -120,26 +127,29 @@ export function validConfig(value: unknown): value is Config {
   )
     return false;
   if (
-    ![c.server_count, c.concurrency, c.queue_limit, c.seed].every(
+    ![c.concurrency, c.queue_limit, c.seed].every(
       Number.isSafeInteger,
     )
   )
     return false;
   if (
-    c.server_count < 1 ||
-    c.server_count > 1000 ||
+    !validServerCount(c.server_count) ||
     c.concurrency < 1 ||
     c.server_count * c.concurrency > 4096 ||
     c.queue_limit < 0 ||
     c.server_count * c.queue_limit > 100000
   )
     return false;
+  const requested = c.arrival_rate * c.duration;
+  const exceedsOneShotLimit = allowLegacyOneShot
+    ? Math.floor(requested) > 100_000
+    : c.arrival_rate === 0 || requested > 100_000;
   if (
     c.arrival_rate < 0 ||
     c.duration <= 0 ||
     c.service_min <= 0 ||
     c.service_max < c.service_min ||
-    Math.floor(c.arrival_rate * c.duration) > 100000
+    (execution === "continuous" ? c.arrival_rate > 100_000 : exceedsOneShotLimit)
   )
     return false;
   if (!Object.hasOwn(policies,c.policy))
@@ -219,7 +229,9 @@ export function readSetups(): SavedSetup[] {
       item.name.length > 80 ||
       typeof item.updatedAt !== "string" ||
       !Number.isFinite(Date.parse(item.updatedAt)) ||
-      !validConfig(item.config)
+      (item.execution !== undefined &&
+        item.execution !== "one_shot" && item.execution !== "continuous") ||
+      !validConfig(item.config, item.execution, true)
     )
       throw new Error(
         "A saved setup is invalid. Existing browser data has been left unchanged.",
@@ -243,11 +255,12 @@ export function saveSetup(
   name: string,
   config: Config,
   id?: string,
+  execution: ExecutionMode = "one_shot",
 ): SavedSetup {
   const cleaned = name.trim();
   if (!cleaned || cleaned.length > 80)
     throw new Error("Give this setup a name of 1–80 characters.");
-  if (!validConfig(config))
+  if (!validConfig(config, execution))
     throw new Error(
       "Enter a valid configuration within the Python API limits before saving.",
     );
@@ -262,6 +275,7 @@ export function saveSetup(
   const result: SavedSetup = {
     id: existing?.id ?? crypto.randomUUID(),
     name: cleaned,
+    execution,
     config: JSON.parse(JSON.stringify(config)),
     updatedAt: new Date().toISOString(),
   };

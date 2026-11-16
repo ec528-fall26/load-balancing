@@ -81,6 +81,17 @@ class SessionTests(unittest.TestCase):
             )
             self.assertEqual(client.delete(f"/v1/sessions/{sid}").status_code, 404)
 
+    def test_manual_only_fleet_keeps_configured_repair_times(self):
+        repairs = [2, 3, 4, 5]
+        with TestClient(create_app()) as client:
+            initial = self.create(client, {
+                **CONFIG, "availabilities": [1] * 4, "mean_repair_time": repairs,
+            }, paused=True)
+            self.assertEqual(initial["config"]["mean_repair_time"], repairs)
+            self.assertNotIn("availabilities", initial["config"])
+            failed = self.command(client, initial["session_id"], "fail_server", 1)
+            self.assertFalse(failed["servers"]["items"][1]["up"])
+
     def test_pagination_retention_limits_and_serialized_commands(self):
         limits = SessionLimits(
             response_window=9,

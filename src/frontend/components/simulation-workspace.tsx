@@ -1,36 +1,30 @@
 "use client";
-import { initialRegions } from "@/components/regional-settings";
 import { RegionalTelemetry } from "@/components/regional-telemetry";
 import {
   regionalRequest,
-  withoutRegionalClients,
   type RegionalConfig,
   type RegionalRun,
-  type RegionalTopology,
 } from "@/lib/regions";
 import { ShardedRunResults } from "@/components/sharded-run-results";
 import {
   fanoutCompareHref,
   fanoutRequest,
-  isShardedConfig,
-  shardedDefaults,
   type FanoutRun,
   type ShardedConfig,
 } from "@/lib/fanout";
 import { LabControls } from "@/components/lab-controls";
 import { useLiveSession } from "@/hooks/use-live-session";
+import { useWorkspaceDraft } from "@/hooks/use-workspace-draft";
 import { LiveSessionPanel } from "@/components/live-session-panel";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 import {
   COMPARE_DRAFT_KEY,
-  WORKSPACE_DRAFT_KEY,
-  validCompareConfig,
-  isRegional,
 } from "@/lib/comparison";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Config, defaults, engineRequest, Run } from "@/lib/engine";
+import { Config, engineRequest, Run } from "@/lib/engine";
+import type { ExecutionMode } from "@/lib/saved-setups";
 import { Results, seconds } from "@/components/results";
 import {
   hasOutages,
@@ -79,7 +73,6 @@ import {
 } from "@/components/ui/empty";
 import { Panel, Notice } from "@/components/surface";
 import { SaveSetupDialog } from "@/components/save-setup-dialog";
-import { readSetups, templates, type SavedSetup } from "@/lib/saved-setups";
 import { AppHeader } from "@/components/app-header";
 import { Server } from "lucide-react";
 function Upload({
@@ -214,7 +207,7 @@ export default function SimulationWorkspace({
   const pathname = usePathname();
   const queryParams = useSearchParams();
   const isSetup = pathname === "/setup";
-  const [labExecution, setLabExecution] = useState("one_shot");
+  const [labExecution, setLabExecution] = useState<ExecutionMode>("one_shot");
   const [labTopology, setLabTopology] = useState("single_pool");
   const [labName, setLabName] = useState("New simulation");
   const router = useRouter();
@@ -225,16 +218,11 @@ export default function SimulationWorkspace({
       window.scrollTo(0, 0);
     }
   }, [pathname]);
-  const [topology, setTopology] = useState("single_pool");
-  const [sharded, setSharded] = useState(shardedDefaults);
   const [shardedRun, setShardedRun] = useState<{
     config: ShardedConfig;
     run: FanoutRun;
   } | null>(null);
-  const [regional, setRegional] = useState<RegionalTopology>(initialRegions);
-  const [regionalPolicy, setRegionalPolicy] = useState("least_loaded");
   const [regionalRun, setRegionalRun] = useState<RegionalRun | null>(null);
-  const [execution, setExecution] = useState("one_shot");
   const live = useLiveSession(true);
   useEffect(() => {
     if (live.id) {
@@ -245,17 +233,17 @@ export default function SimulationWorkspace({
         );
     }
   }, [live.id, live.snapshot?.session_id]);
-  const [sourceReady, setSourceReady] = useState(false);
-  const [draftReady, setDraftReady] = useState(false);
-  const restoredDraft = useRef<string | null>(null);
-  const [currentSave, setCurrentSave] = useState<SavedSetup | null>(null);
-  const [setupName, setSetupName] = useState("New simulation");
+  const {
+    config, setConfig, topology, setTopology, regional, setRegional,
+    regionalPolicy, setRegionalPolicy, sharded, setSharded, execution,
+    setExecution, setupName, currentSave, rememberSaved, draftConfig, regionalConfig,
+    draftReady, draftError, detachTemplate,
+  } = useWorkspaceDraft(pathname, live.id === live.restoredId ? live.snapshot : null);
   const requestPending = useRef(false);
   const csvFiles = useRef<[string, string]>(["", ""]);
   const uploadVersions = useRef([0, 0]);
   const comparisonVersion = useRef(0);
-  const [config, setConfig] = useState<Config>(defaults),
-    [run, setRun] = useState<Run | null>(null),
+  const [run, setRun] = useState<Run | null>(null),
     [preview, setPreview] = useState(false),
     [feedback, setFeedback] = useState(""),
     [busy, setBusy] = useState(false),
@@ -265,187 +253,28 @@ export default function SimulationWorkspace({
     [comparison, setComparison] = useState<[Run, Run] | null>(null),
     [fileNames, setFileNames] = useState<[string, string]>(["", ""]),
     [compareError, setCompareError] = useState("");
+  const showPreview = queryParams.has("preview");
   useEffect(() => {
-    const s = live.snapshot;
-    if (
-      !s ||
-      live.id !== live.restoredId ||
-      restoredDraft.current === s.session_id ||
-      sourceReady
-    )
-      return;
-    restoredDraft.current = s.session_id;
-    if (s.topology === "regions") {
-      setRegional(s.config);
-      setRegionalPolicy(s.config.policy);
-      setConfig({
-        ...defaults,
-        arrival_rate: s.config.arrival_rate,
-        service_min: s.config.service_min,
-        service_max: s.config.service_max,
-        seed: s.config.seed,
-      });
-    } else setConfig({ ...s.config, duration: defaults.duration });
-    setSetupName("Reconnected session");
-  }, [live.id, live.restoredId, live.snapshot?.session_id, sourceReady]);
-  const sourceKey = queryParams.get("template")
-    ? `template:${queryParams.get("template")}`
-    : queryParams.get("save")
-      ? `save:${queryParams.get("save")}`
-      : queryParams.has("compareDraft")
-        ? "compareDraft"
-        : "";
-  const loadedSource = useRef<string | null>(null);
-  useEffect(() => {
-    if (loadedSource.current === sourceKey) return;
-    const firstLoad = loadedSource.current === null;
-    if (firstLoad && sourceKey && pathname === "/simulator")
-      router.replace("/setup" + location.search);
-    loadedSource.current = sourceKey;
-    if (!firstLoad && !sourceKey) return;
-    const query = new URLSearchParams(location.search);
-    if (query.get("mode") === "continuous") setExecution("continuous");
-    try {
-      const raw = query.has("compareDraft")
-        ? sessionStorage.getItem(COMPARE_DRAFT_KEY)
-        : !sourceKey && !query.has("new")
-          ? sessionStorage.getItem(WORKSPACE_DRAFT_KEY) ??
-            sessionStorage.getItem(COMPARE_DRAFT_KEY)
-          : null;
-      if (raw !== null || query.has("compareDraft")) {
-        if (!raw || raw.length > 65536)
-          throw new Error(
-            "The comparison's lab setup is unavailable in this tab.",
-          );
-        const draft = JSON.parse(raw);
-        if (draft.config?.topology === "sharded") {
-          draft.config = {outage_ms: shardedDefaults.outage_ms, dispatch_mode: shardedDefaults.dispatch_mode, ...draft.config};
-        }
-        if (
-          draft.version !== 1 ||
-          (!isShardedConfig(draft.config) && !validCompareConfig(draft.config))
-        )
-          throw new Error("The comparison's lab setup could not be loaded.");
-        if (isShardedConfig(draft.config)) {
-          setTopology("sharded");
-          setSharded(draft.config);
-        } else if (isRegional(draft.config)) {
-          setRegional(draft.config);
-          setRegionalPolicy(draft.config.policy);
-          setTopology("regions");
-          setConfig({
-            ...defaults,
-            arrival_rate: draft.config.arrival_rate,
-            duration: draft.config.duration,
-            service_min: draft.config.service_min,
-            service_max: draft.config.service_max,
-            seed: draft.config.seed,
-          });
-        } else {
-          setTopology("single_pool");
-          setConfig(draft.config);
-        }
-        setExecution(
-          query.get("mode") === "continuous" || draft.execution === "continuous"
-            ? "continuous"
-            : "one_shot",
-        );
-        setSetupName(typeof draft.name === "string" ? draft.name : "Lab setup");
-        setSourceReady(true);
-      } else if (query.has("save")) {
-        const item = readSetups().find((item) => item.id === query.get("save"));
-        if (!item)
-          throw new Error(
-            "This saved setup was not found in this browser. Your default setup is ready below.",
-          );
-        setConfig(item.config);
-        setTopology("single_pool");
-        setCurrentSave(item);
-        setSetupName(item.name);
-        setSourceReady(true);
-      } else if (query.has("template")) {
-        const item = templates.find(
-          (item) => item.id === query.get("template"),
-        );
-        if (!item)
-          throw new Error(
-            "This template was not found. Your default setup is ready below.",
-          );
-        setConfig(item.config);
-        setTopology("single_pool");
-        setCurrentSave(null);
-        setSetupName(item.name);
-        setSourceReady(true);
-      }
-    } catch (error) {
-      setFeedback(
-        error instanceof Error ? error.message : "Could not load this setup.",
-      );
-    }
-    setDraftReady(true);
-    if (query.has("preview")) {
+    if (showPreview) {
       setLabExecution("one_shot");
       setLabTopology("single_pool");
       setPreview(true);
       setRun(previewRun as unknown as Run);
     }
-  }, [sourceKey]);
-  const regionalConfig: RegionalConfig = {
-    ...(execution === "continuous" ? regional : withoutRegionalClients(regional)),
-    topology: "regions",
-    policy: regionalPolicy as RegionalConfig["policy"],
-    arrival_rate: config.arrival_rate,
-    service_min: config.service_min,
-    service_max: config.service_max,
-    seed: config.seed,
-    duration: config.duration,
-  };
-  const draftConfig = topology === "regions" ? regionalConfig : config;
-  useEffect(() => {
-    if (!draftReady) return;
-    try {
-      sessionStorage.setItem(
-        WORKSPACE_DRAFT_KEY,
-        JSON.stringify({
-          version: 1,
-          name: setupName,
-          config: topology === "sharded" ? sharded : draftConfig,
-          execution: topology === "sharded" ? "one_shot" : execution,
-        }),
-      );
-    } catch {
-      /* The explicit Compare action reports storage errors. */
-    }
-  }, [
-    config,
-    regional,
-    regionalPolicy,
-    sharded,
-    topology,
-    execution,
-    setupName,
-    draftReady,
-  ]);
-  function detachTemplate() {
-    const q = new URLSearchParams(location.search);
-    q.delete("template");
-    q.delete("compareDraft");
-    q.delete("new");
-    history.replaceState(
-      null,
-      "",
-      location.pathname + (q.size ? "?" + q.toString() : ""),
-    );
-  }
-  function openComparison(compareConfig: Config | RegionalConfig) {
+  }, [showPreview]);
+  function openComparison(
+    compareConfig: Config | RegionalConfig,
+    mode = execution,
+    name = setupName,
+  ) {
     try {
       sessionStorage.setItem(
         COMPARE_DRAFT_KEY,
         JSON.stringify({
           version: 1,
-          name: setupName,
+          name,
           config: compareConfig,
-          execution,
+          execution: mode,
         }),
       );
       router.push("/compare?draft=1");
@@ -632,16 +461,9 @@ export default function SimulationWorkspace({
             <SaveSetupDialog
               suggestedName={setupName}
               config={config}
+              execution={execution}
               current={currentSave}
-              onSaved={(item) => {
-                setCurrentSave(item);
-                setSetupName(item.name);
-                history.replaceState(
-                  null,
-                  "",
-                  `${location.pathname}?save=${encodeURIComponent(item.id)}`,
-                );
-              }}
+              onSaved={rememberSaved}
             />
           ) : undefined
         }
@@ -679,9 +501,9 @@ export default function SimulationWorkspace({
                 </Button>
               </div>
             </div>
-            {feedback && (
+            {(feedback || draftError) && (
               <Notice error role="status">
-                {feedback}
+                {feedback || draftError}
               </Notice>
             )}
             {live.error && <Notice error>{live.error}</Notice>}
@@ -887,6 +709,8 @@ export default function SimulationWorkspace({
                           : labTopology === "regions"
                             ? (regionalRun?.config ?? draftConfig)
                             : (run?.config ?? draftConfig),
+                        labExecution,
+                        labName,
                       )
                 }
               >

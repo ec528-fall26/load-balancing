@@ -14,15 +14,17 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Notice } from "@/components/surface";
-import { saveSetup, type SavedSetup } from "@/lib/saved-setups";
+import { saveSetup, type ExecutionMode, type SavedSetup } from "@/lib/saved-setups";
 import type { Config } from "@/lib/engine";
 export function SaveSetupDialog({
   config,
+  execution,
   suggestedName,
   current,
   onSaved,
 }: {
   config: Config;
+  execution: ExecutionMode;
   suggestedName: string;
   current: SavedSetup | null;
   onSaved: (setup: SavedSetup) => void;
@@ -32,7 +34,7 @@ export function SaveSetupDialog({
     [error, setError] = useState("");
   function save(copy: boolean) {
     try {
-      const result = saveSetup(name, config, copy ? undefined : current?.id);
+      const result = saveSetup(name, config, copy ? undefined : current?.id, execution);
       onSaved(result);
       setOpen(false);
     } catch (e) {
@@ -62,7 +64,7 @@ export function SaveSetupDialog({
             {current ? "Save your changes" : "Save this setup"}
           </DialogTitle>
           <DialogDescription>
-            Save the current configuration and seed in this browser. Results are
+            Save the configuration, execution mode, and seed in this browser. Results are
             not stored; open the setup and run it again.
           </DialogDescription>
         </DialogHeader>

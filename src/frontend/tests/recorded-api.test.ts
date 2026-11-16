@@ -21,8 +21,18 @@ test("recorded proxy preserves precise times and only exposes bounded recording 
   );
   assert.equal(response.status, 200);
   assert.ok(called.includes("time=100.76233412345678"));
+  const laterPage = await proxyRecording(
+    new Request(`http://localhost/api/runs/${id}/events?offset=1000000`),
+    [id, "events"],
+    { fetchImpl: async (url) => {
+      assert.equal(new URL(String(url)).searchParams.get("offset"), "1000000");
+      return Response.json({ items: [] });
+    } },
+  );
+  assert.equal(laterPage.status, 200);
   for (const [parts, query] of [
     [[id, "events"], "?offset=-1"],
+    [[id, "events"], "?offset=9007199254740992"],
     [[id, "snapshot"], "?time=NaN"],
     [[id, "snapshot"], "?time=1&time=2"],
     [["..", "snapshot"], ""],

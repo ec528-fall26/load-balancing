@@ -87,7 +87,7 @@ distributed session ownership, autoscaling, or automatic failover.
 
 | Model | Supported execution | Boundary |
 | --- | --- | --- |
-| Simple single pool | One-shot and continuous | Finite execution slots, bounded waiting FIFO, service-demand sampling, optional processing-rate multipliers. |
+| Simple single pool | One-shot and continuous | Finite execution slots, bounded waiting FIFO, optional processing-rate multipliers, and configurable server availability and repair time. |
 | Main Lab CPU/I/O | One-shot and continuous | CPU -> shared finite I/O -> CPU, with CPU-ready FIFO and per-server outstanding admission caps. I/O releases CPU but retains admission capacity. |
 | Regions | One-shot and continuous | Aggregate compute pools, configurable request/reply transit, and current load knowledge. Continuous runs support manual datacenter outages and optional client migration. No per-server regional scheduling or delayed telemetry. |
 | Sharded service | One-shot | Coordinator, one/two/four required calls, parallel/serial dispatch, CPU/I/O, deadlines, slowdown, and a seeded outage with recovery. |
@@ -332,14 +332,16 @@ inputs and example files are in [the saved-run contract](api.md#saved-runs-expor
 
 ### Reloading and comparing saved runs (D3-04/05)
 
-In the sidebar, **Replay a saved run** accepts version-one configuration JSON.
+In the Next.js Lab, open **Setup → Saved run tools** with **Single server pool**
+selected. **Replay a saved run** accepts version-one configuration JSON.
 Inspect its settings and click **Replay saved configuration** to regenerate the
 simulation. Results replace the active run only after their export fingerprint
 matches the saved ID. Playback then resets to paused at time zero. Invalid files
 or mismatches display errors and preserve current results; the settings form is
 independent of loaded settings.
 
-**Compare saved results** accepts two original CSV exports without an active run.
+In the same **Saved run tools** card, **Compare saved results** accepts two
+original CSV exports without an active run.
 It shows policies, configuration differences, latency, rejection rates, mean
 server utilization and per-server tables. Different workload/capacity settings
 are flagged. It reads saved metrics without simulating or changing active results.
@@ -623,7 +625,7 @@ and workload hashes.
 | Deque optimization in isolation | [Matched-revision commands](#fresh-matched-revision-timing-run) | The reference 100,000-request, 100-server run moved from 1.030 s to 0.364 s, or 2.83×, with matching full-summary fingerprints. Timing varies by machine. |
 | Published Demo 2 vs. Demo 3 | [Commands and raw results](#published-demo-2-vs-demo-3) | Original 10,000-request Round Robin workload. Median engine runtime improved by 1.20×–1.62× across 10, 100 and 1,000 servers. The trace and reported simulation metrics matched. |
 | Single-pool server availability | [Availability validation](#experiment-8-server-availability-validation) | 28 checks cover repair times, configured availability, and one-shot/live parity. |
-| Regional outage and recovery (slide 12) | [Live Lab walkthrough](#continuous-regional-outages-and-client-migration) | East-1 traffic moves to East-2 during the outage and returns home after recovery. |
+| Regional outage and recovery (slide 7; live demo on slide 12) | [Live Lab walkthrough](#continuous-regional-outages-and-client-migration) | East-1 traffic moves to East-2 during the outage and returns home after recovery. |
 | Regional routing spillover | [Lab reproduction](#regional-routing-spillover) | At 130 requests/s for 5 seconds, Nearest rejects 173 of 650 requests. Nearest under 90% load completes all 650. |
 | Recorded playback and scale | [Exact API startup and harness commands](#recorded-playback-and-scale) | Allow 1-3 minutes on a local CPU. The reference 100,000-request case reduced the initial decoded payload from 7.87 MB to 4.10 kB. The harness checks every paginated event against the full trace and verifies seek and live pause/drain. |
 | Sharded service outage | [Outage and slowdown commands](#sharded-service-slowdown-outage-and-call-order) | A few seconds. At 50 parents/s for four seconds with seed 42 and a 500 ms outage, 7 of 200 fail with one required call and 25 of 200 with four. Both no-outage controls finish all 200. [Output interpretation and slowdown controls](#sharded-service-slowdown-outage-and-call-order). |
@@ -733,9 +735,8 @@ throttle but does not demonstrate sustained 100,000/s real-time throughput.
 The [follow-up analysis](../experiments/results/a-11/analysis.md#pagination-and-larger-topology-follow-up)
 distinguishes the initial full-trace study from the implemented pagination work.
 Extended browser/telemetry commands are in the [A-11 runbook](../experiments/results/a-11/README.md).
-Those harnesses write into the evidence directory by default: use a disposable
-checkout or their documented output overrides to preserve references, and do
-not overlap measurements with builds.
+The runbook directs all outputs into a separate rerun directory to preserve
+reference captures. Run performance phases away from builds.
 
 ### Regional routing spillover
 
@@ -767,6 +768,20 @@ Expect `nearest 477 173 1.485 [477, 0, 0]` and
 and an illustrative RTT matrix, not measured WAN conditions or delayed reports.
 
 ### Continuous regional outages and client migration
+
+Reproduce the slide 7 figures without relying on manual click timing:
+
+```sh
+uv run --locked python experiments/reproduce_regional_outage.py
+```
+
+The script samples busy slots every 0.1 simulated seconds. It takes East-1
+offline at 10 s, restores it at 20 s, and reports results for the windows
+0–10, 10–20, 20–35, and 35–45 s. Expect mean routed RTTs of **2.0, 9.0, 5.2,
+and 2.0 ms**, and East-2 mean busy slots of **5.2, 27.9, 15.7, and 6.2**.
+The outage interrupts 15 requests at the transition. All 387 new East-1
+requests during the outage route to East-2, with zero new rejections. The
+live walkthrough shows the same behavior with counts that depend on click timing.
 
 In Setup, choose **Regions**, **Continuous**, and **US · balanced**. Set
 **Requests per second** to 55, the regional routing policy to **Nearest region**,

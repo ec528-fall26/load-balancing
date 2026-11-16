@@ -21,14 +21,14 @@ controls consistent across setup, results, saved-run workflows, and playback.
 - Charts use shadcn Chart + Recharts. Chart 1 is teal (`oklch(0.49 0.085 210)`);
   chart 2 is orange (`oklch(0.52 0.14 45)`). Labels and tooltips carry meaning
   independently of color. Disable chart entrance animations so results are
-  immediately visible. Histogram work is linear in sample count, with at most
-  20 rendered bins. Preserve engine p95 and completed-request-only semantics.
+  immediately visible. Recorded playback and live snapshots use at most 20 bins
+  supplied by Python. Preserve engine p95 and completed-request-only semantics.
 - Playback uses Button, RadioGroup, Select, Slider, Progress, and Badge.
   Execution and waiting remain separate; the task pool covers every server.
   Rack cards paginate at 32 servers. No container implies a physical region.
 - API errors retain the previous successful run. Edited settings never rewrite
-  the completed run's configuration. Replay, comparison, and exports keep their
-  existing explicit unconnected responses until their backend task is done.
+  the completed run's configuration. Portable replay, saved-result comparison,
+  and exports use the Python API and follow its version-one file format.
 
 Verification: production build and TypeScript, Node API/client suite, browser
 suite with live Python Run parity, real UI run and validation recovery,
@@ -80,7 +80,7 @@ Header navigation names Library, Setup, Lab and Compare. A successful run opens
 `/simulator`; errors stay on Setup. Lab offers Edit configuration and Compare
 this run, with results, playback and active live controls. Setup edits are a draft
 and never reconfigure or stop an active worker. Explicit replacement of a live
-session stops the old worker before starting the replacement.
+session retires the old worker after the replacement is ready.
 
 A shared route-group layout keeps the workspace mounted across Setup, Lab and
 Compare. Retain completed results separately from the editable draft and active

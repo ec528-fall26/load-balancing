@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
 import { Play, LoaderCircle } from "lucide-react";
-import { policies, type Config } from "@/lib/engine";
+import { policies, validServerCount, type Config } from "@/lib/engine";
 import { regionalPolicies } from "@/lib/policy-metadata";
 import {
   FanoutDispatchMode,
@@ -16,6 +16,8 @@ import { withoutRegionalClients, type RegionalTopology } from "@/lib/regions";
 import { RegionalSettings } from "@/components/regional-settings";
 import { RequestModelFields } from "@/components/request-model-fields";
 import { NumberField } from "@/components/number-field";
+import { ProcessingRateField } from "@/components/processing-rate-field";
+import type { ExecutionMode } from "@/lib/saved-setups";
 import { AvailabilityFields } from "@/components/availability-fields";
 import {
   formatDuration,
@@ -61,8 +63,8 @@ type Props = {
   config: Config;
   onChange: (c: Config) => void;
   name: string;
-  execution: string;
-  onExecution: (v: string) => void;
+  execution: ExecutionMode;
+  onExecution: (v: ExecutionMode) => void;
   topology: string;
   onTopology: (v: string) => void;
   sharded: ShardedConfig;
@@ -190,9 +192,18 @@ export function LabControls(p: Props) {
                     <NumberField
                       label="Server count"
                       value={c.server_count}
-                      onChange={(n) =>
-                        p.onChange(resizeAvailabilities({ ...c, server_count: n }))
-                      }
+                      commitOnBlur={!!c.processing_rates}
+                      onChange={(server_count) => {
+                        const resized = resizeAvailabilities({ ...c, server_count });
+                        const rates = c.processing_rates;
+                        if (rates && validServerCount(server_count)) {
+                          resized.processing_rates = Array.from(
+                            { length: server_count },
+                            (_, index) => rates[index] ?? 1,
+                          );
+                        }
+                        p.onChange(resized);
+                      }}
                     />
                     <NumberField
                       label="Slots per server"
@@ -208,6 +219,12 @@ export function LabControls(p: Props) {
                       />
                     )}
                   </FieldGroup>
+                  <ProcessingRateField
+                    rates={c.processing_rates}
+                    onChange={(processing_rates) =>
+                      p.onChange({ ...c, processing_rates })
+                    }
+                  />
                   <Separator />
                   {outagesSupported(c) ? (
                     <AvailabilityFields config={c} onChange={p.onChange} />
@@ -397,7 +414,7 @@ export function LabControls(p: Props) {
                       "Execution",
                       p.execution,
                       { one_shot: "One-shot", continuous: "Continuous" },
-                      p.onExecution,
+                      (value) => p.onExecution(value === "continuous" ? "continuous" : "one_shot"),
                     )}
                     {p.execution === "one_shot" && (
                       <NumberField
@@ -491,7 +508,7 @@ export function LabControls(p: Props) {
                         ? [
                             [
                               "Offered requests",
-                              Math.floor(
+                              (single ? Math.floor : Math.ceil)(
                                 c.arrival_rate * c.duration,
                               ).toLocaleString(),
                             ],

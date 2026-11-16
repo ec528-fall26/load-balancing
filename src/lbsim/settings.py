@@ -7,7 +7,7 @@ from math import isfinite
 from lbsim.policies import supports_policy
 
 
-def validate_config(values: Mapping) -> dict:
+def validate_config(values: Mapping, *, allow_manual_repair: bool = False) -> dict:
     """Validate configuration fields and return a new config dictionary."""
     errors = []
     for key in ("server_count", "concurrency", "queue_limit", "seed"):
@@ -83,6 +83,9 @@ def validate_config(values: Mapping) -> dict:
     # Always-available fleets are the original model and keep the original config.
     if availabilities is not None and any(r < 1 for r in availabilities):
         config["availabilities"] = tuple(float(r) for r in availabilities)
+    if "availabilities" in config or (
+        allow_manual_repair and model == "simple" and "mean_repair_time" in values
+    ):
         # A list of equal values is the same as one shared value.
         config["mean_repair_time"] = (float(repairs[0]) if all(r == repairs[0] for r in repairs)
                                       else tuple(float(r) for r in repairs))

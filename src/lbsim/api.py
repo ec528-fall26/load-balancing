@@ -25,6 +25,7 @@ from lbsim.regional import RegionalSimulation, run_regional, presets
 from lbsim.regions import MAX_REGIONAL_SERVERS, Region, validate_topology
 from lbsim.simulation import run_simulation
 from lbsim.sessions import SessionLimits, SessionManager, SessionError
+from lbsim.staged import CPU_HEAVY_IO_FRACTION, IO_HEAVY_IO_FRACTION
 
 
 @dataclass(frozen=True)
@@ -106,7 +107,7 @@ class ExportRequest(BaseModel):
     run_id: str
 
 
-def checked_config(values, limits):
+def checked_config(values, limits, *, allow_manual_repair=False):
     allowed = {'server_count', 'concurrency', 'queue_limit', 'arrival_rate', 'duration',
                'service_min', 'service_max', 'seed', 'policy', 'processing_rates',
                'availabilities', 'mean_repair_time',
@@ -116,7 +117,7 @@ def checked_config(values, limits):
         raise APIError(422, 'INVALID_CONFIG', 'Unknown configuration fields.',
                        [{'field': f'config.{key}', 'message': 'Unknown field.'} for key in extra[:20]])
     try:
-        config = validate_config(values)
+        config = validate_config(values, allow_manual_repair=allow_manual_repair)
     except (ValueError, OverflowError) as error:
         fields = []
         for part in str(error).split('; ')[:20]:
@@ -125,12 +126,18 @@ def checked_config(values, limits):
                            'message': message if sep else part})
         raise APIError(422, 'INVALID_CONFIG', 'Configuration validation failed.', fields) from error
     if config.get('request_model') == 'cpu_io':
-        fraction = .9 if 'io_heavy_probability' in config else config['io_fraction']
-        for speed in config.get('processing_rates', (1.,)):
-            low = config['service_min']*(1-fraction)/2/speed
-            high = config['service_max']*(1-fraction)/2/speed
-            if not isfinite(high) or not 1e-9 <= low <= high <= 3600 or config['service_max']*fraction > 3600:
-                raise APIError(422, 'INVALID_CONFIG', 'CPU stages must be 1 ns–3,600 s and I/O delay at most 3,600 s.')
+        probability = config.get('io_heavy_probability')
+        min_fraction = config['io_fraction'] if probability is None else (
+            IO_HEAVY_IO_FRACTION if probability == 1 else CPU_HEAVY_IO_FRACTION
+        )
+        max_fraction = config['io_fraction'] if probability is None else (
+            CPU_HEAVY_IO_FRACTION if probability == 0 else IO_HEAVY_IO_FRACTION
+        )
+        speeds = config.get('processing_rates', (1.,))
+        low = config['service_min'] * (1 - max_fraction) / 2 / max(speeds)
+        high = config['service_max'] * (1 - min_fraction) / 2 / min(speeds)
+        if not 1e-9 <= low <= high <= 3600 or config['service_max'] * max_fraction > 3600:
+            raise APIError(422, 'INVALID_CONFIG', 'CPU stages must be 1 ns–3,600 s and I/O delay at most 3,600 s.')
     product = config['arrival_rate'] * config['duration']
     exceeded = []
     if not isfinite(product) or product > limits.generated_requests:
@@ -180,7 +187,11 @@ def checked_session_config(values, limits, session_limits):
     if not finite_number(rate) or not 0 <= rate <= session_limits.max_arrival_rate:
         raise APIError(422, 'INVALID_CONFIG', 'Invalid continuous traffic rate.',
                        [{'field': 'config.arrival_rate', 'message': f'Use 0–{session_limits.max_arrival_rate:g} requests/s.'}])
-    config = checked_config({**values, 'duration': 1, 'arrival_rate': rate or 1}, replace(limits, generated_requests=session_limits.max_arrival_rate))
+    config = checked_config(
+        {**values, 'duration': 1, 'arrival_rate': rate or 1},
+        replace(limits, generated_requests=session_limits.max_arrival_rate),
+        allow_manual_repair=True,
+    )
     config.pop('duration')
     config['arrival_rate'] = rate
     rates = config.get('processing_rates', (1.0,))
@@ -466,7 +477,7 @@ def create_app(*, limits=None, runner=isolated_run, session_limits=None, session
         return await run_in_threadpool(recordings.get,run_id)
 
     @app.get('/v1/runs/{run_id}/events')
-    async def recorded_events(run_id: str,offset: int=Query(0,ge=0,le=5*limits.generated_requests),limit: int=Query(min(500,recordings.limits.event_page),ge=1,le=recordings.limits.event_page)):
+    async def recorded_events(run_id: str,offset: int=Query(0,ge=0,le=2**53-1),limit: int=Query(min(500,recordings.limits.event_page),ge=1,le=recordings.limits.event_page)):
         return await run_in_threadpool(recordings.events,run_id,offset,limit)
 
     @app.get('/v1/runs/{run_id}/snapshot')

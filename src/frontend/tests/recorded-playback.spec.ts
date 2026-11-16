@@ -1,4 +1,29 @@
 import { test, expect } from "@playwright/test";
+
+test("recorded Datacenter shows a server as down during its outage", async ({ page, request }) => {
+  await page.goto("/setup?template=light-traffic");
+  await page.getByLabel("Server availability", { exact: true }).fill("0.1");
+  const created = page.waitForResponse((response) => response.url().endsWith("/api/engine/run"));
+  await page.getByRole("button", { name: "Run simulation", exact: true }).click();
+  const run = await (await created).json();
+  expect(run.run_id).toBeTruthy();
+  try {
+    const [start, end] = run.summary.outages["0"][0];
+    const time = Math.ceil(start * 10) / 10;
+    expect(time).toBeLessThan(end);
+    await page.getByRole("tab", { name: "Datacenter", exact: true }).click();
+    const slider = page.getByRole("slider");
+    await slider.press("Home");
+    for (let step = 0; step < Math.round(time * 10); step++) {
+      await slider.press("ArrowRight");
+    }
+    await expect(page.getByText(`Recorded state at ${time.toFixed(2)} s.`)).toBeVisible();
+    await expect(page.getByRole("article", { name: "Server 0 visualization" })).toContainText("Down");
+  } finally {
+    await request.delete(`/api/runs/${run.run_id}`);
+  }
+});
+
 test("100k bounded run loads its histogram, seeks to the drained state and paginates servers", async ({
   page,
   request,

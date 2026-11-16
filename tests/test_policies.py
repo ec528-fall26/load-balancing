@@ -2,8 +2,24 @@ import random
 import unittest
 from unittest.mock import patch
 
+from lbsim.policies import RoutingContext, create_policy
 from lbsim.simulation import run_simulation
 from lbsim.utils.generate_seed import route
+
+
+class PowerOfTwoChoicesTests(unittest.TestCase):
+    def test_healthy_fleet_samples_with_original_seed_without_a_health_scan(self):
+        def unexpected_health_check(_):
+            self.fail("Healthy fleet should not be scanned")
+
+        def policy(**kwargs):
+            return create_policy("power_of_two", RoutingContext(
+                1000, lambda server: server % 7, routing_rng=random.Random(42), **kwargs,
+            ))
+
+        plain = policy()
+        checked = policy(available=unexpected_health_check, all_available=lambda: True)
+        self.assertEqual([plain.choose() for _ in range(50)], [checked.choose() for _ in range(50)])
 
 
 class LeastActiveRequestsTests(unittest.TestCase):

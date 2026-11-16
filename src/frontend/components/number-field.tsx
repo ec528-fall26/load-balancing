@@ -12,12 +12,14 @@ export function NumberField({
   label,
   value,
   step = 1,
+  commitOnBlur = false,
   help,
   onChange,
 }: {
   label: string;
   value: number;
   step?: number;
+  commitOnBlur?: boolean;
   help?: string;
   onChange: (value: number) => void;
 }) {
@@ -44,12 +46,25 @@ export function NumberField({
           onChange={(e) => {
             setDraft(e.target.value);
             if (
+              !commitOnBlur &&
               e.target.value !== "" &&
               Number.isFinite(Number(e.target.value))
             )
               onChange(Number(e.target.value));
           }}
-          onBlur={() => setEditing(false)}
+          onBlur={(event) => {
+            setEditing(false);
+            const text = event.currentTarget.value;
+            if (commitOnBlur && text !== "" && Number.isFinite(Number(text))) {
+              onChange(Number(text));
+            }
+          }}
+          onKeyDown={(event) => {
+            if (commitOnBlur && event.key === "Enter") {
+              event.preventDefault();
+              event.currentTarget.blur();
+            }
+          }}
         />
         <InputGroupAddon align="inline-end">
           <InputGroupButton

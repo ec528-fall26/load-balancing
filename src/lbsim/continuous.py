@@ -41,7 +41,8 @@ class ContinuousSimulation:
             demand=lambda i: self.servers[i].running_count+self.servers[i].waiting_count,
             routing_rng=Random(config["seed"] + 1000000),
             # Health check; with every server up, routing is unchanged.
-            available=lambda i: self.servers[i].up))
+            available=lambda i: self.servers[i].up,
+            all_available=lambda: self.up_count == count))
         # Outages. Telemetry appears only once outages are possible, so sessions
         # without them keep their original snapshots.
         self.availabilities = [float(a) for a in config.get("availabilities", [1.0] * count)]

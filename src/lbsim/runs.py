@@ -81,6 +81,7 @@ class RunStore:
             # Requests dropped by a failed server and not yet re-routed (same timestamp only).
             in_transit=0
             idle=config['server_count']
+            down = set()
             with closing(sqlite3.connect(path)) as db:
                 db.execute('PRAGMA journal_mode=OFF')
                 db.execute('CREATE TABLE events (seq INTEGER PRIMARY KEY, at REAL, sid INTEGER, running INTEGER, waiting INTEGER, action TEXT, request INTEGER, offered INTEGER, completed INTEGER, rejected INTEGER, total_running INTEGER, total_waiting INTEGER, idle INTEGER, io INTEGER, outstanding INTEGER, total_io INTEGER, total_outstanding INTEGER, io_active INTEGER, io_queued INTEGER, total_io_active INTEGER, total_io_queued INTEGER)')
@@ -93,9 +94,14 @@ class RunStore:
                         io_run=e[8] if len(e)>8 else io
                         io_queue=e[9] if len(e)>9 else 0
                         old=states[sid]
-                        if action=='server_down':in_transit+=old[0]+old[1]
+                        was_idle = old[3] == 0 and sid not in down
+                        if action=='server_down':
+                            in_transit+=old[0]+old[1]
+                            down.add(sid)
+                        elif action=='server_up':
+                            down.remove(sid)
                         elif action in ('rerouted','reroute_rejected'):in_transit-=1
-                        idle+=int(unfinished==0)-int(old[3]==0)
+                        idle += int(unfinished == 0 and sid not in down) - int(was_idle)
                         io_waiting+=io-old[2];outstanding+=unfinished-old[3]
                         io_active+=io_run-old[4];io_queued+=io_queue-old[5]
                         running+=active-old[0];waiting+=queued-old[1];states[sid]=[active,queued,io,unfinished,io_run,io_queue]
