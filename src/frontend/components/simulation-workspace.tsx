@@ -25,45 +25,14 @@ import {
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Config, engineRequest, Run } from "@/lib/engine";
 import type { ExecutionMode } from "@/lib/saved-setups";
-import { Results, seconds } from "@/components/results";
+import { Results } from "@/components/results";
 import {
-  hasOutages,
   outagesSupported,
   withoutOutages,
 } from "@/lib/availability";
 import previewRun from "@/lib/preview-run.json";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import {
-  Field,
-  FieldDescription,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   Empty,
   EmptyHeader,
@@ -72,133 +41,11 @@ import {
   EmptyMedia,
 } from "@/components/ui/empty";
 import { Panel, Notice } from "@/components/surface";
+import { SavedRunTools, SavedRunDownloads } from "@/components/saved-run-tools";
+import { useSavedRunTools } from "@/hooks/use-saved-run-tools";
 import { SaveSetupDialog } from "@/components/save-setup-dialog";
 import { AppHeader } from "@/components/app-header";
 import { Server } from "lucide-react";
-function Upload({
-  label,
-  accept,
-  limit,
-  onFile,
-}: {
-  label: string;
-  accept: string;
-  limit: string;
-  onFile: (file: File) => void;
-}) {
-  return (
-    <Field>
-      <FieldLabel>{label}</FieldLabel>
-      <Input
-        type="file"
-        accept={accept}
-        aria-label={label}
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) onFile(file);
-        }}
-      />
-      <FieldDescription>
-        Choose an original {accept.slice(1).toUpperCase()} export. Limit {limit}.
-      </FieldDescription>
-    </Field>
-  );
-}
-function Comparison({ runs }: { runs: [Run, Run] }) {
-  const changed = (Object.keys(runs[0].config) as (keyof Config)[]).filter(
-    (k) => runs[0].config[k] !== runs[1].config[k],
-  );
-  return (
-    <>
-      <Notice>
-        {changed.some((k) => k !== "policy")
-          ? `Settings differ: ${changed.join(", ")}. Workload or capacity differences also affect these results; this is not an isolated policy comparison.`
-          : changed.length
-            ? "Only the routing policy differs; workload and capacity settings match."
-            : "Both files have the same configuration."}
-      </Notice>
-      <div className="grid gap-6 md:grid-cols-2">
-        {runs.map((r, i) => {
-          const s = r.summary,
-            total = s.completed_count + s.rejected_count,
-            util = Object.values(s.per_server_utilization);
-          return (
-            <section key={i}>
-              <h2>Run {i ? "B" : "A"}</h2>
-              <p>
-                <strong>Policy:</strong> {r.config.policy}
-              </p>
-              <p className="caption">
-                {total.toLocaleString()} generated ·{" "}
-                {s.completed_count.toLocaleString()} completed ·{" "}
-                {s.rejected_count.toLocaleString()} rejected
-              </p>
-              {[
-                ["Average response time", seconds(s.mean_response_time)],
-                ["p95 response time", seconds(s.p95_response_time)],
-                [
-                  "Rejection rate",
-                  total
-                    ? `${((100 * s.rejected_count) / total).toFixed(1)}%`
-                    : "N/A",
-                ],
-                [
-                  "Mean server slot utilization",
-                  `${((100 * util.reduce((a, b) => a + b, 0)) / util.length).toFixed(1)}%`,
-                ],
-              ].map(([label, value]) => (
-                <div className="compare-metric" key={label}>
-                  <div>{label}</div>
-                  <div className="metric-value">{value}</div>
-                </div>
-              ))}
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Server ID</TableHead>
-                    <TableHead>Slot utilization (%)</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {Object.entries(s.per_server_utilization).map(([sid, u]) => (
-                    <TableRow key={sid}>
-                      <TableCell>{sid}</TableCell>
-                      <TableCell>{(u * 100).toFixed(2)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </section>
-          );
-        })}
-      </div>
-      <p className="caption">
-        Latency includes waiting and draining, for completed requests only.
-        Utilization excludes draining beyond the arrival window. Mean
-        utilization averages all servers in each run. No completions: N/A
-        latency; no generated requests: N/A rejection rate.
-      </p>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Setting</TableHead>
-            <TableHead>Run A</TableHead>
-            <TableHead>Run B</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {(Object.keys(runs[0].config) as (keyof Config)[]).map((k) => (
-            <TableRow key={k}>
-              <TableCell>{k}</TableCell>
-              <TableCell>{String(runs[0].config[k])}</TableCell>
-              <TableCell>{String(runs[1].config[k])}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </>
-  );
-}
 export default function SimulationWorkspace({
   children,
 }: {
@@ -240,19 +87,11 @@ export default function SimulationWorkspace({
     draftReady, draftError, detachTemplate,
   } = useWorkspaceDraft(pathname, live.id === live.restoredId ? live.snapshot : null);
   const requestPending = useRef(false);
-  const csvFiles = useRef<[string, string]>(["", ""]);
-  const uploadVersions = useRef([0, 0]);
-  const comparisonVersion = useRef(0);
   const [run, setRun] = useState<Run | null>(null),
     [preview, setPreview] = useState(false),
     [feedback, setFeedback] = useState(""),
-    [busy, setBusy] = useState(false),
-    [saved, setSaved] = useState<{ text: string; config: Config } | null>(null),
-    [savedName, setSavedName] = useState(""),
-    [replayError, setReplayError] = useState(""),
-    [comparison, setComparison] = useState<[Run, Run] | null>(null),
-    [fileNames, setFileNames] = useState<[string, string]>(["", ""]),
-    [compareError, setCompareError] = useState("");
+    [busy, setBusy] = useState(false);
+  const savedRunTools = useSavedRunTools(runSinglePool);
   const showPreview = queryParams.has("preview");
   useEffect(() => {
     if (showPreview) {
@@ -328,23 +167,16 @@ export default function SimulationWorkspace({
       setBusy(false);
     }
   }
-  async function request(operation: "run" | "replay") {
+  async function runSinglePool(
+    request: () => Promise<Run>,
+    onError: (message: string) => void = setFeedback,
+  ) {
     if (requestPending.current) return;
     requestPending.current = true;
     setBusy(true);
     setFeedback("");
-    if (operation === "replay") setReplayError("");
     try {
-      const result = await engineRequest<Run>(
-        operation,
-        operation === "run"
-          ? {
-              config: outagesSupported(config)
-                ? config
-                : withoutOutages(config),
-            }
-          : { configuration: saved?.text },
-      );
+      const result = await request();
       setRun(result);
       setPreview(false);
       setLabExecution("one_shot");
@@ -352,96 +184,10 @@ export default function SimulationWorkspace({
       setLabName(setupName);
       router.push("/simulator");
     } catch (error) {
-      const message = (error as Error).message;
-      if (operation === "replay") setReplayError(message);
-      else setFeedback(message);
+      onError((error as Error).message);
     } finally {
       requestPending.current = false;
       setBusy(false);
-    }
-  }
-  async function readConfig(file: File) {
-    try {
-      if (file.size > 60 * 1024) throw new Error("Configuration exceeds 60 KiB.");
-      const text = await file.text();
-      const data = JSON.parse(text);
-      if (!data.config || typeof data.config !== "object")
-        throw new Error(
-          "Choose a configuration export containing a config object.",
-        );
-      setSaved({ text, config: data.config });
-      setSavedName(file.name);
-      setReplayError("");
-    } catch (error) {
-      setSaved(null);
-      setSavedName("");
-      setReplayError((error as Error).message);
-    }
-  }
-  async function readCsv(file: File, index: number) {
-    const uploadVersion = ++uploadVersions.current[index];
-    ++comparisonVersion.current;
-    csvFiles.current[index] = "";
-    let activeComparison: number | undefined;
-    setComparison(null);
-    setCompareError("");
-    setFileNames((current) => {
-      const names: [string, string] = [...current];
-      names[index] = "";
-      return names;
-    });
-    try {
-      if (file.size > 5 * 1024 * 1024) throw new Error("Results exceed 5 MiB.");
-      const text = await file.text();
-      if (uploadVersion !== uploadVersions.current[index]) return;
-      // File reads may finish together before React rerenders the other handler.
-      const next: [string, string] = [...csvFiles.current];
-      next[index] = text;
-      csvFiles.current = next;
-      setFileNames((current) => {
-        const names: [string, string] = [...current];
-        names[index] = file.name;
-        return names;
-      });
-      setComparison(null);
-      setCompareError("");
-      if (next.every(Boolean)) {
-        const version = ++comparisonVersion.current;
-        activeComparison = version;
-        const result = await engineRequest<[Run, Run]>("compare", {
-          results: next,
-        });
-        if (version === comparisonVersion.current) setComparison(result);
-      }
-    } catch (error) {
-      if (
-        uploadVersion === uploadVersions.current[index] &&
-        (activeComparison === undefined ||
-          activeComparison === comparisonVersion.current)
-      )
-        setCompareError((error as Error).message);
-    }
-  }
-  async function download(kind: "configuration" | "results") {
-    if (!run?.run_id) return;
-    try {
-      const data = await engineRequest<{
-        config_json: string;
-        results_csv: string;
-        run_id: string;
-      }>("exports", { run_id: run.run_id });
-      const blob = new Blob(
-        [kind === "configuration" ? data.config_json : data.results_csv],
-        { type: kind === "configuration" ? "application/json" : "text/csv" },
-      );
-      const url = URL.createObjectURL(blob),
-        a = document.createElement("a");
-      a.href = url;
-      a.download = `lbsim-${data.run_id.slice(0, 12)}-${kind === "configuration" ? "config.json" : "results.csv"}`;
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-    } catch (error) {
-      setFeedback((error as Error).message);
     }
   }
   if (pathname === "/compare") return children;
@@ -568,110 +314,19 @@ export default function SimulationWorkspace({
                     setLabName(setupName);
                     router.push("/simulator");
                   }
-                } else if (topology === "regions") void runRegional();
-                else void request("run");
+                } else if (topology === "regions") {
+                  void runRegional();
+                } else {
+                  void runSinglePool(() =>
+                    engineRequest<Run>("run", {
+                      config: outagesSupported(config) ? config : withoutOutages(config),
+                    }),
+                  );
+                }
               }}
             />
             {topology === "single_pool" ? (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Saved run tools</CardTitle>
-                  <CardDescription>
-                    Work with exported configurations and results.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-wrap gap-2">
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" disabled={!draftReady}>
-                        Replay a saved run
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-h-[calc(100dvh-2rem)] grid-cols-[minmax(0,1fr)] overflow-y-auto sm:max-w-lg">
-                      <DialogHeader className="pr-8">
-                        <DialogTitle>Replay a saved run</DialogTitle>
-                        <DialogDescription>
-                          Upload the original configuration JSON to reproduce a run.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <FieldGroup>
-                        <Upload
-                          label="Configuration export (JSON)"
-                          accept=".json"
-                          limit="60 KiB"
-                          onFile={readConfig}
-                        />
-                        {replayError && (
-                          <Notice error role="status">{replayError}</Notice>
-                        )}
-                        {saved !== null && (
-                          <>
-                            <p className="caption">{savedName}</p>
-                            <pre>
-                              {JSON.stringify(
-                                saved.config,
-                                null,
-                                2,
-                              )}
-                            </pre>
-                            <p className="caption">
-                              Replay verifies the saved metrics using the exported
-                              settings and seed, then opens the result in Lab.
-                            </p>
-                            <Button
-                              variant="outline"
-                              disabled={busy}
-                              onClick={() => request("replay")}
-                            >
-                              Replay saved configuration
-                            </Button>
-                          </>
-                        )}
-                      </FieldGroup>
-                    </DialogContent>
-                  </Dialog>
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" disabled={!draftReady}>
-                        Compare saved results
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-h-[calc(100dvh-2rem)] grid-cols-[minmax(0,1fr)] overflow-y-auto sm:max-w-5xl">
-                      <DialogHeader className="pr-8">
-                        <DialogTitle>Compare saved results</DialogTitle>
-                        <DialogDescription>
-                          Upload two results CSV exports to compare their recorded metrics.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <FieldGroup>
-                        <FieldGroup className="grid gap-6 md:grid-cols-2">
-                          {[0, 1].map((i) => (
-                            <div className="min-w-0" key={i}>
-                              <Upload
-                                label={`Run ${i ? "B" : "A"} results (CSV)`}
-                                accept=".csv"
-                            limit="5 MiB"
-                                onFile={(file) => readCsv(file, i)}
-                              />
-                              {fileNames[i] && (
-                                <p className="caption mt-2">{fileNames[i]}</p>
-                              )}
-                            </div>
-                          ))}
-                        </FieldGroup>
-                        {compareError && <Notice error>{compareError}</Notice>}
-                        {comparison ? (
-                          <Comparison runs={comparison} />
-                        ) : (
-                          <p className="caption">
-                            Choose two valid results CSV files to compare.
-                          </p>
-                        )}
-                      </FieldGroup>
-                    </DialogContent>
-                  </Dialog>
-                </CardContent>
-              </Card>
+              <SavedRunTools tools={savedRunTools} ready={draftReady} busy={busy} />
             ) : (
               <p className="caption">
                 Saved run tools are available for single server pools.
@@ -796,32 +451,7 @@ export default function SimulationWorkspace({
                 <Panel title="Run configuration">
                   <pre>{JSON.stringify(run.config, null, 2)}</pre>
                 </Panel>
-                {run.run_id &&
-                  run.config.request_model !== "cpu_io" &&
-                  !run.config.processing_rates?.some((rate) => rate !== 1) &&
-                  !hasOutages(run.config) && (
-                    <Panel title="Download run">
-                      <p className="caption mb-4">
-                        Download the last completed run&apos;s configuration and
-                        results. CSV includes summary metrics and per-server
-                        utilization.
-                      </p>
-                      <div className="flex flex-wrap gap-3">
-                        <Button
-                          variant="outline"
-                          onClick={() => download("configuration")}
-                        >
-                          Download configuration (JSON)
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => download("results")}
-                        >
-                          Download results (CSV)
-                        </Button>
-                      </div>
-                    </Panel>
-                  )}
+                <SavedRunDownloads run={run} onError={setFeedback} />
               </>
             ) : (
               <Empty className="min-h-80 border border-dashed">

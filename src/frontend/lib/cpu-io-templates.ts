@@ -29,6 +29,3 @@ export const cpuIOTemplates: CPUIOTemplate[] = [
     mode: "workload", profile: "cpu_heavy", rate: 100, policy: "round_robin",
   },
 ];
-export function cpuIOTemplateHref(template: CPUIOTemplate) {
-  return `/cpu-io?template=${encodeURIComponent(template.id)}`;
-}

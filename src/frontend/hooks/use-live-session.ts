@@ -13,7 +13,6 @@ import {
 export function useLiveSession(enabled: boolean) {
   const [id, setId] = useState<string | null>(null),
     [restoredId, setRestoredId] = useState<string | null>(null),
-    [startedId, setStartedId] = useState<string | null>(null),
     [snapshot, setSnapshot] = useState<LiveSnapshot | null>(null),
     [error, setError] = useState(""),
     [connectionError, setConnectionError] = useState(""),
@@ -158,7 +157,6 @@ export function useLiveSession(enabled: boolean) {
       last.current = null;
       setOffset(0);
       remember(data.session_id);
-      setStartedId(data.session_id);
       adopt(data);
       return true;
     }, false);
@@ -203,14 +201,12 @@ export function useLiveSession(enabled: boolean) {
         if (!isTerminalSessionError(e)) throw e;
       }
       remember(null);
-      setStartedId(null);
       return true;
     });
   }
   return {
     id,
     restoredId,
-    startedId,
     snapshot,
     error: error || connectionError,
     connectionError,
