@@ -619,6 +619,14 @@ Run these from the repository root after `uv sync --locked`. Use a quiet local
 machine for timings. The committed reports preserve the original environments
 and workload hashes.
 
+Regular arrivals and uniform service times provide controlled policy comparisons
+with identical offered work. The 10,000-request workloads preserve the Demo 2
+baseline; the 100,000-request workloads test engine scaling and playback transfer
+costs. Regional and shard experiments isolate routing and failure behavior.
+These experiments support controlled simulator comparisons, rather than
+production workload validation. Bursty arrivals and trace-driven workloads
+remain future work.
+
 | Experiment | Command | Expected result |
 | --- | --- | --- |
 | Three-policy replay (slide 5) | `uv run python experiments/compare_policies.py --include-least-outstanding --output experiments/results/demo-3-policy-rerun` | A few seconds. Validates 36 runs and replays on 12 traces. In the `near_capacity` rows of `report.json`, average rejection and p95 are **0.00% / 2.13 s**, **2.91% / 5.24 s**, and **0.00% / 1.23 s** for Round Robin, Least Active, and Least Outstanding. |
@@ -879,7 +887,7 @@ significance or confidence intervals.
 | --- | --- |
 | Production workload realism | Regular arrivals, sampled demands, and illustrative RTTs. Trace-driven/bursty traffic and more repeated trials are needed before production conclusions. |
 | Reliability and stale information | Seeded shard outages/slowdown, manual continuous regional outages, client migration, and [single-pool server outages](simulation-model.md#server-availability-and-outages) are implemented. Automatic regional failure detection, retries/replication, and delayed load telemetry are outside the demonstrated model. Announce any proposal-scope revision at the demo. |
-| Portable saved-run coverage | Version one supports simple single-pool runs with uniform processing rates. Regions, CPU/I/O, and shards need a versioned schema and replay evidence. Browser-local setups, portable run files, and temporary recordings are distinct features. |
+| Portable saved-run coverage | Version one supports simple single-pool runs without custom processing rates or availability settings. CPU/I/O, regions, shards, and these additional settings require an extended versioned schema and replay validation. Browser-local setups, portable run files, and temporary recordings are distinct features. |
 | Durable or distributed state | Sessions/recordings expire and restart loses them. Accounts, durable saves, distributed ownership, and automatic failover are not established by manual compute scaling. |
 | Deployment validation | Compose/Kubernetes provide separate compute/state routing. Their presence does not prove autoscaling, high availability, public security, or concurrent-user capacity. Base-image tags remain mutable. |
 | Platform and timeout limits | The November 12 Windows audit reproduced the 100-server/100,000-request paging case exactly, but the subsequent 1,000-server legacy request returned HTTP 504 under the default 15 s worker deadline. The complete historical scale study is not claimed as a successful Windows rerun. The November 15 Linux ARM64 run completed the full harness with the same default worker deadline. |
@@ -898,18 +906,17 @@ recording/seek semantics, and routing that distinguishes active from outstanding
 work. UI integration and deployment wiring support these mechanisms; they do
 not independently establish technical depth or production scalability.
 
-### November 15 clean Linux verification
+### November 16 submission verification
 
-The code at `efc47be` was checked in fresh Python and Node containers under
-Colima, with Debian Bookworm ARM64, Python 3.12.16, uv 0.11.32, Node 24.22.3,
-and npm 11.19.1. The locked install, frontend build, policy metadata check,
-154 Python tests, 23 Node tests, and 38 Chromium tests passed. The initial
-2 GiB VM ran out of memory during Chromium tests. The browser suite passed
-after increasing the VM to 4 CPUs and 8 GiB.
+[GitHub Actions](https://github.com/ec528-fall26/load-balancing/actions/runs/43901872848)
+passed for submission commit `0a5cc84` on November 16, 2026. The run verified
+locked dependency installation, 198 Python tests, policy metadata validation,
+the frontend production build, 39 Node tests, and 46 Chromium tests. The CI
+workflow uses Ubuntu, Python 3.12 selected by `.python-version`, Node 24, and
+the repository's locked Python and npm dependencies.
 
-The 36 paired policy runs and replays, 81 CPU/I/O runs and replays, regional
-spillover, and seeded shard outage reproduced the documented results.
-The matched Demo 2 and Demo 3 traces and simulation metrics agreed across
-all nine paired samples. Linux median speedups were 1.12×–1.58×. The full
-playback harness passed all three one-shot, two regional, and four live cases
-with the default 15-second worker deadline.
+These checks verify the automated regression suite on that submission commit.
+They do not constitute a fresh rerun of every historical performance experiment.
+The benchmark sections identify their measured revisions, environments, expected
+outputs, and reproduction commands; their historical timings remain specific
+to those captures.
