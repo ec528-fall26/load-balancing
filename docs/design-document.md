@@ -39,7 +39,7 @@ of revised milestones.
 
 | Commitment or extension | Demo 2 baseline | Demo 3 evidence and acceptance check |
 | --- | --- | --- |
-| Profile and improve a measured bottleneck | List front-removal of pending arrivals; original 10,000-request benchmark | Published snapshot medians improve 1.19-1.62x with matching traces and metrics. The isolated deque study improves 2.76-4.31x at 100,000 requests with exact full-summary fingerprints. See Experiments 3/4 and [snapshot comparison](#published-demo-2-vs-demo-3). |
+| Profile and improve a measured bottleneck | List front-removal of pending arrivals; original 10,000-request benchmark | Published snapshot medians improve 1.20–1.62× with matching traces and metrics. The isolated deque study improves 2.76-4.31x at 100,000 requests with exact full-summary fingerprints. See Experiments 3/4 and [snapshot comparison](#published-demo-2-vs-demo-3). |
 | Implement and compare load feedback | Round-robin prototype | Running-only least active and queue-aware least outstanding; 36 policy runs and exact API replays on twelve shared traces. Near-capacity p95 is 2.13/5.24/1.23 s, with rejection 0/2.91/0%. See the [Demo 3 experiments](#demo-3-experiments). |
 | Save, replay, and compare simulations | In-memory recorded-event playback | Version-one JSON/CSV, fingerprint-verified replay, and validated saved-result comparison; complete replayed summaries/events match. Experiments 2/5. |
 | Make larger results usable | Legacy full-trace API response | Initial decoded response falls from 7,870,218 to 4,097 bytes for the reference 100-server/100,000-request case; paginated events reconstruct the original trace. [Playback validation](#recorded-playback-and-scale). |
@@ -271,8 +271,7 @@ uv sync --locked
 npm --prefix src/frontend ci
 ```
 
-Record the resolved commit and versions with a rerun. This document's review
-branch must be merged into `demo-3` to enter the graded snapshot.
+Record the resolved commit and versions with a rerun.
 The [course setup requirements](https://ec528.github.io/ec528/fall26/setup/#instructions-the-ta-can-run)
 require a teammate to follow the final instructions from a clean environment.
 
@@ -307,14 +306,14 @@ npm --prefix src/frontend run build
 LBSIM_API_URL=http://127.0.0.1:8000 PLAYWRIGHT_CHANNEL=chromium npm --prefix src/frontend test
 ```
 
-Expect 148 Python tests with `OK`, a successful metadata check/build, 23 passing
-Node module tests, and no failed browser cases. Keep the API running. Stop the
+Expect 154 Python tests with `OK`, a successful metadata check and frontend build,
+23 passing Node module tests, and 38 passing Chromium tests. Keep the API running. Stop the
 interactive frontend before Playwright starts its own server on port 3000.
 The default config otherwise selects Edge; explicitly selecting Chromium makes
 this command portable. Allow roughly 30-120 seconds for Python, 1-3 minutes for
 a cold build, and 2-10 minutes for browser checks after installation. Slower
 machines may exceed these estimates. These categories also run in
-[CI](../.github/workflows/tests.yml); counts identify the audited snapshot.
+[CI](../.github/workflows/tests.yml).
 
 The worked example and JSON/CSV instructions below reproduce the earlier
 Streamlit baseline with `uv run streamlit run src/lbsim/app.py`. For the three
@@ -647,7 +646,7 @@ and workload hashes.
 | --- | --- | --- |
 | Three-policy replay (slide 7) | `uv run python experiments/compare_policies.py --include-least-outstanding --output experiments/results/demo-3-policy-rerun` | A few seconds. Validates 36 runs and replays on 12 traces. In the `near_capacity` rows of `report.json`, average rejection and p95 are **0.00% / 2.13 s**, **2.91% / 5.24 s**, and **0.00% / 1.23 s** for Round Robin, Least Active, and Least Outstanding. |
 | Deque optimization in isolation | [Matched-revision commands](../experiments/README.md#d3-07-deque-beforeafter-comparison) | The reference 100,000-request, 100-server run moved from 1.030 s to 0.364 s, or 2.83×, with matching full-summary fingerprints. Timing varies by machine. |
-| Published Demo 2 vs. Demo 3 | [Commands and raw results](#published-demo-2-vs-demo-3) | Original 10,000-request Round Robin workload. Median engine runtime improved by 1.19×–1.62× across 10, 100 and 1,000 servers. The trace and reported simulation metrics matched. |
+| Published Demo 2 vs. Demo 3 | [Commands and raw results](#published-demo-2-vs-demo-3) | Original 10,000-request Round Robin workload. Median engine runtime improved by 1.20×–1.62× across 10, 100 and 1,000 servers. The trace and reported simulation metrics matched. |
 | Regional routing spillover | [Lab reproduction](#regional-routing-spillover) | At 130 requests/s for 5 seconds, Nearest rejects 173 of 650 requests. Nearest under 90% load completes all 650. |
 | Recorded playback and scale | [Exact API startup and harness commands](#recorded-playback-and-scale) | Allow 1-3 minutes on a local CPU. The reference 100,000-request case reduced the initial decoded payload from 7.87 MB to 4.10 kB. The harness checks every paginated event against the full trace and verifies seek and live pause/drain. |
 | Sharded service outage | `uv run --locked python experiments/compare_fanout_pipeline.py --outage > fanout-outage-rerun.json` | A few seconds. At 50 parents/s for four seconds with seed 42 and a 500 ms outage, 7 of 200 fail with one required call and 25 of 200 with four. Both no-outage controls finish all 200. [Output interpretation and slowdown controls](#sharded-service-slowdown-outage-and-call-order). |
@@ -702,8 +701,8 @@ See the [reports and all 18 samples](../experiments/results/demo-2-vs-demo-3/).
 | Servers | Demo 2 median | Demo 3 median | Speedup | Completed / rejected |
 | ---: | ---: | ---: | ---: | ---: |
 | 10 | 21.2 ms | 13.1 ms | 1.62× | 1,905 / 8,095 |
-| 100 | 35.5 ms | 29.2 ms | 1.22× | 10,000 / 0 |
-| 1,000 | 35.1 ms | 29.4 ms | 1.19× | 10,000 / 0 |
+| 100 | 35.5 ms | 29.2 ms | 1.21× | 10,000 / 0 |
+| 1,000 | 35.1 ms | 29.4 ms | 1.20× | 10,000 / 0 |
 
 The published snapshots include multiple code and dependency changes.
 The separate deque experiment isolates the arrival-list change on 100,000 requests.
@@ -891,7 +890,7 @@ significance or confidence intervals.
 | Portable saved-run coverage | Version one supports simple single-pool runs with uniform processing rates. Regions, CPU/I/O, and shards need a versioned schema and replay evidence. Browser-local setups, portable run files, and temporary recordings are distinct features. |
 | Durable or distributed state | Sessions/recordings expire and restart loses them. Accounts, durable saves, distributed ownership, and automatic failover are not established by manual compute scaling. |
 | Deployment validation | Compose/Kubernetes provide separate compute/state routing. Their presence does not prove autoscaling, high availability, public security, or concurrent-user capacity. Base-image tags remain mutable. |
-| Platform and timeout limits | The November 12 Windows audit reproduced the 100-server/100,000-request paging case exactly, but the subsequent 1,000-server legacy request returned HTTP 504 under the default 15 s worker deadline. The complete historical scale study is not claimed as a successful Windows rerun. Repeat the full harness on the primary Linux/macOS path and record failures rather than treating partial output as success. |
+| Platform and timeout limits | The November 12 Windows audit reproduced the 100-server/100,000-request paging case exactly, but the subsequent 1,000-server legacy request returned HTTP 504 under the default 15 s worker deadline. The complete historical scale study is not claimed as a successful Windows rerun. The November 15 Linux ARM64 run completed the full harness with the same default worker deadline. |
 
 ### Code structure and technical depth
 
@@ -952,12 +951,27 @@ all 174 event pages and seek snapshots for the first scale case before the
 larger legacy request timed out. Historical reports remain unchanged. These
 checks do not claim a newly completed clean-VM, full-browser, or deployment run.
 
+### November 15 clean Linux verification
+
+The code at `efc47be` was checked in fresh Python and Node containers under
+Colima, with Debian Bookworm ARM64, Python 3.12.16, uv 0.11.32, Node 24.22.3,
+and npm 11.19.1. The locked install, frontend build, policy metadata check,
+154 Python tests, 23 Node tests, and 38 Chromium tests passed. The initial
+2 GiB VM ran out of memory during Chromium tests. The browser suite passed
+after increasing the VM to 4 CPUs and 8 GiB.
+
+The 36 paired policy runs and replays, 81 CPU/I/O runs and replays, regional
+spillover, and seeded shard outage reproduced the documented results.
+The matched Demo 2 and Demo 3 traces and simulation metrics agreed across
+all nine paired samples. Linux median speedups were 1.12×–1.58×. The full
+playback harness passed all three one-shot, two regional, and four live cases
+with the default 15-second worker deadline.
+
 ### Submission and presentation checks
 
-Before noon Boston time on November 16, merge the reviewed document branch into
-`demo-3`, run the automated checks, and have a teammate follow the commands from
-a clean environment. Verify slides, video, code, and document on that exact
-remote branch. A separate unmerged branch is not collected for grading.
+The submission snapshot is taken from `demo-3` at noon Boston time on
+November 16. Verify the slides, video, code, and design document on that
+remote branch.
 
 The presentation should explain the baseline, new mechanism, workload,
 measured result, and limitations, with the architecture diagram and labeled
