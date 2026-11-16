@@ -341,14 +341,20 @@ class SessionManager:
                     "Live session capacity is full. Delete or wait for a session to expire.",
                 )
             self.pending += 1
-        context = multiprocessing.get_context("spawn")
-        parent, child = context.Pipe()
-        process = context.Process(
-            target=self.worker_target, args=(child, config, self.limits, speed, paused)
-        )
-        record = _Session(process, parent, monotonic(), monotonic())
+        parent = child = record = None
         try:
-            process.start()
+            try:
+                context = multiprocessing.get_context("spawn")
+                parent, child = context.Pipe()
+                process = context.Process(
+                    target=self.worker_target, args=(child, config, self.limits, speed, paused)
+                )
+                record = _Session(process, parent, monotonic(), monotonic())
+                process.start()
+            except OSError as error:
+                raise SessionError(
+                    503, "SESSION_FAILED", "Could not start the session worker. Retry shortly."
+                ) from error
             child.close()
             if not parent.poll(self.limits.startup_seconds):
                 raise SessionError(
@@ -380,16 +386,22 @@ class SessionManager:
                     del self.sessions[replacement[0]]
                 self.sessions[sid] = record
         except BaseException:
-            self._stop(record)
+            if record is not None:
+                self._stop(record)
+            elif parent is not None:
+                parent.close()
             raise
         else:
             if replacement is not None:
                 self._stop(replacement[1])
             return self._envelope(sid, data)
         finally:
-            child.close()
-            with self.lock:
-                self.pending -= 1
+            try:
+                if child is not None:
+                    child.close()
+            finally:
+                with self.lock:
+                    self.pending -= 1
 
     def request(self, sid, action, *, value=None, options=None):
         record = self._get(sid)

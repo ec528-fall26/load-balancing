@@ -257,7 +257,7 @@ Typical errors use the existing versioned error envelope:
 | 429 | `SESSION_BUSY` | Per-session command lock could not be acquired in time |
 | 404 | `SESSION_NOT_FOUND` | Unknown/deleted ID, or ID from a previous API process |
 | 410 | `SESSION_EXPIRED` | Idle or absolute lifetime expired |
-| 503 | `SESSION_FAILED` | Worker crashed, disconnected, or stopped replying |
+| 503 | `SESSION_FAILED` | Worker could not start, crashed, disconnected, or stopped replying |
 | 504 | `SESSION_START_TIMEOUT` | Worker did not finish startup in time |
 
 Expired/failed IDs have a bounded 128-entry tombstone cache. Once evicted they

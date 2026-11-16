@@ -86,7 +86,7 @@ LBSIM_API_URL=http://127.0.0.1:8000 PLAYWRIGHT_CHANNEL=chromium npm --prefix src
 Run these commands after installing the locked dependencies. Keep the API running
 and stop the interactive frontend before Playwright starts its server on port 3000.
 
-Expect 197 Python tests with `OK`, a successful metadata check and frontend build,
+Expect 198 Python tests with `OK`, a successful metadata check and frontend build,
 39 passing Node module tests and 46 passing Chromium tests.
 On a Linux machine missing browser system libraries, add `--with-deps` to the
 Playwright install command. The default config otherwise selects Edge; explicitly selecting Chromium makes

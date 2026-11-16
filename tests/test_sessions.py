@@ -1,8 +1,10 @@
 from dataclasses import replace
 from concurrent.futures import ThreadPoolExecutor
+from multiprocessing import get_context
 from threading import Event
 from time import monotonic, sleep
 import unittest
+from unittest.mock import Mock, patch
 
 from fastapi.testclient import TestClient
 
@@ -279,6 +281,29 @@ class SessionTests(unittest.TestCase):
                 # normal healthy-worker budget, including fresh-process imports.
                 manager.limits = replace(limits, startup_seconds=SessionLimits().startup_seconds)
                 self.create(client)
+
+    def test_process_allocation_failure_releases_capacity_and_pipe(self):
+        limits = SessionLimits(max_sessions=1)
+        manager = SessionManager(limits)
+        with TestClient(create_app(
+            session_limits=limits, session_manager=manager,
+        ), raise_server_exceptions=False) as client:
+            for failure in ("Pipe", "Process"):
+                with self.subTest(failure=failure):
+                    context = Mock(wraps=get_context("spawn"))
+                    parent, child = Mock(), Mock()
+                    context.Pipe.return_value = (parent, child)
+                    getattr(context, failure).side_effect = OSError("resource temporarily unavailable")
+                    with patch("lbsim.sessions.multiprocessing.get_context", return_value=context):
+                        response = client.post("/v1/sessions", json={"config": CONFIG})
+                    self.assertEqual(manager.pending, 0)
+                    self.assertEqual(response.status_code, 503, response.text)
+                    self.assertEqual(response.json()["code"], "SESSION_FAILED")
+                    if failure == "Process":
+                        parent.close.assert_called_once_with()
+                        child.close.assert_called_once_with()
+            initial = self.create(client, paused=True)
+            self.assertEqual(initial["status"], "paused")
 
     def test_replacement_preserves_old_session_until_success_at_capacity(self):
         limits = SessionLimits(max_sessions=1)
