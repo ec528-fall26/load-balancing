@@ -222,89 +222,43 @@ Tests and the benchmark check these properties.
 
 ## 3. Setup
 
-The primary runbook uses a POSIX shell on Linux or macOS. CI runs on Ubuntu
-with Node.js 24. Install Git, Python 3.12 (including `venv`), and Node.js 24
-with npm. The audit used uv 0.11.32; the bootstrap below pins that working
-version. uv selects Python 3.12 from `.python-version`.
-`uv.lock` and `src/frontend/package-lock.json`
-pin application packages; this snapshot locks Streamlit 1.67.0, Next.js 16.4.3,
-and React 19.3.1. Historical measurements retain their original recorded versions.
-The Dockerfiles select uv 0.13.7, Python 3.12-slim, and Node 24-bookworm-slim;
-base-image tags are not immutable digests.
+Follow the [quick start](../README.md#quick-start) to install dependencies and
+start the Lab. The [verification commands](../README.md#verification) exercise
+the engine, policy registry, and frontend. Record the commit, Python version,
+and Node version with any benchmark rerun.
 
-No GPU, cloud credentials, external dataset, or database service is needed.
-Internet access is needed for cloning and package/browser installation. A local
-CPU is sufficient. For a clean evaluation machine, 4 CPU cores, 8 GiB RAM, and
-5 GiB free disk are a starting allocation, not a measured minimum. Larger
-builds/runs may need more. Reserve 8000/3000 for ordinary use and 8001/3001 for
-isolated benchmarks. Allow several minutes for first installation.
+The documented experiments use a POSIX shell on Linux or macOS. Python and npm
+dependencies are locked. Historical benchmarks use the locked environments of
+the revisions measured. The Dockerfiles select uv 0.13.7, Python 3.12-slim,
+and Node 24-bookworm-slim. Their base-image tags can change.
 
-Install Git, Python 3.12, and Node.js 24 using your OS packages or official
-installers. On Linux, install your distribution's Python venv package if it is
-separate. Bootstrap uv in a temporary environment, then clone the submission:
+The experiments run on a local CPU. Allow internet access for cloning and
+dependency installation. For a clean evaluation machine, start with four
+CPU cores, 8 GiB RAM, and 5 GiB free disk. Reserve ports 8000 and 3000 for the
+Lab and 8001 and 3001 for isolated playback benchmarks.
 
-```sh
-tool_env=$(mktemp -d)
-python3.12 -m venv "$tool_env"
-"$tool_env/bin/python" -m pip install uv==0.11.32
-export PATH="$tool_env/bin:$PATH"
-git clone --branch demo-3 https://github.com/ec528-fall26/load-balancing.git
-cd load-balancing
-git rev-parse HEAD
-uv --version
-node --version
-npm --version
-uv sync --locked
-npm --prefix src/frontend ci
-```
+### Lab walkthroughs
 
-Record the resolved commit and versions with a rerun.
-The [course setup requirements](https://ec528.github.io/ec528/fall26/setup/#instructions-the-ta-can-run)
-require a teammate to follow the final instructions from a clean environment.
+- **Compare routing.** In Setup, select **Single server pool** and **One-shot**.
+  Use 10 servers, 1 slot and 10 waiting places per server, 16.36 requests/s for
+  100 seconds, simple service times of 0.1–1.0 seconds, and seed 42.
+  Choose **Compare current setup**, clone the baseline, and set the two variants
+  to **Least active requests** and **Least outstanding requests**. Leave the
+  baseline at **Round robin** and click **Run comparison**. Expect 1,636 offered
+  requests per case and 0, 55, and 0 rejections, respectively.
+- **Change load live.** In Setup, use **Continuous**, two servers with one slot
+  each, and start at 2 requests/s. In Lab, enter 10 in **Live requests per
+  second** and click **Apply traffic**. Watch the queue and simulated clock.
+  Click **Pause session**, then **Resume session**. Click **Stop session** when
+  finished.
+- **Inspect an outage.** Choose **Sharded service**, four parallel calls,
+  4 ms round trip, a 500 ms seeded outage, CPU slowdown 1×, 50 parents/s for
+  four seconds, a 200 ms deadline, and seed 42. Under **Seed and request
+  timeline**, choose request 170. Expect 175 of 200 parents on time and 25
+  outage failures. Open **Follow request 170** and **Full event timeline**.
 
-Start the API in terminal A, with one worker for local state ownership:
-
-```sh
-uv run --locked python -m uvicorn lbsim.api:app --host 127.0.0.1 --port 8000 --workers 1
-```
-
-In terminal B, from the repository root:
-
-```sh
-curl -fsS http://127.0.0.1:8000/health
-LBSIM_API_URL=http://127.0.0.1:8000 npm --prefix src/frontend run dev
-```
-
-Expect health JSON containing `"status":"ok"`; open
-[Setup](http://127.0.0.1:3000/setup). The [README](../README.md#quick-start)
-provides the routing, live-traffic, and outage walkthroughs. On PowerShell, set
-`$env:LBSIM_API_URL='http://127.0.0.1:8000'` before running npm; inline variable
-assignments and historical shell loops below require a POSIX shell.
-`python -m uvicorn` avoids an executable-shim block observed on Windows.
-
-### Automated checks
-
-```sh
-uv run --locked python -m unittest discover -s tests -q
-uv run --locked python scripts/generate_policy_metadata.py --check
-npm --prefix src/frontend run build
-(cd src/frontend && npx --no-install tsc -p tsconfig.api-tests.json && node --test .api-tests/tests/*.test.js)
-(cd src/frontend && npx --no-install playwright install --with-deps chromium)
-LBSIM_API_URL=http://127.0.0.1:8000 PLAYWRIGHT_CHANNEL=chromium npm --prefix src/frontend test
-```
-
-Expect 193 Python tests with `OK`, a successful metadata check and frontend build,
-38 passing Node module tests and 38 passing Chromium tests. Keep the API running. Stop the
-interactive frontend before Playwright starts its own server on port 3000.
-The default config otherwise selects Edge; explicitly selecting Chromium makes
-this command portable. Allow roughly 30-120 seconds for Python, 1-3 minutes for
-a cold build, and 2-10 minutes for browser checks after installation. Slower
-machines may exceed these estimates. These categories also run in
-[CI](../.github/workflows/tests.yml).
-
-The worked example and JSON/CSV instructions below reproduce the earlier
-Streamlit baseline with `uv run streamlit run src/lbsim/app.py`. For the three
-current Lab workflows, follow the [Demo 3 quick start](../README.md#quick-start).
+The overload example and export instructions below also work with the earlier
+Streamlit interface. Its start command is in the [quick start](../README.md#quick-start).
 
 ### Short worked example: overload and draining
 
@@ -394,6 +348,12 @@ Both formats are checked for schema, types, consistency and fingerprints, with a
 
 ## 4. Running the experiments
 
+Start with the [Demo 3 results table](#demo-3-experiments) for the presentation
+claims. The numbered entries document the baseline and supporting experiments.
+Run commands from the repository root after following the
+[quick start](../README.md#quick-start). Write reruns to fresh paths to preserve
+the [reference captures](../experiments/results/).
+
 The existing benchmark measures the full `run_simulation` call, including
 generation, routing, event recording, draining and metrics. Each sample uses
 a fresh process. Startup/imports and post-run checks are excluded from timing.
@@ -432,8 +392,7 @@ three samples per server count:
 | 100 | 0.1351 | 37.79 | 10,000 | 0 |
 | 1,000 | 0.1275 | 38.66 | 10,000 | 0 |
 
-See [methodology](../experiments/README.md),
-[raw samples](../experiments/results/d2-13/samples.csv),
+See the [raw samples](../experiments/results/d2-13/samples.csv),
 [machine/configuration report](../experiments/results/d2-13/report.json) and
 [trace](../experiments/results/d2-13/trace.csv). Increasing server count also adds
 capacity. Ten servers reject most requests. These results do not isolate the
@@ -451,7 +410,7 @@ output directory preserves those reference files.
 
 ### Experiment 3: D3-06 engine profiling
 
-Run `uv run python experiments/profile_engine.py --output experiments/results/d3-07-rerun`
+Run `uv run python experiments/profile_engine.py --output experiments/results/engine-profile-rerun`
 from the repository root. It profiles the current deque implementation at
 10,000 requests and a longer
 100,000-request workload, with 10/100/1,000 servers and three unprofiled timings
@@ -477,6 +436,10 @@ requests). Combined list-pop self time accounted for 37-48% of profiled time in
 the 100,000-request cases. cProfile combines arrival and pending-completion pop
 sites, so this is neither an isolated arrival-pop cost nor a predicted speedup.
 See the [raw pre-change captures and function statistics](../experiments/results/d3-06/report.json).
+
+You can inspect the reference profile with
+`uv run python -m pstats experiments/results/d3-06/100000-requests-100-servers.prof`.
+At the prompt, use `sort tottime` and `stats 15`.
 
 ### Experiment 4: D3-07 deque improvement
 
@@ -513,16 +476,32 @@ Each median uses three fresh-process unprofiled runs. Original timing captures
 used macOS arm64, Python 3.12.12 and Streamlit 1.65.0 as recorded in those reports.
 These are matched sequential batches on one machine, not the Windows D2 timing
 environment; do not divide D2 timings by these timings to claim optimization.
-All six complete summaries match before/after. The historical optimization
-validation used 39 tests; the audited integrated suite now contains 148.
+All six complete summaries match before and after.
 
-Experiment 3 can collect a new after-change report on another machine. Comparing
-that report directly with the original macOS capture will correctly fail the
-environment check if environments differ. To measure a new speedup, collect
-both the list-arrival engine and deque engine with this same profiling script,
-configuration and Python/dependencies on the same machine, using separate output
-directories. The saved source hashes identify the original pair. No new before
-capture or unmeasured speedup is assumed by this document.
+#### Fresh matched-revision timing run
+
+To collect new timings, run the same profiling script on both historical
+revisions on one machine. The pre-deque revision predates the harness, so copy
+the harness from the post-deque revision. Run these commands in a POSIX shell
+from the repository root:
+
+```sh
+run_dir=$(mktemp -d)
+git worktree add --detach "$run_dir/before" 2ae52ee
+git worktree add --detach "$run_dir/after" 9b95fdc
+cp "$run_dir/after/experiments/profile_engine.py" "$run_dir/before/experiments/"
+(cd "$run_dir/before" && uv sync --locked && uv run python experiments/profile_engine.py --output "$run_dir/results-before")
+(cd "$run_dir/after" && uv sync --locked && uv run python experiments/profile_engine.py --output "$run_dir/results-after")
+uv run python -X utf8 experiments/compare_profiles.py \
+  "$run_dir/results-before/report.json" "$run_dir/results-after/report.json" \
+  --output "$run_dir/comparison.json"
+```
+
+Allow roughly a minute for both profiling runs. The comparison prints six
+ratios and checks exact summary fingerprints. Timing ratios vary by machine.
+Keep the Python version and environment the same for both runs. The saved
+captures were taken together, so compare them to each other when checking the
+published ratios.
 
 Removing arrival-list shifts improves these measured cases, especially the
 larger traces. It does not establish overall linear complexity: completion-list
@@ -629,7 +608,7 @@ deterministic results can be checked separately from machine-dependent timings.
 | --- | --- |
 | Supports | Server outages (availability, MTTR) behave as the model claims in one-shot runs and continuous sessions. |
 | Command | `uv run python experiments/validate_availability.py --output experiments/results/availability-validation-rerun` |
-| Expected runtime | About 40 seconds on a local CPU. |
+| Expected runtime | Seconds to under a minute on a local CPU. |
 | Expected output | `28 of 28 availability checks passed`; e.g. 36.0% of arrivals should find both of two 40%-available servers down, measured 35.9% ± 0.5% over 50 seeds. See the [reference report](../experiments/results/availability-validation/report.md). |
 
 ### Demo 3 experiments
@@ -641,11 +620,13 @@ and workload hashes.
 | Experiment | Command | Expected result |
 | --- | --- | --- |
 | Three-policy replay (slide 5) | `uv run python experiments/compare_policies.py --include-least-outstanding --output experiments/results/demo-3-policy-rerun` | A few seconds. Validates 36 runs and replays on 12 traces. In the `near_capacity` rows of `report.json`, average rejection and p95 are **0.00% / 2.13 s**, **2.91% / 5.24 s**, and **0.00% / 1.23 s** for Round Robin, Least Active, and Least Outstanding. |
-| Deque optimization in isolation | [Matched-revision commands](../experiments/README.md#d3-07-deque-beforeafter-comparison) | The reference 100,000-request, 100-server run moved from 1.030 s to 0.364 s, or 2.83×, with matching full-summary fingerprints. Timing varies by machine. |
+| Deque optimization in isolation | [Matched-revision commands](#fresh-matched-revision-timing-run) | The reference 100,000-request, 100-server run moved from 1.030 s to 0.364 s, or 2.83×, with matching full-summary fingerprints. Timing varies by machine. |
 | Published Demo 2 vs. Demo 3 | [Commands and raw results](#published-demo-2-vs-demo-3) | Original 10,000-request Round Robin workload. Median engine runtime improved by 1.20×–1.62× across 10, 100 and 1,000 servers. The trace and reported simulation metrics matched. |
+| Single-pool server availability | [Availability validation](#experiment-8-server-availability-validation) | 28 checks cover repair times, configured availability, and one-shot/live parity. |
+| Regional outage and recovery (slide 12) | [Live Lab walkthrough](#continuous-regional-outages-and-client-migration) | East-1 traffic moves to East-2 during the outage and returns home after recovery. |
 | Regional routing spillover | [Lab reproduction](#regional-routing-spillover) | At 130 requests/s for 5 seconds, Nearest rejects 173 of 650 requests. Nearest under 90% load completes all 650. |
 | Recorded playback and scale | [Exact API startup and harness commands](#recorded-playback-and-scale) | Allow 1-3 minutes on a local CPU. The reference 100,000-request case reduced the initial decoded payload from 7.87 MB to 4.10 kB. The harness checks every paginated event against the full trace and verifies seek and live pause/drain. |
-| Sharded service outage | `uv run --locked python experiments/compare_fanout_pipeline.py --outage > fanout-outage-rerun.json` | A few seconds. At 50 parents/s for four seconds with seed 42 and a 500 ms outage, 7 of 200 fail with one required call and 25 of 200 with four. Both no-outage controls finish all 200. [Output interpretation and slowdown controls](#sharded-service-slowdown-outage-and-call-order). |
+| Sharded service outage | [Outage and slowdown commands](#sharded-service-slowdown-outage-and-call-order) | A few seconds. At 50 parents/s for four seconds with seed 42 and a 500 ms outage, 7 of 200 fail with one required call and 25 of 200 with four. Both no-outage controls finish all 200. [Output interpretation and slowdown controls](#sharded-service-slowdown-outage-and-call-order). |
 | CPU/I/O and power-of-two choices | `uv run python experiments/compare_cpu_io.py --output experiments/results/a-24-rerun` | A few seconds. 81 paired runs on 27 traces. The [reference analysis](../experiments/results/a-24/analysis.md) defines the research model and expected comparisons. |
 
 The three-policy command writes `samples.csv`, `server-utilization.csv`, twelve
@@ -715,13 +696,13 @@ In terminal B, after health succeeds:
 
 ```sh
 curl -fsS http://127.0.0.1:8001/health
-uv run --locked python experiments/pagination_scale.py --backend http://127.0.0.1:8001 --output pagination-demo-3-rerun.json
+uv run --locked python experiments/pagination_scale.py --backend http://127.0.0.1:8001 \
+  --output "$PWD/experiments/results/pagination-demo-3-rerun.json"
 ```
 
-Allow 1-3 minutes locally. The output filename is relative to
-`experiments/results/a-11/`, so this writes
-`experiments/results/a-11/pagination-demo-3-rerun.json`. All three single-pool
-cases offer 100,000 requests. The harness checks summary equality, histogram
+Allow 1-3 minutes locally. The absolute path in the command writes the report
+under `experiments/results/`, alongside other ignored rerun outputs. All three
+single-pool cases offer 100,000 requests. The harness checks summary equality, histogram
 counts, each paginated event against the legacy trace, stable sequence order,
 and conservation at start/middle/end seeks. It also checks regional draining,
 explicit topology limits, and live pause followed by zero-traffic drain.
@@ -788,11 +769,11 @@ and an illustrative RTT matrix, not measured WAN conditions or delayed reports.
 ### Continuous regional outages and client migration
 
 In Setup, choose **Regions**, **Continuous**, and **US · balanced**. Set
-**Requests per second** to 40, the regional routing policy to **Nearest region**,
+**Requests per second** to 55, the regional routing policy to **Nearest region**,
 the seed to 42, and service times to 0.1–1.0 seconds. Under **Client traffic**,
 choose **Clients by region**, set the weights to 70/20/10 for
 `us-east-1`/`us-east-2`/`us-west-1`, and leave **Client migration** on
-**Gradual shift and return**. The configured rates are 28, 8, and 4 requests/s.
+**Gradual shift and return**. The configured rates are 38.5, 11, and 5.5 requests/s.
 Weights are relative, and a weight of zero disables that origin.
 
 1. Start the continuous simulation. In **Client traffic by region**, the
@@ -822,8 +803,8 @@ its queued, executing, and outbound work. Responses already sent can arrive.
 ### Sharded service: slowdown, outage, and call order
 
 ```sh
-uv run --locked python experiments/compare_fanout_pipeline.py > fanout-slowdown-rerun.json
-uv run --locked python experiments/compare_fanout_pipeline.py --outage > fanout-outage-rerun.json
+uv run --locked python experiments/compare_fanout_pipeline.py > experiments/results/fanout-slowdown-rerun.json
+uv run --locked python experiments/compare_fanout_pipeline.py --outage > experiments/results/fanout-outage-rerun.json
 uv run --locked python -m unittest discover -s tests -p 'test_fanout_pipeline.py' -v
 ```
 

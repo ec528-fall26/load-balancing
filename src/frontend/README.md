@@ -21,27 +21,9 @@ See the [Python API](../../docs/api.md#python-engine-api-a-05),
 
 ## Checks
 
-From `src/frontend/`, after `npm ci`:
-
-```sh
-npm run build
-npm run test:api
-npm run test:library
-npm run test:comparison
-npm run test:live
-npm run test:recordings
-```
-
-Run the browser suite with the Python API running on port 8000:
-
-```sh
-PLAYWRIGHT_CHANNEL=chrome npm test
-```
-
-Install Chrome for that command, or use the configured browser in
-[playwright.config.ts](playwright.config.ts). See the
-[A-11 guide](../../experiments/results/a-11/README.md) for the separate
-performance harness and isolated ports.
+See the [repository verification commands](../../README.md#verification) for
+the build, Node tests, and browser suite. The [A-11 performance harness](../../experiments/results/a-11/README.md)
+uses separate ports and is independent of the browser regression suite.
 
 ## Shared component system
 

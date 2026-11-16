@@ -22,7 +22,7 @@ policies on identical offered workloads.
 
 From a fresh checkout on macOS or Linux, install Git, [uv](https://docs.astral.sh/uv/getting-started/installation/),
 and [Node.js with npm](https://nodejs.org/). Use Python 3.12 (selected by uv)
-and Node.js 22 or newer. Dependencies are pinned by `uv.lock` and
+and Node.js 24 (the version used by CI). Dependencies are pinned by `uv.lock` and
 `src/frontend/package-lock.json`.
 
 ```sh
@@ -39,26 +39,16 @@ npm --prefix src/frontend ci
 LBSIM_API_URL=http://127.0.0.1:8000 npm --prefix src/frontend run dev
 ```
 
-Open [Setup](http://127.0.0.1:3000/setup). To check the backend independently,
+Open [Setup](http://localhost:3000/setup). To check the backend independently,
 run `curl -fsS http://127.0.0.1:8000/health` and look for `"status":"ok"`.
 
-- **Compare routing.** In Setup, select **Single server pool** and **One-shot**.
-  Use 10 servers, 1 slot and 10 waiting places per server, 16.36 requests/s for
-  100 seconds, simple service times of 0.1–1.0 seconds, and seed 42.
-  Choose **Compare current setup**, clone the baseline, and set the two variants
-  to **Least active requests** and **Least outstanding requests**. Leave the
-  baseline at **Round robin** and click **Run comparison**. Expect 1,636 offered
-  requests per case and 0, 55, and 0 rejections, respectively.
-- **Change load live.** In Setup, use **Continuous**, two servers with one slot
-  each, and start at 2 requests/s. In Lab, enter 10 in **Live requests per
-  second** and click **Apply traffic**. Watch the queue and simulated clock.
-  Click **Pause session**, then **Resume session**. Click **Stop session** when
-  finished.
-- **Inspect an outage.** Choose **Sharded service**, four parallel calls,
-  4 ms round trip, a 500 ms seeded outage, CPU slowdown 1×, 50 parents/s for
-  four seconds, a 200 ms deadline, and seed 42. Under **Seed and request
-  timeline**, choose request 170. Expect 175 of 200 parents on time and 25
-  outage failures. Open **Follow request 170** and **Full event timeline**.
+For a smoke test, choose **Single server pool**, **One-shot**, and **Round robin**.
+Set one server, one slot, one waiting place, 4 requests/s, a 1-second arrival
+window, and both service-time bounds to 1 second. Run the simulation. Expect
+**2 completed, 2 rejected, and 1.75 s p95**. Keep the default seed of 42.
+
+See the [Demo 3 walkthroughs](docs/design-document.md#lab-walkthroughs) for
+routing comparisons, changes to live traffic, and a shard outage.
 
 The original Streamlit interface is available with
 `uv run streamlit run src/lbsim/app.py`.
@@ -78,16 +68,32 @@ See the [deployment guide](deploy/README.md) for Docker Compose and Kubernetes.
 
 ## Reproducing our results
 
-See the [Demo 3 experiments](docs/design-document.md#demo-3-experiments) for
-commands, expected output, and timing. Run the Python suite and frontend
-build from the repository root:
+Start with [Running the experiments](docs/design-document.md#4-running-the-experiments)
+for the exact commands, expected results, and links to the reference captures.
+[Experiment outputs](experiments/README.md) explains where reruns write files.
+
+## Verification
 
 ```sh
-uv run python -m unittest discover -s tests -q
+uv run --locked python -m unittest discover -s tests -q
+uv run --locked python scripts/generate_policy_metadata.py --check
 npm --prefix src/frontend run build
+(cd src/frontend && npx --no-install tsc -p tsconfig.api-tests.json && node --test .api-tests/tests/*.test.js)
+(cd src/frontend && npx --no-install playwright install chromium)
+LBSIM_API_URL=http://127.0.0.1:8000 PLAYWRIGHT_CHANNEL=chromium npm --prefix src/frontend test
 ```
 
-See the [frontend guide](src/frontend/README.md) for Node and browser checks.
+Run these commands after installing the locked dependencies. Keep the API running
+and stop the interactive frontend before Playwright starts its server on port 3000.
+
+Expect 193 Python tests with `OK`, a successful metadata check and frontend build,
+38 passing Node module tests and 38 passing Chromium tests.
+On a Linux machine missing browser system libraries, add `--with-deps` to the
+Playwright install command. The default config otherwise selects Edge; explicitly selecting Chromium makes
+this command portable. Allow roughly 30-120 seconds for Python, 1-3 minutes for
+a cold build, and 2-10 minutes for browser checks after installation. Slower
+machines may exceed these estimates. These categories also run in
+[CI](.github/workflows/tests.yml).
 
 ## Submission checklist
 

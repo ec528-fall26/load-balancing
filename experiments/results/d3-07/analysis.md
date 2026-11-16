@@ -29,7 +29,7 @@ Three unprofiled fresh-process timings per case, same machine/configuration/Pyth
 
 ## Reproduce
 
-[Reproduction instructions](../../README.md#d3-07-deque-beforeafter-comparison) cover both the saved calculation and a fresh same-machine capture.
+[Reproduction instructions](../../../docs/design-document.md#experiment-4-d3-07-deque-improvement) cover both the saved calculation and a fresh same-machine capture.
 
 The comparison command rejects mismatched environments, configurations or outputs. It compares unprofiled medians only; profiler timings are not used as a speedup estimate. report.json records exact source hashes because the engine change is currently uncommitted. Raw profiles remain available for inspection.
 
