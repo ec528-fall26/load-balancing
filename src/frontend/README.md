@@ -15,9 +15,9 @@ Open [Setup](http://127.0.0.1:3000/setup).
 Recorded runs use bounded summaries and fetch only the requested server or
 event page. Live sessions poll the Python worker for bounded telemetry, and
 Pause, Resume, traffic changes, and Stop send commands to that worker.
-See the [Python API](../../docs/python-api.md),
-[recorded runs](../../docs/recorded-runs.md), and
-[live sessions](../../docs/live-frontend.md) for the contracts.
+See the [Python API](../../docs/api.md#python-engine-api-a-05),
+[recorded runs](../../docs/api.md#bounded-one-shot-responses-and-recorded-playback), and
+[live sessions](../../docs/api.md#live-sessions-in-the-nextjs-lab--a-10) for the contracts.
 
 ## Checks
 

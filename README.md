@@ -1,8 +1,10 @@
 # EC528 Project — Load Modeling and Load Balancing Simulation Platform
 
-**Team** Daniel Thomas, Kimone Walker, Neev Jain, Sean O’Connor
+**Team:** Daniel Thomas, Kimone Walker, Neev Jain, Sean O’Connor
 
-**Mentor** Shripad Nadgowda (Meta)
+**Mentor:** Shripad Nadgowda (Meta)
+
+**Project:** A simulator for measuring how routing, load, and failures affect queues, latency, and rejections.
 
 ## What this is
 
@@ -27,7 +29,7 @@ and Node.js 22 or newer. Dependencies are pinned by `uv.lock` and
 git clone --branch demo-3 https://github.com/ec528-fall26/load-balancing.git
 cd load-balancing
 uv sync --locked
-uv run uvicorn lbsim.api:app --host 127.0.0.1 --port 8000 --workers 1
+uv run --locked python -m uvicorn lbsim.api:app --host 127.0.0.1 --port 8000 --workers 1
 ```
 
 In a second terminal, from the repository root:
@@ -60,14 +62,13 @@ run `curl -fsS http://127.0.0.1:8000/health` and look for `"status":"ok"`.
 
 The original Streamlit interface is available with
 `uv run streamlit run src/lbsim/app.py`.
-For deployment, see [Docker Compose](docs/docker-compose.md) and
-[Kubernetes](docs/kubernetes.md).
+See the [deployment guide](deploy/README.md) for Docker Compose and Kubernetes.
 
 ## Repository layout
 
 | Path | Contents |
 | --- | --- |
-| `docs/` | Design proposal, design document, API contracts, and deployment instructions |
+| `docs/` | Design proposal, design document, and model/API reference |
 | `slides/` and `videos/` | Demo deliverables |
 | `src/lbsim/` | Python simulator, HTTP API, and Streamlit interface |
 | `src/frontend/` | Next.js Lab and browser tests |
@@ -95,9 +96,9 @@ the demo date. [Course submission instructions](https://ec528.github.io/ec528/fa
 
 | Deliverable | Branch | Must contain |
 | --- | --- | --- |
-| Demo 1 | `demo-1` | Slides, code, design proposal |
-| Demo 2 | `demo-2` | Slides, code, design document, demo video |
-| Demo 3 | `demo-3` | Slides, code, updated design document, demo video |
+| Demo 1 | `demo-1` | Slides, code, `docs/design-proposal.md` |
+| Demo 2 | `demo-2` | Slides, code, `docs/design-document.md`, demo video |
+| Demo 3 | `demo-3` | Slides, code, updated `docs/design-document.md`, demo video |
 | Final | `final-demo` | Slides, code, artifact documentation, recorded video presentation |
 
 Earlier snapshots: [Demo 1 proposal](docs/design-proposal.md) and

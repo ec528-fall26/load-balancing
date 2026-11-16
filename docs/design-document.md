@@ -1,16 +1,10 @@
-# Demo 3 design document: load balancing simulator
+# Design Document
+
+## Load balancing simulator: implemented design (Demo 3)
 
 **Team:** Daniel Thomas, Kimone Walker, Neev Jain, Sean O'Connor
 
 **Mentor:** Shripad Nadgowda (Meta)
-
-**Updated:** November 12, 2026
-
-**Implementation audited for the November 12 measurements:** `demo-3` at `c07af2150d3f36dcbe5f512e6139217b57d72a01`
-
-**Submission:** November 16, 2026, noon, America/New_York, branch `demo-3`
-
-## Problem and evaluation goals
 
 Uneven load, hidden queued work, and slow dependencies can produce rejections
 and long response times even when some capacity appears idle. Load Balancing
@@ -26,16 +20,9 @@ with seeded outages, and a paginated playback API. The [PDF](../slides/demo-3.pd
 and [video](../videos/demo-3.mp4) show the main Demo 3 workflows. The
 `demo-2` branch preserves the previous submission.
 
-### Progress against the proposal and grading rubric
+### Progress against the proposal
 
-The [Demo 3 rubric](https://ec528.github.io/ec528/fall26/grading/#demo-3)
-assigns 50% to progress, 20% to this document, and 10% each to code quality,
-slides, and technical depth. Its milestone bar requires numerical improvement
-over Demo 2 on meaningful workloads. The table connects the
-[original proposal](design-proposal.md) to implemented work and evidence.
-These are current measured acceptance checks; the original proposal did not
-state these numerical targets, and this document does not claim mentor approval
-of revised milestones.
+The table relates the [original proposal](design-proposal.md) to measured Demo 3 results.
 
 | Commitment or extension | Demo 2 baseline | Demo 3 evidence and acceptance check |
 | --- | --- | --- |
@@ -87,10 +74,10 @@ Single Pool supports simple service or CPU → I/O → CPU, with either executio
 mode. Regions uses aggregate pools and configurable transit delays. Sharded
 Service models one coordinator waiting for required parallel or serial replies.
 Sharded experiments run one-shot and isolate dependency slowdown or outages.
-See [CPU/I/O](cpu-io-lab.md), [regions](regional-api.md), [fan-out](fanout-pipeline.md),
-and [routing policies](routing-policies.md) for the model boundaries.
+See [CPU/I/O](simulation-model.md#cpuio-in-the-main-lab), [regions](api.md#regional-api-and-frontend), [fan-out](simulation-model.md#fan-out-and-stragglers),
+and [routing policies](simulation-model.md#routing-strategies) for the model boundaries.
 
-[Docker Compose](docker-compose.md) and [Kubernetes](kubernetes.md) separate web
+[Docker Compose](../deploy/README.md#run-the-lab-with-docker-compose) and [Kubernetes](../deploy/README.md#run-the-lab-on-kubernetes) separate web
 and independent compute replicas from the single owner of sessions and
 recordings. Restarting the state owner expires its in-memory state.
 
@@ -126,8 +113,8 @@ points, and 128 command records. A tick has a 10 ms processing budget and a
 Pause freezes time; zero traffic while running drains outstanding work.
 Sequential polls and cancellation prevent overlapping/stale reads. Expiry,
 worker failure, and API restart loss are explicit states. The session owner is
-temporary, not a database. See [recordings](recorded-runs.md) and
-[session lifecycle](continuous-api.md).
+temporary, not a database. See [recordings](api.md#bounded-one-shot-responses-and-recorded-playback) and
+[session lifecycle](api.md#continuous-api-sessions--a-08).
 
 ### Simple single-pool configuration and lifecycle
 
@@ -365,7 +352,7 @@ Open **Download run** below the results to save configuration/seed as versioned
 JSON and results as CSV. The files describe the last completed run, including
 when form inputs have been edited but not submitted. CSV contains whole-run
 metrics and one utilization row per server. Empty-run latency cells are blank.
-See [the export format](run-exports.md) for every field and the real-run example.
+See [the export format](api.md#saved-runs-export-verified-replay-and-comparison-d3-030405) for every field and the real-run example.
 
 The saved-run contract is schema version `1`:
 
@@ -387,7 +374,7 @@ Files omit original events, individual requests, response-time samples and the
 engine/dependency bundle. Replay regenerates those details using the current
 model and verifies the exported metrics; an original file alone cannot prove
 that an omitted event history is identical. Exact field definitions, accepted
-inputs and example files are in [the saved-run contract](run-exports.md).
+inputs and example files are in [the saved-run contract](api.md#saved-runs-export-verified-replay-and-comparison-d3-030405).
 
 ### Reloading and comparing saved runs (D3-04/05)
 
@@ -403,7 +390,7 @@ It shows policies, configuration differences, latency, rejection rates, mean
 server utilization and per-server tables. Different workload/capacity settings
 are flagged. It reads saved metrics without simulating or changing active results.
 Both formats are checked for schema, types, consistency and fingerprints, with a
-5 MiB per-file limit. See [the saved-run guide](run-exports.md) for exact rules.
+5 MiB per-file limit. See [the saved-run guide](api.md#saved-runs-export-verified-replay-and-comparison-d3-030405) for exact rules.
 
 ## 4. Running the experiments
 
@@ -459,7 +446,7 @@ from the repository root. It completes in seconds and writes configuration JSON
 and results CSV for a fixed overload case. Expect two completions, two rejections,
 mean/p95 response times 1.375/1.75 seconds and utilization 1.0. The checked-in
 [example files](../experiments/results/d3-03/config.json) and
-[format documentation](run-exports.md) describe the expected output. A separate
+[format documentation](api.md#saved-runs-export-verified-replay-and-comparison-d3-030405) describe the expected output. A separate
 output directory preserves those reference files.
 
 ### Experiment 3: D3-06 engine profiling
@@ -636,7 +623,7 @@ deterministic results can be checked separately from machine-dependent timings.
 | Expected runtime | A few seconds on a local CPU. |
 | Expected output | `Validated 54 runs on 9 shared traces.` See the [reference analysis](../experiments/results/a-02/analysis.md). |
 
-## Demo 3 experiments
+### Demo 3 experiments
 
 Run these from the repository root after `uv sync --locked`. Use a quiet local
 machine for timings. The committed reports preserve the original environments
@@ -644,7 +631,7 @@ and workload hashes.
 
 | Experiment | Command | Expected result |
 | --- | --- | --- |
-| Three-policy replay (slide 7) | `uv run python experiments/compare_policies.py --include-least-outstanding --output experiments/results/demo-3-policy-rerun` | A few seconds. Validates 36 runs and replays on 12 traces. In the `near_capacity` rows of `report.json`, average rejection and p95 are **0.00% / 2.13 s**, **2.91% / 5.24 s**, and **0.00% / 1.23 s** for Round Robin, Least Active, and Least Outstanding. |
+| Three-policy replay (slide 5) | `uv run python experiments/compare_policies.py --include-least-outstanding --output experiments/results/demo-3-policy-rerun` | A few seconds. Validates 36 runs and replays on 12 traces. In the `near_capacity` rows of `report.json`, average rejection and p95 are **0.00% / 2.13 s**, **2.91% / 5.24 s**, and **0.00% / 1.23 s** for Round Robin, Least Active, and Least Outstanding. |
 | Deque optimization in isolation | [Matched-revision commands](../experiments/README.md#d3-07-deque-beforeafter-comparison) | The reference 100,000-request, 100-server run moved from 1.030 s to 0.364 s, or 2.83×, with matching full-summary fingerprints. Timing varies by machine. |
 | Published Demo 2 vs. Demo 3 | [Commands and raw results](#published-demo-2-vs-demo-3) | Original 10,000-request Round Robin workload. Median engine runtime improved by 1.20×–1.62× across 10, 100 and 1,000 servers. The trace and reported simulation metrics matched. |
 | Regional routing spillover | [Lab reproduction](#regional-routing-spillover) | At 130 requests/s for 5 seconds, Nearest rejects 173 of 650 requests. Nearest under 90% load completes all 650. |
@@ -777,7 +764,7 @@ three region cards.
 
 The second run completes 335 requests in `us-east-1`, 281 in `us-east-2`,
 and 34 in `us-west-1`. The policy counts outbound requests in transit
-toward load. See the [routing rules](routing-policies.md).
+toward load. See the [routing rules](simulation-model.md#routing-strategies).
 
 For an exact browser-free reproduction of that preset:
 
@@ -856,7 +843,7 @@ parallel versus serial at two or four calls with all other settings fixed.
 Serial waits for each successful reply and leaves later calls unsent after
 failure/deadline. Do not attribute the parallel table's results to serial mode.
 The focused test suite covers both dispatch modes and unsent work. The model
-omits retries, replication, and link contention; see [the contract](fanout-pipeline.md).
+omits retries, replication, and link contention; see [the contract](simulation-model.md#fan-out-and-stragglers).
 
 ## 5. Claims and limitations
 
@@ -906,51 +893,6 @@ recording/seek semantics, and routing that distinguishes active from outstanding
 work. UI integration and deployment wiring support these mechanisms; they do
 not independently establish technical depth or production scalability.
 
-## 6. Evidence coverage and verification
-
-| Completed implementation scope | Evidence/reproduction entry |
-| --- | --- |
-| D3-01: state-based policy | [Policy definition](simulation-model.md), [policy tests](../tests/test_policies.py); shared lifecycle and exact events are checked by the suite. |
-| D3-02: paired policy study | Experiment 6, its 24 per-run samples, three-seed aggregates and twelve paired traces. |
-| D3-03: exports | Experiment 2 and the [version-one file contract](run-exports.md). |
-| D3-04/05: replay and comparison | Experiment 5, the [saved verification report](../experiments/results/d3-04-05/verification.json), and [loader/UI tests](../tests/test_saved_runs.py). |
-| D3-06/07: diagnosis and measured change | Experiments 3/4; before/after reports, raw profiles, full-summary fingerprints and all six timing ratios. |
-
-The [combined policy/export/replay/comparison verification](../experiments/results/d3-02/integration-verification.json)
-records all 24 policy summaries matching their evidence, all 24 exported JSON
-configurations replaying to their full original summaries/events, all 24 CSVs
-preserving configuration/metrics, and all twelve matched policy pairs rendering
-eight comparison metrics without errors. This is automated component verification,
-not a claim that a new manual browser check was performed for every policy sample.
-
-The commands above are local and require no cloud service or GPU. New rerun
-directories preserve original captures; environment/timestamp/source metadata
-may differ on rerun. Compare deterministic trace/summary fields directly and
-interpret performance only within matched environments.
-
-The integrated tests additionally cover 171 pre-refactor parity snapshots,
-indexed routing against a simple oracle after 1,000 load updates, worker expiry
-and failure, recording paging/seek, API validation, saved-file consistency, and
-browser workflows against Python. Passing tests support these contracts, not
-every possible schedule or platform.
-
-### Verification performed for this document update
-
-The November 12 audit used a separate checkout of the audited commit on Windows
-with Python 3.12.13 and locked dependencies. It discovered 148 Python test cases;
-discovery alone is not execution of the full suite. The three-policy study
-validated 36 runs/replays on twelve traces; CPU/I/O validated 81 runs/replays on
-27 traces; the six saved deque ratios passed exact-summary checks; JSON/CSV
-export and two-policy replay reproduced their expected outcomes; and the
-regional example matched the counts/latencies above. The mixed-speed study
-validated 54 runs on nine traces, the current scale
-benchmark completed nine samples with its invariant checks, generated policy
-metadata was current, and all 16 focused shard tests passed. The paging audit
-verified
-all 174 event pages and seek snapshots for the first scale case before the
-larger legacy request timed out. Historical reports remain unchanged. These
-checks do not claim a newly completed clean-VM, full-browser, or deployment run.
-
 ### November 15 clean Linux verification
 
 The code at `efc47be` was checked in fresh Python and Node containers under
@@ -966,16 +908,3 @@ The matched Demo 2 and Demo 3 traces and simulation metrics agreed across
 all nine paired samples. Linux median speedups were 1.12×–1.58×. The full
 playback harness passed all three one-shot, two regional, and four live cases
 with the default 15-second worker deadline.
-
-### Submission and presentation checks
-
-The submission snapshot is taken from `demo-3` at noon Boston time on
-November 16. Verify the slides, video, code, and design document on that
-remote branch.
-
-The presentation should explain the baseline, new mechanism, workload,
-measured result, and limitations, with the architecture diagram and labeled
-figures. Slides are still assessed separately. The instructor and mentor judge
-the milestone bar; an evidence map cannot guarantee a grade. Two private
-multiple-choice quiz questions with marked answers are separately due to the
-instructor at 5:30 pm that day; repository contents do not prove submission.

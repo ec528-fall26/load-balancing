@@ -29,7 +29,7 @@ exports two policies on the same 16-request workload, verifies complete replayed
 summaries/events, reads both CSVs and saves `verification.json`. Expect 9 completed
 and 7 rejected for round-robin, versus 7 and 9 for least-active-requests. The
 command overwrites its files in the chosen directory; use the rerun path to keep
-[reference evidence](results/d3-04-05/verification.json). The [saved-run guide](../docs/run-exports.md)
+[reference evidence](results/d3-04-05/verification.json). The [saved-run guide](../docs/api.md#saved-runs-export-verified-replay-and-comparison-d3-030405)
 explains loading the generated JSON and CSV files into the UI. This is a workflow
 example, not the D3-02 policy study.
 
@@ -46,7 +46,7 @@ This executes a fixed overload simulation and exports `config.json` and
 response time 1.375/1.75 seconds and server utilization 1.0. The command
 overwrites those filenames in the selected directory; the rerun directory
 preserves the reference [JSON](results/d3-03/config.json) and
-[CSV](results/d3-03/results.csv). See [the schema documentation](../docs/run-exports.md).
+[CSV](results/d3-03/results.csv). See [the schema documentation](../docs/api.md#saved-runs-export-verified-replay-and-comparison-d3-030405).
 
 One script per claim. Each script should be runnable from the repository root,
 print what it is measuring, and finish in a bounded amount of time.
@@ -241,5 +241,5 @@ PYTHONPATH=src uv run python experiments/compare_cpu_io.py --output experiments/
 
 Runs 81 policy cases plus exact replays on 27 shared traces in seconds locally.
 Separates CPU execution, I/O wait and the outstanding admission cap. Existing web
-app behavior is unchanged. See [model and limits](../docs/cpu-io-research.md) and
+app behavior is unchanged. See [model and limits](../docs/simulation-model.md#cpuio-routing-research-a-24) and
 [recorded results](results/a-24/analysis.md). No cloud or GPU is required.
