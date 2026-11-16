@@ -3,6 +3,11 @@ import { regionalPolicies } from "./policy-metadata";
 import type { Config, Run } from "./engine";
 import type { RegionalConfig, RegionalRun } from "./regions";
 import { validConfig } from "./saved-setups";
+import {
+  DEFAULT_REPAIR_TIME,
+  formatAvailabilities,
+  formatRepairTimes,
+} from "./availability";
 export type CompareConfig = Config | (RegionalConfig & { duration: number });
 export const isRegional = (
   config: CompareConfig,
@@ -21,6 +26,8 @@ export const configLabels: Record<keyof Config, string> = {
   seed: "Random seed",
   policy: "Routing policy",
   processing_rates: "Processing rates",
+  availabilities: "Server availability",
+  mean_repair_time: "Mean time to recover",
   request_model: "Request model",
   io_fraction: "I/O share",
   outstanding_limit: "Outstanding limit per server",
@@ -117,6 +124,23 @@ export function settings(config: CompareConfig): Setting[] {
         group: "Capacity",
         value: config.processing_rates,
       },
+      ...(config.request_model === "cpu_io"
+        ? []
+        : [
+            {
+              key: "availabilities",
+              label: configLabels.availabilities,
+              group: "Availability",
+              value: config.availabilities,
+            },
+            {
+              key: "mean_repair_time",
+              label: "Mean time to recover (s)",
+              group: "Availability",
+              value: config.mean_repair_time ?? DEFAULT_REPAIR_TIME,
+              step: 0.1,
+            },
+          ]),
     ];
     return fields;
   }
@@ -164,6 +188,12 @@ export function settingValue(config: CompareConfig, key: string) {
   const s = settings(config).find((s) => s.key === key);
   if (!s) return "N/A";
   if (s.options) return s.options[String(s.value)] ?? String(s.value);
+  if (key === "availabilities")
+    return Array.isArray(s.value) && s.value.some((r) => r < 1)
+      ? formatAvailabilities(s.value)
+      : "Always up (1)";
+  if (key === "mean_repair_time")
+    return `${formatRepairTimes(s.value as number | number[] | undefined)} s`;
   if (Array.isArray(s.value))
     return `${s.value.length} rates: ${s.value.slice(0, 8).join(", ")}${s.value.length > 8 ? "…" : ""}`;
   return s.value === undefined ? "Identical (1×)" : String(s.value);

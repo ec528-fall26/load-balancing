@@ -47,6 +47,8 @@ import { TaskPool } from "@/components/datacenter/task-pool";
 import { ServerInspector } from "@/components/datacenter/server-inspector";
 import type { ServerSnapshot } from "@/components/datacenter/server-node";
 import { seconds } from "@/components/results";
+import { AvailabilityNote } from "@/components/availability-note";
+import { formatDuration, outagesSupported, repairTime } from "@/lib/availability";
 export function LiveSessionPanel({
   live,
   config,
@@ -56,7 +58,8 @@ export function LiveSessionPanel({
 }) {
   const s = live.snapshot;
   const [rate, setRate] = useState(config.arrival_rate),
-    [selected, setSelected] = useState<string | null>(null);
+    [selected, setSelected] = useState<string | null>(null),
+    [failId, setFailId] = useState(0);
   const trigger = useRef<HTMLElement | null>(null);
   useEffect(() => {
     if (s) setRate(s.arrival_rate);
@@ -76,6 +79,7 @@ export function LiveSessionPanel({
         ioQueued: server.io_queued,
         outstanding: server.outstanding,
         outstandingLimit: server.outstanding_limit,
+        down: server.up === false,
       }),
     ) ?? [];
   const active = !!live.id;
@@ -182,6 +186,39 @@ export function LiveSessionPanel({
                 Drain traffic
               </Button>
             </div>
+            {s && s.topology !== "regions" && outagesSupported(s.config) && (
+              <div className="flex flex-wrap items-end gap-3">
+                <div className="w-52">
+                  <NumberField
+                    label="Server to fail"
+                    value={failId}
+                    onChange={(n) =>
+                      setFailId(
+                        Math.max(0, Math.min(s.config.server_count - 1, Math.round(n))),
+                      )
+                    }
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  disabled={
+                    live.busy ||
+                    s.servers.items.find((row) => row.id === failId)?.up === false
+                  }
+                  onClick={() => live.command("fail_server", failId)}
+                >
+                  Fail server now
+                </Button>
+                <p className="caption basis-full">
+                  Takes server {failId} down immediately for{" "}
+                  {formatDuration(repairTime(s.config, failId))} (its mean time to
+                  recover). Its running and queued requests are re-routed to
+                  servers that are up.
+                  {s.servers.items.find((row) => row.id === failId)?.up === false &&
+                    ` Server ${failId} is already down.`}
+                </p>
+              </div>
+            )}
             <Panel key={live.id} title="Session options"><div className="flex flex-wrap items-end gap-3">
               <Button
                 variant="outline"
@@ -298,9 +335,58 @@ export function LiveSessionPanel({
                   <dd className="mt-1 text-2xl font-semibold tabular-nums">
                     {value}
                   </dd>
+                  {label === "Rejected" && s.rejected_breakdown && (
+                    <dd data-testid="live-rejected-breakdown" className="mt-2">
+                      <p className="text-xs text-muted-foreground">
+                        Why requests were rejected
+                      </p>
+                      <ul className="mt-1 flex flex-col gap-0.5 text-xs text-muted-foreground">
+                        {(
+                          [
+                            [s.rejected_breakdown.no_server_up, "every server was down"],
+                            [
+                              s.rejected_breakdown.reroute_rejected,
+                              "dropped when their server failed",
+                            ],
+                            [s.rejected_breakdown.queue_full, "queue full (overload)"],
+                          ] as const
+                        ).map(([count, text]) => (
+                          <li key={text}>
+                            <strong className="text-foreground tabular-nums">
+                              {count.toLocaleString()}
+                            </strong>{" "}
+                            {text}
+                          </li>
+                        ))}
+                      </ul>
+                    </dd>
+                  )}
                 </div>
               ))}
             </dl>
+            {s.outages && (
+              <div className="flex flex-col gap-3" data-testid="live-outages">
+                <p className="text-sm">
+                  <strong className="tabular-nums">
+                    {s.outages.servers_down} of {s.config.server_count}
+                  </strong>{" "}
+                  {s.config.server_count === 1 ? "server" : "servers"} down now ·{" "}
+                  <span className="tabular-nums">
+                    {s.outages.outage_count.toLocaleString()}
+                  </span>{" "}
+                  outages so far ·{" "}
+                  <span className="tabular-nums">
+                    {s.outages.rerouted.toLocaleString()}
+                  </span>{" "}
+                  requests re-routed ·{" "}
+                  <span className="tabular-nums">
+                    {s.outages.reroute_rejected.toLocaleString()}
+                  </span>{" "}
+                  dropped
+                </p>
+                <AvailabilityNote config={s.config} />
+              </div>
+            )}
             <p className="caption">
               Mean response: {seconds(s.metrics.mean_response_time)} since
               start. Recent p95 and histogram cover the latest{" "}

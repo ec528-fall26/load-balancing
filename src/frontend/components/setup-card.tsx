@@ -88,6 +88,9 @@ export function SetupCard({
           {config.processing_rates && (
             <Badge variant="outline">Mixed speeds</Badge>
           )}
+          {config.availabilities?.some((r) => r < 1) && (
+            <Badge variant="outline">Server outages</Badge>
+          )}
         </div>
       </CardContent>
       <CardFooter className="mt-auto flex gap-2">

@@ -27,6 +27,9 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Notice } from "./surface";
+import { AvailabilityNote } from "./availability-note";
+import { OutageTimeline } from "./outage-timeline";
+import { repairTime } from "@/lib/availability";
 export const seconds = (v: number | null) =>
   v === null ? "N/A" : `${v.toFixed(3)} s`;
 export function Results({ run }: { run: Run }) {
@@ -49,6 +52,8 @@ export function Results({ run }: { run: Run }) {
     [s.per_server_utilization],
   );
   const total = s.completed_count + s.rejected_count;
+  const availability = s.per_server_availability;
+  const outageCount = (id: number) => s.outages?.[String(id)]?.length ?? 0;
   return (
     <div className="flex min-w-0 flex-col gap-6">
       <div className="flex flex-wrap items-center gap-2">
@@ -71,6 +76,32 @@ export function Results({ run }: { run: Run }) {
             <dd className="mt-1 text-2xl font-semibold tabular-nums">
               {value}
             </dd>
+            {label === "Rejected requests" && s.rejected_breakdown && (
+              <dd data-testid="rejected-breakdown" className="mt-2">
+                <p className="text-xs text-muted-foreground">
+                  Why requests were rejected
+                </p>
+                <ul className="mt-1 flex flex-col gap-0.5 text-xs text-muted-foreground">
+                  {(
+                    [
+                      [s.rejected_breakdown.no_server_up, "every server was down"],
+                      [
+                        s.rejected_breakdown.reroute_rejected,
+                        "dropped when their server failed",
+                      ],
+                      [s.rejected_breakdown.queue_full, "queue full (overload)"],
+                    ] as const
+                  ).map(([count, text]) => (
+                    <li key={text}>
+                      <strong className="text-foreground tabular-nums">
+                        {count.toLocaleString()}
+                      </strong>{" "}
+                      {text}
+                    </li>
+                  ))}
+                </ul>
+              </dd>
+            )}
           </div>
         ))}
       </dl>
@@ -143,6 +174,53 @@ export function Results({ run }: { run: Run }) {
               </CardContent>
             </Card>
           </div>
+          {availability && (
+            <Card className="min-w-0">
+              <CardHeader>
+                <CardTitle>Server outages</CardTitle>
+                <CardDescription>
+                  How did random server failures affect this run?
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-4">
+                <dl className="grid grid-cols-2 gap-6 xl:grid-cols-3">
+                  {[
+                    [
+                      "Re-routed requests",
+                      Object.values(s.rerouted_by_server ?? {})
+                        .reduce((n, m) => n + m.rerouted, 0)
+                        .toLocaleString(),
+                    ],
+                    [
+                      "Dropped by a failure",
+                      Object.values(s.rerouted_by_server ?? {})
+                        .reduce((n, m) => n + m.rejected, 0)
+                        .toLocaleString(),
+                    ],
+                    [
+                      "Outages",
+                      rows
+                        .reduce((n, r) => n + outageCount(r.id), 0)
+                        .toLocaleString(),
+                    ],
+                  ].map(([label, value]) => (
+                    <div key={label}>
+                      <dt className="text-sm text-muted-foreground">{label}</dt>
+                      <dd className="mt-1 text-xl font-semibold tabular-nums">
+                        {value}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+                <OutageTimeline
+                  summary={s}
+                  serverCount={c.server_count}
+                  duration={c.duration}
+                />
+                <AvailabilityNote config={c} />
+              </CardContent>
+            </Card>
+          )}
           <Card className="min-w-0">
             <CardHeader>
               <CardTitle>Per-server utilization</CardTitle>
@@ -173,6 +251,16 @@ export function Results({ run }: { run: Run }) {
               <TableRow>
                 <TableHead>Server ID</TableHead>
                 <TableHead>Slot utilization (%)</TableHead>
+                {availability && (
+                  <>
+                    <TableHead>Configured availability</TableHead>
+                    <TableHead>MTTR (s)</TableHead>
+                    <TableHead>Measured availability (%)</TableHead>
+                    <TableHead>Outages</TableHead>
+                    <TableHead>Re-routed</TableHead>
+                    <TableHead>Dropped by failure</TableHead>
+                  </>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -180,6 +268,22 @@ export function Results({ run }: { run: Run }) {
                 <TableRow key={r.id}>
                   <TableCell>{r.id}</TableCell>
                   <TableCell>{r.utilization.toFixed(2)}</TableCell>
+                  {availability && (
+                    <>
+                      <TableCell>{c.availabilities?.[r.id] ?? 1}</TableCell>
+                      <TableCell>{repairTime(c, r.id)}</TableCell>
+                      <TableCell>
+                        {((availability[String(r.id)] ?? 1) * 100).toFixed(2)}
+                      </TableCell>
+                      <TableCell>{outageCount(r.id)}</TableCell>
+                      <TableCell>
+                        {s.rerouted_by_server?.[String(r.id)]?.rerouted ?? 0}
+                      </TableCell>
+                      <TableCell>
+                        {s.rerouted_by_server?.[String(r.id)]?.rejected ?? 0}
+                      </TableCell>
+                    </>
+                  )}
                 </TableRow>
               ))}
             </TableBody>

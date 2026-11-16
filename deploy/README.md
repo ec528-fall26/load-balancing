@@ -46,7 +46,7 @@ docker compose down
 
 ## Run the Lab on Kubernetes
 
-The Lab uses the same three images as [Docker Compose](docker-compose.md).
+The Lab uses the same three images as [Docker Compose](#run-the-lab-with-docker-compose).
 The Nginx gateway serves the Next.js UI and routes its API calls to either the
 compute or state service. Kubernetes Services route connections to ready pods.
 

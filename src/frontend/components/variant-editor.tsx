@@ -24,6 +24,14 @@ import {
   SelectLabel,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { AvailabilityNote } from "@/components/availability-note";
+import {
+  formatAvailabilities,
+  formatRepairTimes,
+  parseAvailabilities,
+  parseRepairTimes,
+} from "@/lib/availability";
 export function VariantEditor({
   base,
   config,
@@ -98,6 +106,54 @@ export function VariantEditor({
                 />
                 <FieldDescription>
                   One comma-separated multiplier per server. Empty uses 1×.
+                </FieldDescription>
+              </Field>
+            ) : key === "availabilities" && !("topology" in config) ? (
+              <Field>
+                <FieldLabel htmlFor={`${id}-availability`}>
+                  Server availability
+                </FieldLabel>
+                <Input
+                  id={`${id}-availability`}
+                  inputMode="decimal"
+                  placeholder="1 (never fails)"
+                  disabled={disabled}
+                  defaultValue={formatAvailabilities(config.availabilities)}
+                  onChange={(e) =>
+                    onChange(
+                      updateSetting(
+                        config,
+                        key,
+                        parseAvailabilities(e.target.value, config.server_count),
+                      ),
+                    )
+                  }
+                />
+                <FieldDescription>
+                  Fraction of time a server is up (0–1). One value for every
+                  server, or one per server separated by commas.
+                </FieldDescription>
+                <AvailabilityNote config={config} />
+              </Field>
+            ) : key === "mean_repair_time" && !("topology" in config) ? (
+              <Field>
+                <FieldLabel htmlFor={`${id}-repair`}>
+                  Mean time to recover (s)
+                </FieldLabel>
+                <Input
+                  id={`${id}-repair`}
+                  inputMode="decimal"
+                  disabled={disabled}
+                  defaultValue={formatRepairTimes(config.mean_repair_time)}
+                  onChange={(e) =>
+                    onChange(
+                      updateSetting(config, key, parseRepairTimes(e.target.value)),
+                    )
+                  }
+                />
+                <FieldDescription>
+                  Average outage length. One value for every server, or one
+                  per server separated by commas.
                 </FieldDescription>
               </Field>
             ) : (

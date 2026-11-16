@@ -45,7 +45,7 @@ class Completion:
 
 
 class Server:
-    def __init__(self, id: int, concurrency: int, queue_limit: int, size: int | None = None, reliability: float | None = 1.0,
+    def __init__(self, id: int, concurrency: int, queue_limit: int, size: int | None = None, availability: float | None = 1.0,
                  processing_rate: float = 1.0):
         if type(id) is not int:
             raise ValueError("server ID must be an integer")
@@ -55,21 +55,26 @@ class Server:
             raise ValueError("queue limit must be a nonnegative integer")
         if size is not None and (type(size) is not int or size <= 0):
             raise ValueError("size must be an integer")
-        if reliability is not None and (type(reliability) is not float or reliability <= 0.0 or reliability > 1.0):
-            raise ValueError("reliability must be a float between 0 and 1")
+        if availability is not None and (type(availability) is not float or availability <= 0.0 or availability > 1.0):
+            raise ValueError("availability must be a float between 0 and 1")
         if type(processing_rate) not in (int, float) or not isfinite(processing_rate) or processing_rate <= 0:
             raise ValueError("processing rate must be finite and greater than zero")
         self.id = id
         self.concurrency = concurrency
         self.queue_limit = queue_limit
         self.size = size
-        self.reliability = reliability
+        self.availability = availability
         # Speed multiplier: 2.0 finishes the same work in half the time
         self.processing_rate = float(processing_rate)
         self._running: dict[int, Execution] = {}
         self._waiting: deque[Request] = deque()
         self._waiting_ids: set[int] = set()
         self._last_time = 0.0
+        self._up = True
+
+    @property
+    def up(self) -> bool:
+        return self._up
 
     @property
     def running(self) -> tuple[Execution, ...]:
@@ -99,8 +104,11 @@ class Server:
 
     def submit(self, request: Request, now: float) -> Admission:
         self._check_time(now)
-        if now != request.arrival_time:
-            raise ValueError("submit at the request's arrival time")
+        if not self._up:
+            raise ValueError("server is down")
+        # Re-routed requests are submitted after arrival and keep their original arrival time.
+        if now < request.arrival_time:
+            raise ValueError("cannot submit before the request's arrival time")
         if any(e.completion_time <= now for e in self._running.values()):
             raise ValueError("process pending completions before arrivals")
         if request.id in self._running or request.id in self._waiting_ids:
@@ -135,3 +143,24 @@ class Server:
             self._running[started.request.id] = started
         self._last_time = now
         return Completion(finished, started)
+
+    def fail(self, now: float) -> list[Request]:
+        """Go down and return dropped work: running (by start time), then queued (FIFO)."""
+        self._check_time(now)
+        if not self._up:
+            raise ValueError("server is already down")
+        running = sorted(self._running.values(), key=lambda e: (e.start_time, e.request.id))
+        dropped = [e.request for e in running] + list(self._waiting)
+        self._running.clear()
+        self._waiting.clear()
+        self._waiting_ids.clear()
+        self._up = False
+        self._last_time = now
+        return dropped
+
+    def recover(self, now: float) -> None:
+        self._check_time(now)
+        if self._up:
+            raise ValueError("server is already up")
+        self._up = True
+        self._last_time = now

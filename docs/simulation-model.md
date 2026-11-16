@@ -10,7 +10,7 @@ All times are simulated seconds. No wall-clock sleeps are used.
 | --- | --- |
 | Config | `server_count`, `concurrency`, `queue_limit`, `arrival_rate`, `duration`, `service_min`, `service_max`, `seed`, `policy` |
 | Request | `id` (unique integer), `arrival_time`, `service_time` |
-| Server | `id`, `concurrency`, `queue_limit`, `size`, `reliability`, running executions, FIFO waiting requests |
+| Server | `id`, `concurrency`, `queue_limit`, `size`, `availability`, running executions, FIFO waiting requests |
 | Execution | request, `server_id`, `start_time`, `completion_time` |
 | Run summary | `completed_count`, `rejected_count`, `mean_response_time`, `p95_response_time`, `per_server_utilization`, `response_times`, `events` |
 
@@ -19,7 +19,8 @@ integer counting waiting requests only. Duration, rate and service bounds are
 positive finite numbers, with `service_min <= service_max`. Arrival times are
 finite and nonnegative. IDs are unique within a run. The seed is an integer.
 All servers initially have identical capacity; concurrency is the only server
-size setting. Hardware types and reliability/failures remain optional extensions.
+size setting. Hardware types remain an optional extension; server outages are
+described under "Server availability and outages" below.
 
 The connected prototype currently uses `int(arrival_rate * duration)` requests
 with evenly spaced arrivals starting at zero. Service durations are uniform
@@ -65,9 +66,9 @@ separate `started` record.
 Both `round_robin` and `least_active_requests` are implemented in the engine and
 available in the UI. Policy-comparison experiments remain a separate task.
 
-Exponential interarrival times, hardware types, and reliability/failures are also
-optional. The current engine creates identical servers with `size=None` and
-`reliability=None`; those constructor fields do not affect execution. Any future
+Exponential interarrival times and hardware types are also optional. The
+current engine creates servers with `size=None`, which does not affect
+execution. Any future
 traffic generator must create the complete seeded trace before routing so policy
 comparisons use identical requests.
 
@@ -149,7 +150,7 @@ config = validate_config({
     "seed": 42, "policy": "round_robin",
 })
 request = Request(id=0, arrival_time=0.0, service_time=3.0)
-server = Server(id=0, concurrency=1, queue_limit=1, size=None, reliability=None)
+server = Server(id=0, concurrency=1, queue_limit=1, size=None, availability=None)
 admission = server.submit(request, now=0.0)
 assert admission.status == "started"
 assert server.running == (Execution(request, 0, 0.0, 3.0),)
@@ -592,3 +593,41 @@ reduces elapsed latency. The slow shard raises the tail even in the four-way
 case. Compare the deadline success count alongside p95, since p95 excludes
 timeouts and rejections. These results apply to the modeled workload and
 placement, and do not rank load-balancing policies.
+
+## Server availability and outages
+
+Optional config fields `availabilities` (one value in (0, 1] per server) and
+`mean_repair_time` (MTTR in seconds, one shared value or one per server,
+default 1) let servers fail in one-shot runs and continuous sessions of the
+simple request model.
+
+- Availability A is the long-run fraction of time a server is up. Each server
+  alternates up and down periods drawn from exponential distributions with
+  means MTBF = MTTR × A / (1 − A) and MTTR, so MTBF / (MTBF + MTTR) = A.
+- Each server draws its periods from its own seeded stream
+  (`src/lbsim/availability.py`), separate from the request trace and routing
+  draws. Every server starts up. One-shot runs generate the whole window first
+  (`outage_schedule`); continuous sessions (`ContinuousSimulation`) draw the
+  next period whenever a server goes down or up. With the same seed, a
+  continuous session's first T seconds have the same outages as a T-second
+  one-shot run.
+- Continuous sessions also accept the `fail_server` command (value: server
+  number). It takes that server down immediately for exactly its MTTR (1 s when
+  no availability is configured); invalid or already-down servers are ignored.
+  Session snapshots gain `outages`, `rejected_breakdown`, and per-server `up`,
+  `measured_availability`, `outage_count`, `rerouted`, and `dropped` once
+  outages are possible.
+- At equal timestamps a completion is handled first, then a server going down
+  or up, then an arrival.
+- Routing policies skip down servers. When a server fails, its running and
+  queued requests are re-routed through the policy and restart, keeping their
+  original arrival time; a request no server can take is rejected. When every
+  server is down, arrivals are rejected.
+- Playback records add statuses `server_down`, `server_up`, `rerouted`,
+  `reroute_rejected` (a dropped request no server could take), and
+  `no_server_up` (an arrival rejected because every server was down). Summaries
+  add `rerouted_count`, `outages`, `per_server_availability`,
+  `rerouted_by_server`, and `rejected_breakdown` (`queue_full`, `no_server_up`,
+  `reroute_rejected`, summing to `rejected_count`).
+- With every availability at 1 the fields are dropped from the config and
+  results are identical to runs without them.

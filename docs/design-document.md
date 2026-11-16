@@ -293,8 +293,8 @@ npm --prefix src/frontend run build
 LBSIM_API_URL=http://127.0.0.1:8000 PLAYWRIGHT_CHANNEL=chromium npm --prefix src/frontend test
 ```
 
-Expect 154 Python tests with `OK`, a successful metadata check and frontend build,
-23 passing Node module tests, and 38 passing Chromium tests. Keep the API running. Stop the
+Expect 193 Python tests with `OK`, a successful metadata check and frontend build,
+38 passing Node module tests and 38 passing Chromium tests. Keep the API running. Stop the
 interactive frontend before Playwright starts its own server on port 3000.
 The default config otherwise selects Edge; explicitly selecting Chromium makes
 this command portable. Allow roughly 30-120 seconds for Python, 1-3 minutes for
@@ -537,7 +537,7 @@ from the repository root. In seconds it writes two exported JSON/CSV pairs and
 back both CSVs. Both runs have 16 arrivals with the same seed and workload;
 round-robin completes/rejects 9/7 requests, least-active-requests 7/9. This checks
 the save/replay/compare workflow, not a general policy-performance claim.
-Use the [reference files and UI instructions](run-exports.md#reproduce-replay-and-comparison-evidence)
+Use the [reference files and UI instructions](api.md#reproduce-replay-and-comparison-evidence)
 to reproduce the panels. A separate output directory preserves saved evidence.
 
 ### Experiment 6: D3-02 paired policy comparison
@@ -622,6 +622,15 @@ deterministic results can be checked separately from machine-dependent timings.
 | Command | `uv run python experiments/compare_speeds.py --output experiments/results/a-02-rerun` |
 | Expected runtime | A few seconds on a local CPU. |
 | Expected output | `Validated 54 runs on 9 shared traces.` See the [reference analysis](../experiments/results/a-02/analysis.md). |
+
+### Experiment 8: server availability validation
+
+| | |
+| --- | --- |
+| Supports | Server outages (availability, MTTR) behave as the model claims in one-shot runs and continuous sessions. |
+| Command | `uv run python experiments/validate_availability.py --output experiments/results/availability-validation-rerun` |
+| Expected runtime | About 40 seconds on a local CPU. |
+| Expected output | `28 of 28 availability checks passed`; e.g. 36.0% of arrivals should find both of two 40%-available servers down, measured 35.9% ± 0.5% over 50 seeds. See the [reference report](../experiments/results/availability-validation/report.md). |
 
 ### Demo 3 experiments
 
@@ -873,7 +882,7 @@ significance or confidence intervals.
 | Boundary or remaining work | Current status and next validation needed |
 | --- | --- |
 | Production workload realism | Regular arrivals, sampled demands, and illustrative RTTs. Trace-driven/bursty traffic and more repeated trials are needed before production conclusions. |
-| Reliability and stale information | Seeded shard outages/slowdown, manual continuous regional outages, and client migration are implemented. Automatic regional failure detection, retries/replication, and delayed load telemetry are outside the demonstrated model. Announce any proposal-scope revision at the demo. |
+| Reliability and stale information | Seeded shard outages/slowdown, manual continuous regional outages, client migration, and [single-pool server outages](simulation-model.md#server-availability-and-outages) are implemented. Automatic regional failure detection, retries/replication, and delayed load telemetry are outside the demonstrated model. Announce any proposal-scope revision at the demo. |
 | Portable saved-run coverage | Version one supports simple single-pool runs with uniform processing rates. Regions, CPU/I/O, and shards need a versioned schema and replay evidence. Browser-local setups, portable run files, and temporary recordings are distinct features. |
 | Durable or distributed state | Sessions/recordings expire and restart loses them. Accounts, durable saves, distributed ownership, and automatic failover are not established by manual compute scaling. |
 | Deployment validation | Compose/Kubernetes provide separate compute/state routing. Their presence does not prove autoscaling, high availability, public security, or concurrent-user capacity. Base-image tags remain mutable. |

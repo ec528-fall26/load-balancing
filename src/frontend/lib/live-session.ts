@@ -63,7 +63,26 @@ export type SinglePoolSnapshot = {
       queue_limit: number;
       processing_rate: number;
       mean_slot_utilization: number;
+      /** Present once outages are possible in this session. */
+      up?: boolean;
+      measured_availability?: number;
+      outage_count?: number;
+      rerouted?: number;
+      dropped?: number;
     }[];
+  };
+  /** Present once outages are possible (availability set, or a manual failure). */
+  outages?: {
+    servers_down: number;
+    outage_count: number;
+    rerouted: number;
+    reroute_rejected: number;
+    no_server_up: number;
+  };
+  rejected_breakdown?: {
+    queue_full: number;
+    no_server_up: number;
+    reroute_rejected: number;
   };
   history: {
     simulation_time: number;
@@ -76,6 +95,7 @@ export type SinglePoolSnapshot = {
     io_active?: number;
     io_queued?: number;
     outstanding?: number;
+    servers_down?: number;
   }[];
 };
 export const ACTIVE_SESSION_KEY = "lbsim.active-session.v1";
@@ -142,6 +162,20 @@ export function acceptSnapshot(
     s.speed >= 0.25 &&
     s.speed <= 10 &&
     totals(s.totals) &&
+    (s.outages === undefined ||
+      (["servers_down", "outage_count", "rerouted", "reroute_rejected", "no_server_up"].every(
+        (key) => count(s.outages![key as keyof typeof s.outages]),
+      ) &&
+        !!s.rejected_breakdown &&
+        ["queue_full", "no_server_up", "reroute_rejected"].every((key) =>
+          count(s.rejected_breakdown![key as keyof typeof s.rejected_breakdown]),
+        ) &&
+        s.rejected_breakdown.queue_full +
+          s.rejected_breakdown.no_server_up +
+          s.rejected_breakdown.reroute_rejected ===
+          s.totals.rejected &&
+        s.rejected_breakdown.no_server_up === s.outages.no_server_up &&
+        s.rejected_breakdown.reroute_rejected === s.outages.reroute_rejected)) &&
     !!s.config &&
     count(s.config.server_count) &&
     s.config.server_count > 0 &&
@@ -176,7 +210,15 @@ export function acceptSnapshot(
         row.free_slots === row.slots - row.running &&
         nonnegative(row.processing_rate) &&
         row.processing_rate > 0 &&
-        nonnegative(row.mean_slot_utilization),
+        nonnegative(row.mean_slot_utilization) &&
+        (row.up === undefined ||
+          (typeof row.up === "boolean" &&
+            nonnegative(row.measured_availability) &&
+            row.measured_availability! <= 1.000001 &&
+            count(row.outage_count) &&
+            count(row.rerouted) &&
+            count(row.dropped) &&
+            (row.up || (row.running === 0 && row.waiting === 0)))),
     ) &&
     Array.isArray(s.history) &&
     s.history.length <= 240 &&

@@ -159,6 +159,12 @@ def session_worker(connection, config, limits, speed, paused):
                             continue
                     elif action == "set_speed":
                         speed = message["value"]
+                    elif action == "fail_server":
+                        # Engines without outages (CPU/I/O, regional) ignore it;
+                        # invalid or already-down servers are no-ops, never errors.
+                        fail = getattr(engine, "fail_server", None)
+                        if fail is not None:
+                            fail(message["value"])
                     else:
                         raise ValueError("Unknown session command")
                     target = engine.now

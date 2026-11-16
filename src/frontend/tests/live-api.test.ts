@@ -206,3 +206,40 @@ test("CPU/I/O snapshot validation includes I/O in conservation and admission bou
   const broken=structuredClone(s);broken.servers.items[0].outstanding_limit=1;
   assert.ok(!acceptSnapshot(broken));
 });
+
+test("outage telemetry validates breakdown totals and idle down servers", () => {
+  const s = structuredClone(liveFixture) as import("../lib/live-session").SinglePoolSnapshot;
+  const rejected = s.totals.rejected;
+  s.outages = {
+    servers_down: 1,
+    outage_count: 3,
+    rerouted: 2,
+    reroute_rejected: 0,
+    no_server_up: 0,
+  };
+  s.rejected_breakdown = { queue_full: rejected, no_server_up: 0, reroute_rejected: 0 };
+  s.servers.items = s.servers.items.map((row, i) => ({
+    ...row,
+    up: true,
+    measured_availability: 0.9,
+    outage_count: i,
+    rerouted: 0,
+    dropped: 0,
+  }));
+  assert.ok(acceptSnapshot(s));
+  // The breakdown must account for every rejection.
+  assert.ok(
+    !acceptSnapshot({ ...s, rejected_breakdown: { ...s.rejected_breakdown, queue_full: rejected + 1 } }),
+  );
+  // Outage counters must match the breakdown.
+  assert.ok(!acceptSnapshot({ ...s, outages: { ...s.outages, no_server_up: 1 } }));
+  // Outage totals require a breakdown.
+  assert.ok(!acceptSnapshot({ ...s, rejected_breakdown: undefined }));
+  // A down server cannot hold work.
+  const busyDown = structuredClone(s);
+  busyDown.servers.items[0] = { ...busyDown.servers.items[0], up: false, running: 1, free_slots: busyDown.servers.items[0].slots - 1 };
+  assert.ok(!acceptSnapshot(busyDown));
+  const badAvailability = structuredClone(s);
+  badAvailability.servers.items[0].measured_availability = 1.5;
+  assert.ok(!acceptSnapshot(badAvailability));
+});

@@ -109,6 +109,7 @@ class ExportRequest(BaseModel):
 def checked_config(values, limits):
     allowed = {'server_count', 'concurrency', 'queue_limit', 'arrival_rate', 'duration',
                'service_min', 'service_max', 'seed', 'policy', 'processing_rates',
+               'availabilities', 'mean_repair_time',
                'request_model', 'io_fraction', 'outstanding_limit', 'io_capacity', 'io_heavy_probability'}
     extra = sorted(set(values) - allowed)
     if extra:
@@ -165,7 +166,9 @@ class SessionRequest(BaseModel):
 
 class SessionCommand(BaseModel):
     model_config = ConfigDict(extra='forbid')
-    action: Literal['pause', 'resume', 'set_rate', 'set_speed', 'fail_region', 'restore_region']
+    action: Literal[
+        'pause', 'resume', 'set_rate', 'set_speed', 'fail_region', 'restore_region', 'fail_server'
+    ]
     value: StrictFloat | StrictInt | None = None
 
 
@@ -261,6 +264,9 @@ def checked_command(action, value, session_limits):
     elif action in ('fail_region', 'restore_region'):
         if type(value) is not int or not 0 <= value < 12:
             raise APIError(422, 'INVALID_COMMAND', 'Provide a zero-based region index.')
+    elif action == 'fail_server':
+        if type(value) is not int or not 0 <= value < 1000:
+            raise APIError(422, 'INVALID_COMMAND', 'Choose a server number from 0 to 999.')
     elif not finite_number(value):
         raise APIError(422, 'INVALID_COMMAND', 'Command value must be finite.')
     elif action == 'set_rate' and not 0 <= value <= session_limits.max_arrival_rate:
