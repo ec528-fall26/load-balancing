@@ -205,8 +205,8 @@ seeded workloads between policies.
 ## Routing strategies
 
 `src/lbsim/policies.py` owns the policy registry, topology eligibility, labels and
-strategy factories. `settings.py`, the Streamlit menu and all three engines use
-that registry. A simulation creates a fresh strategy; no mutable strategy is
+strategy factories. The Python settings and engines use the registry directly.
+The Next.js Lab uses metadata generated from it. A simulation creates a fresh strategy; no mutable strategy is
 shared between runs. Engines call `choose()` before admission and notify
 `update(target)` after running counts change. Admission, event ordering, workload
 sampling, completion handling and queues remain engine responsibilities.

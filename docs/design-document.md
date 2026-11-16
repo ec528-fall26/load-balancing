@@ -63,7 +63,6 @@ flowchart TB
 | `src/lbsim/simulation.py`, `staged.py`, `continuous.py` | Single-pool event processing for simple and CPU/I/O workloads. |
 | `src/lbsim/policies.py` | Single routing registry with policy-specific state and deterministic ties. |
 | `src/lbsim/regional_engine.py`, `fanout.py` | Regional routing with transit delay and separate sharded service experiments. |
-| `src/lbsim/app.py` | Earlier Streamlit interface, including saved JSON/CSV workflows. |
 
 The browser displays Python results. A one-shot run finishes before the browser
 scrubs its recorded timeline. A continuous worker owns its clock, accepts
@@ -256,9 +255,6 @@ Lab and 8001 and 3001 for isolated playback benchmarks.
   four seconds, a 200 ms deadline, and seed 42. Under **Seed and request
   timeline**, choose request 170. Expect 175 of 200 parents on time and 25
   outage failures. Open **Follow request 170** and **Full event timeline**.
-
-The overload example and export instructions below also work with the earlier
-Streamlit interface. Its start command is in the [quick start](../README.md#quick-start).
 
 ### Short worked example: overload and draining
 
@@ -457,9 +453,10 @@ uv run python -X utf8 experiments/compare_profiles.py experiments/results/d3-06/
 
 Comparison takes under a second locally, prints six timing ratios and writes
 the specified JSON. `-X utf8` also supports the script's Unicode timing arrows
-on Windows terminals with a legacy default encoding. It checks that the two reports have matching Python,
-platform, architecture, Streamlit, configurations, outcome/event counts and full
-summary fingerprints. It compares unprofiled medians, not instrumented timings.
+on Windows terminals with a legacy default encoding. It checks Python, platform,
+architecture, configuration, outcome/event counts, and full summary fingerprints.
+Historical reports must agree on their Streamlit version. Current reports must
+agree on their lockfile hash. The calculation uses unprofiled medians.
 Source records: [before](../experiments/results/d3-06/report.json),
 [after](../experiments/results/d3-07/report.json),
 [calculated ratios](../experiments/results/d3-07/comparison.json) and

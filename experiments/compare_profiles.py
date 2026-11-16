@@ -17,8 +17,12 @@ def main():
     args = parser.parse_args()
     before = json.loads(args.before.read_text())
     after = json.loads(args.after.read_text())
-    for key in ('python', 'platform', 'machine', 'streamlit'):
+    for key in ('python', 'platform', 'machine'):
         if before[key] != after[key]:
+            raise ValueError(f'Environment differs: {key}')
+    # Historical reports record Streamlit. Current reports identify the locked environment.
+    for key in ('streamlit', 'uv_lock_sha256'):
+        if before.get(key) != after.get(key):
             raise ValueError(f'Environment differs: {key}')
     left, right = cases_by_config(before), cases_by_config(after)
     if left.keys() != right.keys():

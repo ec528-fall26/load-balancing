@@ -1,6 +1,6 @@
 import unittest
 
-from lbsim.settings import build_config, validate_config
+from lbsim.settings import validate_config
 
 
 class ConfigTests(unittest.TestCase):
@@ -14,7 +14,6 @@ class ConfigTests(unittest.TestCase):
         result = validate_config(self.config)
         self.assertEqual(result, self.config)
         self.assertIsNot(result, self.config)
-        self.assertEqual(build_config(**self.config), result)
 
     def test_integer_fields(self):
         for field in ('server_count', 'concurrency', 'queue_limit', 'seed'):

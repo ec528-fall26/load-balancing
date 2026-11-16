@@ -93,8 +93,3 @@ def validate_config(values: Mapping, *, allow_manual_repair: bool = False) -> di
         config.update(request_model=model, io_fraction=fraction, outstanding_limit=cap, io_capacity=io_capacity)
         if mix is not None: config["io_heavy_probability"] = mix
     return config
-
-
-def build_config(**values) -> dict:
-    """Build a validated config from form values."""
-    return validate_config(values)

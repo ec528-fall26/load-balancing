@@ -50,8 +50,6 @@ window, and both service-time bounds to 1 second. Run the simulation. Expect
 See the [Demo 3 walkthroughs](docs/design-document.md#lab-walkthroughs) for
 routing comparisons, changes to live traffic, and a shard outage.
 
-The original Streamlit interface is available with
-`uv run streamlit run src/lbsim/app.py`.
 See the [deployment guide](deploy/README.md) for Docker Compose and Kubernetes.
 
 ## Repository layout
@@ -60,7 +58,7 @@ See the [deployment guide](deploy/README.md) for Docker Compose and Kubernetes.
 | --- | --- |
 | `docs/` | Design proposal, design document, and model/API reference |
 | `slides/` and `videos/` | Demo deliverables |
-| `src/lbsim/` | Python simulator, HTTP API, and Streamlit interface |
+| `src/lbsim/` | Python simulator and HTTP API |
 | `src/frontend/` | Next.js Lab and browser tests |
 | `experiments/` | Reproduction scripts and saved results |
 | `tests/` | Python engine and API tests |
@@ -86,7 +84,7 @@ LBSIM_API_URL=http://127.0.0.1:8000 PLAYWRIGHT_CHANNEL=chromium npm --prefix src
 Run these commands after installing the locked dependencies. Keep the API running
 and stop the interactive frontend before Playwright starts its server on port 3000.
 
-Expect 198 Python tests with `OK`, a successful metadata check and frontend build,
+Expect 179 Python tests with `OK`, a successful metadata check and frontend build,
 39 passing Node module tests and 46 passing Chromium tests.
 On a Linux machine missing browser system libraries, add `--with-deps` to the
 Playwright install command. The default config otherwise selects Edge; explicitly selecting Chromium makes

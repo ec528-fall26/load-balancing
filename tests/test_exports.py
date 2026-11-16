@@ -2,11 +2,7 @@ import csv
 from copy import deepcopy
 from io import StringIO
 import json
-from pathlib import Path
 import unittest
-from unittest.mock import patch
-
-from streamlit.testing.v1 import AppTest
 
 from lbsim.exports import build_exports
 from lbsim.simulation import run_simulation
@@ -14,7 +10,6 @@ from lbsim.simulation import run_simulation
 CONFIG = dict(server_count=1, concurrency=1, queue_limit=1, arrival_rate=4.0,
               duration=1.0, service_min=1.0, service_max=1.0, seed=-42,
               policy="round_robin")
-APP = Path(__file__).resolve().parents[1] / "src/lbsim/app.py"
 
 
 def rows(export):
@@ -75,26 +70,3 @@ class ExportTests(unittest.TestCase):
                     self.assertEqual(row["mean_response_time_seconds"], "")
                     self.assertEqual(row["p95_response_time_seconds"], "")
                     self.assertEqual(row["generated_count"], "0")
-
-    def test_ui_exports_completed_config_and_clears_after_invalid_run(self):
-        app = AppTest.from_file(str(APP), default_timeout=30).run()
-        self.assertFalse(app.get("download_button"))
-        for key, value in CONFIG.items():
-            if key != "policy":
-                app.number_input(key=key).set_value(value)
-        next(b for b in app.button if b.label == "Run simulation").click().run()
-        self.assertFalse(app.exception)
-        self.assertEqual(len(app.get("download_button")), 2)
-        with patch("lbsim.exports.build_exports", wraps=build_exports) as build:
-            app.number_input(key="server_count").set_value(3).run()
-            self.assertFalse(app.exception)
-            self.assertEqual(build.call_args.args[0], CONFIG)
-        app.number_input(key="server_count").set_value(3)
-        next(b for b in app.button if b.label == "Run simulation").click().run()
-        self.assertFalse(app.exception)
-        self.assertEqual(app.session_state["config"]["server_count"], 3)
-        app.number_input(key="duration").set_value(-1.0)
-        next(b for b in app.button if b.label == "Run simulation").click().run()
-        self.assertFalse(app.exception)
-        self.assertTrue(app.error)
-        self.assertFalse(app.get("download_button"))

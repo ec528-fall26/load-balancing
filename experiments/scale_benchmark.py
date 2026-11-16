@@ -4,7 +4,6 @@ import argparse
 import csv
 import ctypes
 import hashlib
-import importlib.metadata
 import json
 import os
 from pathlib import Path
@@ -164,8 +163,7 @@ def main():
         uv_lock_sha256=hashlib.sha256((ROOT / "uv.lock").read_bytes()).hexdigest(),
         machine=dict(os=platform.platform(), architecture=platform.machine(),
                      processor=os.environ.get("PROCESSOR_IDENTIFIER") or platform.processor(),
-                     logical_cpus=os.cpu_count(), python=sys.version,
-                     streamlit=importlib.metadata.version("streamlit")),
+                     logical_cpus=os.cpu_count(), python=sys.version),
         config=CONFIG, server_counts=SERVER_COUNTS, request_count=REQUEST_COUNT,
         trace_sha256=digest.hexdigest(), repeats=args.repeats,
         method="Fresh process per sample; perf_counter around run_simulation; "

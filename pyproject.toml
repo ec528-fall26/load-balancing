@@ -5,7 +5,6 @@ description = "EC528 load balancing simulator"
 requires-python = ">=3.12,<3.15"
 dependencies = [
     "fastapi>=0.115,<1",
-    "streamlit>=1.65.0",
     "uvicorn>=0.30,<1",
 ]
 

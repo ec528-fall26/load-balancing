@@ -4,7 +4,6 @@ import argparse
 import cProfile
 from datetime import datetime, timezone
 import hashlib
-import importlib.metadata
 import json
 from pathlib import Path
 import platform
@@ -114,7 +113,7 @@ def main():
     report = dict(recorded_at_utc=datetime.now(timezone.utc).isoformat(),
                   revision=revision, python=sys.version, platform=platform.platform(),
                   machine=platform.machine(), processor=platform.processor(),
-                  streamlit=importlib.metadata.version('streamlit'),
+                  uv_lock_sha256=hashlib.sha256((ROOT / 'uv.lock').read_bytes()).hexdigest(),
                   source_sha256={f: hashlib.sha256((ROOT / f).read_bytes()).hexdigest()
                                  for f in source_files},
                   scope='run_simulation only; fresh processes; profiler overhead excluded from baseline medians',
