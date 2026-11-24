@@ -292,6 +292,7 @@ export type ComparisonRun = {
     | "mean_response_time"
     | "p95_response_time"
     | "per_server_utilization"
+    | "workload_sha256"
   >;
 };
 export function compactRun(run: Run): ComparisonRun {
@@ -304,6 +305,7 @@ export function compactRun(run: Run): ComparisonRun {
       mean_response_time: s.mean_response_time,
       p95_response_time: s.p95_response_time,
       per_server_utilization: s.per_server_utilization,
+      workload_sha256: s.workload_sha256,
     },
   };
 }

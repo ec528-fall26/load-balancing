@@ -29,6 +29,7 @@ export type Config = {
 export type Event = [number, number, number, number, string, number, number?, number?, number?, number?];
 export type Summary = {
   request_model?: "cpu_io";
+  workload_sha256?: string;
   mean_cpu_queue_wait?: number | null;
   mean_io_queue_wait?: number|null;
   mean_cpu_service_time?: number|null;

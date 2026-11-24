@@ -1,4 +1,6 @@
 "use client";
+import { Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import {
   ChartContainer,
@@ -58,11 +60,35 @@ function value(n: number | null, unit: string, delta = false) {
         : "")
   );
 }
+function downloadComparison(cases: CompletedCase[], regional: boolean) {
+  const header = ["case", "completed", "rejected", "mean_seconds", "p95_seconds",
+    "p95_scope", "rejection_percent", "mean_slot_utilization_percent",
+    "workload_sha256", "config_json"];
+  const quote = (value: string | number | null) => `"${String(value ?? "").replaceAll('"', '""')}"`;
+  const rows = cases.map(({ label, run }) => {
+    const row = metrics(run);
+    return [label, row.completed, row.rejected, row.mean, row.p95,
+      regional ? "recent_completions" : "all_completions",
+      row.rejection, regional ? null : row.utilization,
+      run.summary.workload_sha256 ?? null,
+      JSON.stringify(run.config)];
+  });
+  const csv = [header, ...rows].map((row) => row.map(quote).join(",")).join("\r\n") + "\r\n";
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  const download = document.createElement("a");
+  download.href = url;
+  download.download = "load-balancing-comparison.csv";
+  download.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 export function ComparisonResults({ cases }: { cases: CompletedCase[] }) {
   const base = cases[0].run.config,
     rows = cases.map((c) => ({ name: c.label, ...metrics(c.run) })),
     baseline = rows[0];
   const regional = isRegional(base);
+  const hashes = cases.map(({ run }) => run.summary.workload_sha256);
+  const workloadMatch = hashes.every(Boolean) ? new Set(hashes).size === 1 : undefined;
   const visibleDefinitions = regional
     ? definitions.filter((m) => m.key !== "utilization")
     : definitions;
@@ -88,6 +114,10 @@ export function ComparisonResults({ cases }: { cases: CompletedCase[] }) {
           Each case was run through Python. Deltas are relative to the baseline;
           edited settings above do not change these results.
         </p>
+        <Button variant="outline" size="sm" className="mt-3"
+          onClick={() => downloadComparison(cases, regional)}>
+          <Download aria-hidden="true" data-icon="inline-start" /> Download CSV
+        </Button>
       </div>
       <Notice>
         {changed.length === 0
@@ -99,6 +129,15 @@ export function ComparisonResults({ cases }: { cases: CompletedCase[] }) {
         {regional &&
           " Regional means include all completions; each p95 uses only that case’s latest 2,000 completions. Regional compute is pooled and RTT assumptions are illustrative."}
       </Notice>
+      {workloadMatch !== undefined && (
+        <Notice>
+          <span className="font-medium">
+            {workloadMatch ? "Offered workload matches" : "Offered workloads differ"}
+          </span>
+          {" · "}The workload fingerprint covers arrivals, generated CPU demand and disk operation types.
+          Configured disk service times are compared separately.
+        </Notice>
+      )}
       <Table>
         <TableHeader>
           <TableRow>
