@@ -93,7 +93,7 @@ test("lab draft comparison runs baseline and two variants, retaining results on 
   });
   await expect(results).toBeVisible();
   const row = results.getByRole("row").filter({
-    has: page.getByRole("cell", { name: "Completed requests", exact: true }),
+    has: page.getByText("Completed requests", { exact: true }),
   });
   await expect(row.getByRole("cell").nth(1)).toHaveText("1");
   await expect(row.getByRole("cell").nth(2)).toContainText("2");
@@ -135,7 +135,7 @@ test("lab draft comparison runs baseline and two variants, retaining results on 
   ).toHaveValue("10.00");
 });
 
-test("mobile bottom navigation connects Library, Setup, Lab and Compare", async ({
+test("mobile bottom navigation connects Library, Setup, Lab, Compare and Docs", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -161,7 +161,9 @@ test("mobile bottom navigation connects Library, Setup, Lab and Compare", async 
   await expect(
     navigation.getByRole("link", { name: "Lab", exact: true }),
   ).toHaveAttribute("aria-current", "page");
-  await expect(navigation.getByRole("link")).toHaveCount(4);
+  await expect(navigation.getByRole("link")).toHaveCount(5);
+  await navigation.getByRole("link", { name: "Docs", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Documentation" })).toBeVisible();
   await navigation.getByRole("link", { name: "Compare", exact: true }).click();
   await expect(
     navigation.getByRole("link", { name: "Compare", exact: true }),
@@ -181,7 +183,7 @@ test("mobile bottom navigation connects Library, Setup, Lab and Compare", async 
   const lastControl = await backToSetup.boundingBox();
   expect(bar!.y + bar!.height).toBeCloseTo(844);
   expect(lastControl!.y + lastControl!.height).toBeLessThanOrEqual(bar!.y);
-  await navigation.getByRole("link", { name: "Setup", exact: true }).click();
+  await navigation.getByRole("link", { name: "Setup", exact: true }).press("Enter");
   await expect(
     page.getByRole("spinbutton", { name: "Arrival window (seconds)" }),
   ).toHaveValue("2.00");
@@ -189,7 +191,7 @@ test("mobile bottom navigation connects Library, Setup, Lab and Compare", async 
   await expect(
     page.getByRole("tab", { name: "Overview", exact: true }),
   ).toBeVisible();
-  await navigation.getByRole("link", { name: "Library", exact: true }).click();
+  await navigation.getByRole("link", { name: "Library", exact: true }).press("Enter");
   await expect(page).toHaveURL(/\/$/);
   await expect(
     navigation.getByRole("link", { name: "Library", exact: true }),

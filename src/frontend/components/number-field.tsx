@@ -1,7 +1,8 @@
 "use client";
 import { useId, useState } from "react";
 import { Minus, Plus } from "lucide-react";
-import { Field, FieldLabel, FieldDescription } from "@/components/ui/field";
+import { ParameterHelp } from "@/components/parameter-help";
+import { Field, FieldLabel } from "@/components/ui/field";
 import {
   InputGroup,
   InputGroupInput,
@@ -29,7 +30,10 @@ export function NumberField({
   const digits = step === 1 ? 0 : step === 0.001 ? 3 : 2;
   return (
     <Field>
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <div className="flex items-center gap-1">
+        <FieldLabel htmlFor={id}>{label}</FieldLabel>
+        {help && <ParameterHelp label={label} description={help} />}
+      </div>
       <InputGroup>
         <InputGroupInput
           id={id}
@@ -85,7 +89,6 @@ export function NumberField({
           </InputGroupButton>
         </InputGroupAddon>
       </InputGroup>
-      {help && <FieldDescription id={`${id}-help`}>{help}</FieldDescription>}
     </Field>
   );
 }

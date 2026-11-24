@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
-import { CircleHelp } from "lucide-react";
+import { ParameterHelp } from "@/components/parameter-help";
 import {
   Accordion,
   AccordionContent,
@@ -23,11 +23,6 @@ import {
 } from "@/components/ui/input-group";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Slider } from "@/components/ui/slider";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import {
   fanoutFields,
   type FanoutSettings,
@@ -55,35 +50,6 @@ const help = {
   width:
     "Split the same work into one, two, or four required shard calls. The coordinator waits for every required reply.",
 };
-
-export function ParameterHelp({
-  label,
-  description,
-}: {
-  label: string;
-  description: string;
-}) {
-  const [open, setOpen] = useState(false);
-  return (
-    <Tooltip open={open} onOpenChange={setOpen}>
-      <TooltipTrigger asChild>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-xs"
-          aria-label={`About ${label.toLowerCase()}`}
-          onClick={(event) => {
-            event.preventDefault();
-            setOpen(true);
-          }}
-        >
-          <CircleHelp aria-hidden="true" />
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent sideOffset={4}>{description}</TooltipContent>
-    </Tooltip>
-  );
-}
 
 function ShardChoices<T extends string | number>({
   label,

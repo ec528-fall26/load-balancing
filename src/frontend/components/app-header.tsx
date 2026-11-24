@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { FlaskConical, Library, Server, Settings2, Split } from "lucide-react";
+import { BookOpen, FlaskConical, Library, Server, Settings2, Split } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const pages = [
@@ -9,6 +9,7 @@ const pages = [
   { id: "setup", label: "Setup", icon: Settings2 },
   { id: "lab", label: "Lab", icon: FlaskConical },
   { id: "compare", label: "Compare", icon: Split },
+  { id: "docs", label: "Docs", icon: BookOpen },
 ] as const;
 export type PageSection = (typeof pages)[number]["id"];
 
@@ -30,6 +31,7 @@ export function AppHeader({
     setup: setupHref,
     lab: labHref,
     compare: compareHref,
+    docs: "/docs",
   };
   return (
     <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-3 md:gap-4 md:px-6">
@@ -45,7 +47,7 @@ export function AppHeader({
       </Link>
       <nav
         aria-label="Main navigation"
-        className="app-navigation fixed inset-x-0 bottom-0 grid grid-cols-4 items-center gap-1 border-t bg-background px-2 md:static md:flex md:border-0 md:bg-transparent md:p-0"
+        className="app-navigation fixed inset-x-0 bottom-0 grid grid-cols-5 items-center gap-1 border-t bg-background px-2 md:static md:flex md:border-0 md:bg-transparent md:p-0"
       >
         {pages.map(({ id, label, icon: Icon }) => (
           <Button

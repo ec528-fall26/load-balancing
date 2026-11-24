@@ -190,7 +190,7 @@ export default function SimulationWorkspace({
       setBusy(false);
     }
   }
-  if (pathname === "/compare") return children;
+  if (pathname === "/compare" || pathname === "/docs") return children;
   const shardedComparison =
     isSetup && topology === "sharded"
       ? fanoutCompareHref(sharded)
