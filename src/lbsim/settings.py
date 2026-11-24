@@ -41,7 +41,17 @@ def validate_config(values: Mapping, *, allow_manual_repair: bool = False) -> di
             errors.append('io_fraction: use a finite fraction from zero to 0.99')
         if type(cap) is not int or cap < 1:
             errors.append('outstanding_limit: use a positive integer per server')
-    elif any(k in values for k in ('io_fraction', 'outstanding_limit', 'io_capacity', 'io_heavy_probability')):
+        if 'disk' in values:
+            disk = values['disk']
+            bounds = {'read_fraction': (0, 1), 'read_ms': (.001, 60000), 'write_ms': (.001, 60000)}
+            if not isinstance(disk, Mapping) or disk.keys() != bounds.keys():
+                errors.append('disk: set read_fraction, read_ms and write_ms')
+            else:
+                for key, (minimum, maximum) in bounds.items():
+                    value = disk[key]
+                    if type(value) not in (int, float) or not isfinite(value) or not minimum <= value <= maximum:
+                        errors.append(f'disk.{key}: use a finite value from {minimum} to {maximum}')
+    elif any(k in values for k in ('io_fraction', 'outstanding_limit', 'io_capacity', 'io_heavy_probability', 'disk')):
         errors.append('request_model: CPU/I/O settings require the cpu_io model')
     rates = values.get("processing_rates")
     if rates is not None:
@@ -92,4 +102,6 @@ def validate_config(values: Mapping, *, allow_manual_repair: bool = False) -> di
     if model == 'cpu_io':
         config.update(request_model=model, io_fraction=fraction, outstanding_limit=cap, io_capacity=io_capacity)
         if mix is not None: config["io_heavy_probability"] = mix
+        if 'disk' in values:
+            config['disk'] = dict(values['disk'])
     return config

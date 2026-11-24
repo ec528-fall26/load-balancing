@@ -33,6 +33,7 @@ export const configLabels: Record<keyof Config, string> = {
   outstanding_limit: "Outstanding limit per server",
   io_capacity: "Shared I/O concurrency",
   io_heavy_probability: "I/O-heavy request fraction",
+  disk: "Disk read/write timing",
 };
 export type Setting = {
   key: string;
@@ -116,6 +117,11 @@ export function settings(config: CompareConfig): Setting[] {
         {key:"outstanding_limit",label:"Outstanding limit per server",group:"Capacity",value:config.outstanding_limit,step:1},
         {key:"io_capacity",label:"Shared I/O concurrency",group:"Capacity",value:config.io_capacity??64,step:1},
         ...(config.io_heavy_probability!==undefined?[{key:"io_heavy_probability",label:"I/O-heavy request fraction",group:"Workload",value:config.io_heavy_probability,step:.01}]:[]),
+      ] : []),
+      ...(config.disk ? [
+        { key: "disk.read_fraction", label: "Disk read fraction", group: "Workload", value: config.disk.read_fraction, step: .01 },
+        { key: "disk.read_ms", label: "Disk read time (ms)", group: "Workload", value: config.disk.read_ms, step: .001 },
+        { key: "disk.write_ms", label: "Disk write time (ms)", group: "Workload", value: config.disk.write_ms, step: .001 },
       ] : []),
       ...common,
       {

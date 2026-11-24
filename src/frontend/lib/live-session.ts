@@ -1,4 +1,4 @@
-import { EngineError, type Config } from "./engine";
+import { EngineError, type Config, type DiskCounts } from "./engine";
 export type LiveConfig = Omit<Config, "duration">;
 import {
   acceptRegionalSummary,
@@ -18,7 +18,7 @@ export type SinglePoolSnapshot = {
   lag_simulation_seconds: number;
   arrival_rate: number;
   config: LiveConfig;
-  io_resource?: {capacity:number;active:number;queued:number;utilization:number};
+  io_resource?: {capacity:number;active:number;queued:number;utilization:number;disk_completed?:DiskCounts};
   totals: {
     offered: number;
     completed: number;

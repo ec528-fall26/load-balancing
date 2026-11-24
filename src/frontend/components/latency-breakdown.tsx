@@ -12,6 +12,7 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/card";
+import type { DiskCounts } from "@/lib/engine";
 type Metrics = {
   mean_cpu_service_time?: number | null;
   mean_cpu_queue_wait?: number | null;
@@ -24,7 +25,7 @@ const config = {
   io: { label: "I/O service", color: "var(--chart-3)" },
   ioQueue: { label: "I/O queue", color: "var(--chart-4)" },
 };
-export function LatencyBreakdown({ metrics }: { metrics: Metrics }) {
+export function LatencyBreakdown({ metrics, disk }: { metrics: Metrics; disk?: DiskCounts }) {
   const values = {
     cpu: metrics.mean_cpu_service_time,
     cpuQueue: metrics.mean_cpu_queue_wait,
@@ -48,6 +49,11 @@ export function LatencyBreakdown({ metrics }: { metrics: Metrics }) {
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
+        {disk && (
+          <p className="text-sm tabular-nums">
+            Completed requests · {disk.read.toLocaleString()} reads · {disk.write.toLocaleString()} writes
+          </p>
+        )}
         <ChartContainer
           config={config}
           className="h-14 w-full"

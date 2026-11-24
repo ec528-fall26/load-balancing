@@ -294,8 +294,18 @@ The service-time range samples total demand before queueing; the CPU fraction
 is split equally before/after I/O. Server processing-rate multipliers scale CPU
 stages only. All servers share a finite I/O resource with a FIFO queue. A call
 holds one I/O slot during service and releases its server CPU slot. This models
-one shared dependency, not a physical disk or network. **Shared I/O bottleneck**
-provides an intentionally constrained example.
+one shared dependency. The optional disk setting replaces proportional I/O
+duration with one fixed read or write service time per request. Read probability
+determines the operation from an independent seeded stream. Both operation
+types use the same FIFO and slot capacity. CPU demand keeps the original
+profile and admitted I/O still counts against the server's outstanding limit.
+This abstraction does not simulate caching, device scheduling, or writeback.
+Set `disk: {"read_fraction": 0.9, "read_ms": 4, "write_ms": 50}` on a CPU/I/O
+configuration. Read fraction accepts 0–1, and operation times accept
+0.001–60,000 ms. `io_capacity` remains the shared concurrency ceiling.
+One-shot summaries and live snapshots report completed read and write
+requests under `io_resource.disk_completed`. See the
+[shared disk experiment](design-document.md#final-experiment-shared-disk).
 
 Mixed workloads draw a 90% or 10% I/O fraction per request, with a configurable
 probability of I/O-heavy requests. A separate seeded type stream preserves the

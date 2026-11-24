@@ -63,7 +63,7 @@ export function Results({ run }: { run: Run }) {
           s arrival window · seed {c.seed} · {policies[c.policy]}
         </p>
       </div>
-      {c.request_model==="cpu_io"&&<p className="caption">CPU → I/O → CPU · {c.io_heavy_probability!==undefined?`${(c.io_heavy_probability*100).toFixed(0)}% I/O-heavy requests`:`${((c.io_fraction??0)*100).toFixed(0)}% I/O`} · {c.outstanding_limit} outstanding places per server · Mean CPU queue delay: {seconds(s.mean_cpu_queue_wait??null)}. Shared I/O: {c.io_capacity??64} operations at once. I/O releases CPU but retains admission capacity.</p>}
+      {c.request_model==="cpu_io"&&<p className="caption">CPU → I/O → CPU · {c.disk ? `Disk: ${(c.disk.read_fraction * 100).toFixed(0)}% reads at ${c.disk.read_ms} ms; writes at ${c.disk.write_ms} ms` : c.io_heavy_probability!==undefined?`${(c.io_heavy_probability*100).toFixed(0)}% I/O-heavy requests`:`${((c.io_fraction??0)*100).toFixed(0)}% I/O share`} · {c.outstanding_limit} outstanding places per server · Mean CPU queue delay: {seconds(s.mean_cpu_queue_wait??null)}. Shared I/O: {c.io_capacity??64} operations at once. I/O releases CPU but retains admission capacity.</p>}
       <dl className="grid grid-cols-2 gap-6 border-y py-5 xl:grid-cols-4">
         {[
           ["Completed requests", s.completed_count.toLocaleString()],
@@ -111,7 +111,7 @@ export function Results({ run }: { run: Run }) {
       <p className="caption">
         Response times include queue waiting and service, in simulated seconds.
       </p>
-      {c.request_model==="cpu_io"&&<LatencyBreakdown metrics={s}/>}
+      {c.request_model==="cpu_io"&&<LatencyBreakdown metrics={s} disk={s.io_resource?.disk_completed}/>}
       <Tabs defaultValue="Overview" className="min-w-0">
         <TabsList>
           {["Overview", "Datacenter", "Server details"].map((t) => (

@@ -855,6 +855,37 @@ failure/deadline. Do not attribute the parallel table's results to serial mode.
 The focused test suite covers both dispatch modes and unsent work. The model
 omits retries, replication, and link contention; see [the contract](simulation-model.md#fan-out-and-stragglers).
 
+### Final experiment: shared disk
+
+From the repository root, with Python 3.12 and the locked environment:
+
+```sh
+uv sync --locked
+uv run --locked python experiments/compare_disk.py
+```
+
+A local CPU is sufficient. This script takes a few seconds or less and prints
+JSON to stdout. All cases offer 1,000 requests at 100/s to eight servers.
+Two shared disk slots serve seeded reads (4 ms) and writes. The CPU demands,
+routing policy and admission bounds remain fixed.
+
+| Case | Read share | Write time | Completed | Rejected | p95 (ms) | Mean disk queue (ms) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Read-heavy baseline | 90% | 50 ms | 1,000 | 0 | 60.435 | 1.512 |
+| Slower writes | 90% | 250 ms | 821 | 179 | 3,303.738 | 1,910.460 |
+| Write-heavy | 20% | 50 ms | 671 | 329 | 4,062.746 | 2,835.553 |
+
+Check exact counts and workload hashes, and allow 0.001 ms rounding
+difference on timing outputs. The first two workload hashes match because
+arrivals, generated demand, and assigned operation types match. The
+write-heavy case changes assigned operation types by design. P95 measures
+completed responses after draining, while utilization measures the arrival
+window only. At 250 ms writes disk utilization rises from 45.24% to 99.8%.
+
+In the Lab, load **Read-heavy disk**, open Compare, and change only
+**Disk write time (ms)** to 250 in Variant A. Expect the same counts,
+and rounded p95.
+
 ## 5. Claims and limitations
 
 Deterministic integer outcomes, workload hashes, and full-result checks should

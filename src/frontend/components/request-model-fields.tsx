@@ -32,6 +32,7 @@ export function RequestModelFields({
   view?: "basic" | "advanced" | "all";
 }) {
   const id = useId();
+  const disk = config.disk;
   const staged = config.request_model === "cpu_io";
   const fraction = config.io_fraction ?? 0.9;
   const profile = !staged
@@ -50,6 +51,7 @@ export function RequestModelFields({
       outstanding_limit,
       io_capacity,
       io_heavy_probability,
+      disk: ignoredDisk,
       ...simple
     } = config;
     if (value === "simple") {
@@ -118,9 +120,39 @@ export function RequestModelFields({
               label="I/O share (%)"
               value={fraction * 100}
               step={1}
-              help="Remaining work is split between two CPU stages."
+              help={disk ? "Determines CPU work only. Disk timings come from the fields below." : "Remaining work is split between two CPU stages."}
               onChange={(n) => onChange({ ...config, io_fraction: n / 100 })}
             />
+          )}
+          <Field>
+            <FieldLabel htmlFor={`${id}-io-model`}>I/O timing model</FieldLabel>
+            <Select value={disk ? "disk" : "proportional"} disabled={disabled}
+              onValueChange={(model) => {
+                const { disk: previous, ...base } = config;
+                onChange(model === "disk"
+                  ? { ...base, disk: previous ?? { read_fraction: .9, read_ms: 4, write_ms: 50 } }
+                  : base);
+              }}>
+              <SelectTrigger id={`${id}-io-model`}><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="proportional">Proportional delay</SelectItem>
+                <SelectItem value="disk">Shared disk reads and writes</SelectItem>
+              </SelectContent>
+            </Select>
+            <FieldDescription>Both timing models use the same shared FIFO queue.</FieldDescription>
+          </Field>
+          {disk && (
+            <div className="grid gap-4 sm:grid-cols-3">
+              <NumberField label="Reads (%)" value={disk.read_fraction * 100}
+                help="Seeded share of arrivals that perform a read. The rest perform writes."
+                onChange={(value) => onChange({ ...config, disk: { ...disk, read_fraction: value / 100 } })} />
+              <NumberField label="Read time (ms)" value={disk.read_ms} step={.001}
+                help="Disk slot time for a read, excluding queue wait. Range 0.001–60,000 ms."
+                onChange={(value) => onChange({ ...config, disk: { ...disk, read_ms: value } })} />
+              <NumberField label="Write time (ms)" value={disk.write_ms} step={.001}
+                help="Disk slot time for a write, excluding queue wait. Range 0.001–60,000 ms."
+                onChange={(value) => onChange({ ...config, disk: { ...disk, write_ms: value } })} />
+            </div>
           )}
           <NumberField
             label="Concurrent I/O operations"

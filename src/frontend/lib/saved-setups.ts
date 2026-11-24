@@ -16,7 +16,24 @@ export type Template = {
   config: Config;
 };
 export const LIBRARY_KEY = "lbsim.saved-setups.v1";
+const diskBaseline: Config = {
+  ...defaults, server_count: 8, concurrency: 2, queue_limit: 8,
+  arrival_rate: 100, duration: 10, seed: 42, service_min: .016, service_max: .024,
+  request_model: "cpu_io", io_fraction: .5, outstanding_limit: 24,
+  io_capacity: 2, policy: "least_outstanding",
+};
+
 export const templates: Template[] = [
+  {
+    id: "disk-read-heavy", name: "Read-heavy disk",
+    description: "90% reads at 4 ms, with occasional 50 ms writes and two shared disk slots.",
+    config: { ...diskBaseline, disk: { read_fraction: .9, read_ms: 4, write_ms: 50 } },
+  },
+  {
+    id: "disk-write-heavy", name: "Write-heavy disk",
+    description: "80% writes saturate the same two-slot disk. Compare with the read-heavy template or change write latency alone.",
+    config: { ...diskBaseline, disk: { read_fraction: .2, read_ms: 4, write_ms: 50 } },
+  },
   {id:"shared-io-bottleneck",name:"Shared I/O bottleneck",description:"One shared dependency slot creates I/O queueing even while server CPUs are idle.",config:{...defaults,server_count:8,concurrency:1,queue_limit:8,arrival_rate:100,duration:5,service_min:.08,service_max:.12,request_model:"cpu_io",io_fraction:.9,outstanding_limit:8,io_capacity:1,policy:"least_outstanding"}},
   {id:"mixed-cpu-io",name:"Mixed CPU and I/O requests",description:"An identical seeded mix of CPU-heavy and I/O-heavy requests, with a finite shared dependency.",config:{...defaults,server_count:8,concurrency:1,queue_limit:8,arrival_rate:100,duration:5,service_min:.08,service_max:.12,request_model:"cpu_io",io_fraction:.9,outstanding_limit:8,io_capacity:4,io_heavy_probability:.5,policy:"power_of_two"}},
 
@@ -159,7 +176,15 @@ export function validConfig(
     if(typeof c.io_fraction!=="number" || !Number.isFinite(c.io_fraction) || c.io_fraction<0 || c.io_fraction>.99 || !Number.isSafeInteger(c.outstanding_limit) || c.outstanding_limit!<1 || c.server_count*c.outstanding_limit!>100000) return false;
     if(c.io_capacity!==undefined && (!Number.isSafeInteger(c.io_capacity)||c.io_capacity<1||c.io_capacity>4096)) return false;
     if(c.io_heavy_probability!==undefined && (typeof c.io_heavy_probability!=="number"||!Number.isFinite(c.io_heavy_probability)||c.io_heavy_probability<0||c.io_heavy_probability>1))return false;
-  } else if(c.io_fraction!==undefined || c.outstanding_limit!==undefined || c.io_capacity!==undefined || c.io_heavy_probability!==undefined) return false;
+    if (c.disk !== undefined) {
+      const disk = c.disk;
+      const inRange = (value: unknown, min: number, max: number) =>
+        typeof value === "number" && Number.isFinite(value) && value >= min && value <= max;
+      if (!disk || typeof disk !== "object" || Object.keys(disk).length !== 3 ||
+          !inRange(disk.read_fraction, 0, 1) || !inRange(disk.read_ms, .001, 60000) ||
+          !inRange(disk.write_ms, .001, 60000)) return false;
+    }
+  } else if(c.disk!==undefined || c.io_fraction!==undefined || c.outstanding_limit!==undefined || c.io_capacity!==undefined || c.io_heavy_probability!==undefined) return false;
   if (
     c.availabilities !== undefined &&
     (c.request_model === "cpu_io" ||

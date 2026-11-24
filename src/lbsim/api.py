@@ -111,7 +111,7 @@ def checked_config(values, limits, *, allow_manual_repair=False):
     allowed = {'server_count', 'concurrency', 'queue_limit', 'arrival_rate', 'duration',
                'service_min', 'service_max', 'seed', 'policy', 'processing_rates',
                'availabilities', 'mean_repair_time',
-               'request_model', 'io_fraction', 'outstanding_limit', 'io_capacity', 'io_heavy_probability'}
+               'request_model', 'io_fraction', 'outstanding_limit', 'io_capacity', 'io_heavy_probability', 'disk'}
     extra = sorted(set(values) - allowed)
     if extra:
         raise APIError(422, 'INVALID_CONFIG', 'Unknown configuration fields.',
@@ -136,7 +136,9 @@ def checked_config(values, limits, *, allow_manual_repair=False):
         speeds = config.get('processing_rates', (1.,))
         low = config['service_min'] * (1 - max_fraction) / 2 / max(speeds)
         high = config['service_max'] * (1 - min_fraction) / 2 / min(speeds)
-        if not 1e-9 <= low <= high <= 3600 or config['service_max'] * max_fraction > 3600:
+        if not 1e-9 <= low <= high <= 3600 or (
+            'disk' not in config and config['service_max'] * max_fraction > 3600
+        ):
             raise APIError(422, 'INVALID_CONFIG', 'CPU stages must be 1 ns–3,600 s and I/O delay at most 3,600 s.')
     product = config['arrival_rate'] * config['duration']
     exceeded = []
