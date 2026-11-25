@@ -48,6 +48,7 @@ class _TimelineTotals:
     io_queued: int = 0
     # Work dropped during a server failure awaits rerouting at the same timestamp.
     pending_reroutes: int = 0
+    pending_retries: int = 0
 
 
 def _timeline_rows(events, server_count, totals):
@@ -84,12 +85,16 @@ def _timeline_rows(events, server_count, totals):
         totals.io_queued += state.io_queued - previous.io_queued
         states[server_id] = state
 
+        if action == 'retry_scheduled':
+            totals.pending_retries += 1
+        elif action in ('retry_started', 'retry_queued', 'retry_rejected', 'retry_no_server_up'):
+            totals.pending_retries -= 1
         totals.completed += action == 'completed'
-        totals.rejected += action in ('rejected', 'reroute_rejected', 'no_server_up')
-        totals.offered += action in ('started', 'queued', 'rejected', 'no_server_up')
+        totals.rejected += action in ('rejected', 'reroute_rejected', 'no_server_up', 'retry_rejected', 'retry_no_server_up')
+        totals.offered += action in ('started', 'queued', 'rejected', 'no_server_up', 'retry_scheduled')
         assert totals.offered == (
             totals.completed + totals.rejected + totals.running + totals.waiting
-            + totals.io_waiting + totals.pending_reroutes
+            + totals.io_waiting + totals.pending_reroutes + totals.pending_retries
         )
 
         yield (

@@ -1,5 +1,6 @@
 "use client";
 
+import { withoutRetries } from "@/lib/engine";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -63,9 +64,10 @@ export function useWorkspaceDraft(pathname: string, restoredSession: LiveSnapsho
           ? templates.find(({ id }) => id === templateId)
           : readSetups().find(({ id }) => id === saveId);
         if (!item) throw new Error("This setup was not found in this browser.");
-        setConfig(item.config);
+        const mode = requestedMode ?? item.execution ?? "one_shot";
+        setConfig(mode === "continuous" ? withoutRetries(item.config) : item.config);
         setTopology("single_pool");
-        setExecution(requestedMode ?? item.execution ?? "one_shot");
+        setExecution(mode);
         setCurrentSave(saveId && "updatedAt" in item ? item : null);
         setSetupName(item.name);
         return;
@@ -108,6 +110,9 @@ export function useWorkspaceDraft(pathname: string, restoredSession: LiveSnapsho
       } else if (candidate && typeof candidate === "object" &&
                  "request_model" in candidate && candidate.request_model === "cpu_io") {
         candidate = withoutOutages(candidate as Config);
+      }
+      if (mode === "continuous" && candidate && typeof candidate === "object" && "retry" in candidate) {
+        candidate = withoutRetries(candidate as Config);
       }
       if (isShardedConfig(candidate)) {
         setTopology("sharded");

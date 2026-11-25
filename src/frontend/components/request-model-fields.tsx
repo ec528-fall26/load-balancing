@@ -1,6 +1,6 @@
 "use client";
 import { useId } from "react";
-import type { Config } from "@/lib/engine";
+import { withoutRetries, type Config } from "@/lib/engine";
 import { withoutOutages } from "@/lib/availability";
 import { NumberField } from "@/components/number-field";
 import {
@@ -59,7 +59,7 @@ export function RequestModelFields({
       return;
     }
     const base = {
-      ...withoutOutages(config),
+      ...withoutRetries(withoutOutages(config)),
       request_model: "cpu_io" as const,
       outstanding_limit:
         config.outstanding_limit ?? config.concurrency + config.queue_limit,

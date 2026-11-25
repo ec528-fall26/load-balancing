@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
 import { Play, LoaderCircle } from "lucide-react";
-import { policies, validServerCount, type Config } from "@/lib/engine";
+import { defaultRetry, policies, retryModes, validServerCount, withoutRetries, type Config, type RetryConfig } from "@/lib/engine";
 import { regionalPolicies } from "@/lib/policy-metadata";
 import {
   FanoutDispatchMode,
@@ -101,14 +101,15 @@ export function LabControls(p: Props) {
     value: string,
     options: Record<string, string>,
     onChange: (v: string) => void,
+    help?: string,
   ) => (
     <Field>
       <div className="flex items-center gap-1">
         <FieldLabel htmlFor={`setup-${label}`}>{label}</FieldLabel>
-        {label === "Topology" && (
+        {(help || label === "Topology") && (
           <ParameterHelp
             label={label}
-            description="Choose a single server pool, multiple regions, or a coordinator that sends work to a fleet of shards."
+            description={help ?? "Choose a single server pool, multiple regions, or a coordinator that sends work to a fleet of shards."}
           />
         )}
       </div>
@@ -294,6 +295,38 @@ export function LabControls(p: Props) {
                             : p.onRegionalPolicy(v),
                       )}
                     </FieldGroup>
+                    {single && !continuous && c.request_model !== "cpu_io" && (
+                      <FieldGroup>
+                        {select(
+                          "Client retry policy",
+                          c.retry?.mode ?? "off",
+                          retryModes,
+                          (mode) => p.onChange(mode === "off" ? withoutRetries(c) : {
+                            ...c,
+                            retry: { ...(c.retry ?? defaultRetry), mode: mode as RetryConfig["mode"] },
+                          }),
+                          "Clients can retry rejected admissions. Immediate retries add load right away; backoff spreads attempts over time.",
+                        )}
+                        {c.retry && c.retry.mode !== "off" && (
+                          <FieldGroup className="grid gap-4 sm:grid-cols-2">
+                            <NumberField
+                              label="Max retries per request"
+                              value={c.retry.limit}
+                              help="Number of extra attempts after the original request is rejected. Range 1–5."
+                              onChange={(limit) => p.onChange({ ...c, retry: { ...c.retry!, limit } })}
+                            />
+                            {c.retry.mode === "backoff" && (
+                              <NumberField
+                                label="Base retry delay (ms)"
+                                value={c.retry.base_ms}
+                                help="First retry waits 50–100% of this delay. The delay range doubles with each retry."
+                                onChange={(base_ms) => p.onChange({ ...c, retry: { ...c.retry!, base_ms } })}
+                              />
+                            )}
+                          </FieldGroup>
+                        )}
+                      </FieldGroup>
+                    )}
                     {!single && continuous && (
                       <FieldGroup>
                         {select(

@@ -70,6 +70,9 @@ export function Results({ run }: { run: Run }) {
         {[
           ["Completed requests", s.completed_count.toLocaleString(), metricHelp.completed],
           ["Rejected requests", s.rejected_count.toLocaleString(), metricHelp.rejected],
+          ...(s.retry_attempts === undefined ? [] : [
+            ["Retry attempts", s.retry_attempts.toLocaleString(), "Additional attempts after rejection. Completed and rejected totals each count original requests once."],
+          ]),
           ["Average response time", seconds(s.mean_response_time), metricHelp.mean],
           ["p95 response time", seconds(s.p95_response_time), metricHelp.p95],
         ].map(([label, value, description]) => (

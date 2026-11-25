@@ -855,6 +855,22 @@ failure/deadline. Do not attribute the parallel table's results to serial mode.
 The focused test suite covers both dispatch modes and unsent work. The model
 omits retries, replication, and link contention; see [the contract](simulation-model.md#fan-out-and-stragglers).
 
+### Client retries after overload
+
+For a one-shot single-server-pool run with simple requests, **Client retry
+policy** controls what happens when the load balancer rejects admission.
+Immediate retries run at the same simulated timestamp. Exponential backoff
+waits a seeded 50–100% of the base delay before the first retry and doubles
+that range before each later retry. Retries can continue after new arrivals
+stop. Requests already admitted use the existing outage rerouting rules.
+
+To reproduce a small overload, use one server and slot, zero waiting places,
+2 requests/s for 1 second, and a service time fixed at 1 second. Set the retry
+limit to 1 in Compare. Immediate retries finish 1 request and reject 1.
+With 1,200 ms base backoff, both requests finish and the retried request's
+latency includes its wait to retry. Compare counts all extra attempts
+separately from the final outcome of each original request.
+
 ### Final experiment: shared disk
 
 From the repository root, with Python 3.12 and the locked environment:

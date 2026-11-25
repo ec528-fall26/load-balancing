@@ -1,4 +1,5 @@
 "use client";
+import { withoutRetries } from "@/lib/engine";
 import { RegionalTelemetry } from "@/components/regional-telemetry";
 import {
   regionalRequest,
@@ -281,6 +282,7 @@ export default function SimulationWorkspace({
               active={!!live.id}
               ready={live.ready}
               onExecution={(next) => {
+                if (next === "continuous") setConfig(withoutRetries);
                 setExecution(next);
                 detachTemplate();
               }}

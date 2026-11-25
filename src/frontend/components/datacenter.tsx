@@ -288,6 +288,12 @@ export function Datacenter({ run }: { run: Run }) {
                   <>Server {latest[1]} {latest[4] === "server_down" ? "went down" : "recovered"}</>
                 ) : latest[4] === "rerouted" || latest[4] === "reroute_rejected" ? (
                   <>Request {latest[5]} was re-routed after an outage{latest[4] === "rerouted" ? ` to server ${latest[1]}` : " but no server could take it"}</>
+                ) : latest[4] === "retry_scheduled" || latest[4] === "retry_rescheduled" ? (
+                  <>Request {latest[5]} was turned away and will retry</>
+                ) : latest[4] === "retry_started" || latest[4] === "retry_queued" ? (
+                  <>Retry for request {latest[5]} {latest[4] === "retry_started" ? "started" : "queued"} on server {latest[1]}</>
+                ) : latest[4] === "retry_rejected" || latest[4] === "retry_no_server_up" ? (
+                  <>Request {latest[5]} was rejected after exhausting its retry budget</>
                 ) : latest[4] === "no_server_up" ? (
                   <>Request {latest[5]} was rejected: every server was down</>
                 ) : (<>Request {latest[5]}{" "}

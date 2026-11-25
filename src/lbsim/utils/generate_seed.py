@@ -1,4 +1,5 @@
 import random
+from heapq import heappop, heappush
 from collections import deque
 from lbsim.availability import outage_schedule
 from lbsim.server import Request, Server
@@ -7,7 +8,8 @@ from lbsim.policies import RoutingContext, create_policy, supports_policy
 def route(server_count: int, concurrency: int, queue_limit: int, policy: str, arrival_rate: float, duration: float, service_min: float, service_max: float, seed: int, events: list | None = None,
           processing_rates: tuple[float, ...] | None = None, availabilities: tuple[float, ...] | None = None,
           mean_repair_time: float = 1.0, outages: dict | None = None, *,
-          interrupted: list[tuple[int, float, float]] | None = None):
+          interrupted: list[tuple[int, float, float]] | None = None,
+          retry: dict | None = None):
     """Run the batch engine and return (completed executions, rejected request IDs).
 
     `availabilities` generates a seeded outage schedule (see lbsim.availability);
@@ -59,9 +61,27 @@ def route(server_count: int, concurrency: int, queue_limit: int, policy: str, ar
         available=(lambda i: server_map[i].up) if transitions else None,
         all_available=lambda: up_count == server_count))
 
+    scheduled_retries = []
+    retry_rng = random.Random(seed + 4000000)
+
+    def reject(req, attempt, now, target, reason):
+        if retry and attempt < retry["limit"]:
+            delay = 0.0
+            if retry["mode"] == "backoff":
+                delay = retry["base_ms"] / 1000 * 2**attempt * retry_rng.uniform(.5, 1)
+            heappush(scheduled_retries, (now + delay, req.id, attempt + 1, req))
+            action = "retry_rescheduled" if attempt else "retry_scheduled"
+        else:
+            rejected.append(req.id)
+            action = f"retry_{reason}" if attempt else reason
+        if events is not None:
+            events.append((now, target.id, target.running_count, target.waiting_count, action, req.id))
+
     # Continue until there are no more requests, pending completions or outages
-    while requests or pending or transitions:
-        next_arrival = requests[0].arrival_time if requests else float('inf')
+    while requests or pending or transitions or scheduled_retries:
+        original_arrival = requests[0].arrival_time if requests else float('inf')
+        retry_arrival = scheduled_retries[0][0] if scheduled_retries else float('inf')
+        next_arrival = min(original_arrival, retry_arrival)
         next_transition = transitions[0][0] if transitions else float('inf')
 
         # Get the earliest completion time
@@ -133,29 +153,30 @@ def route(server_count: int, concurrency: int, queue_limit: int, policy: str, ar
         else:
             # If the next arrival happens before the next completion, process that
             now = next_arrival
-            req = requests.popleft()
+            if original_arrival <= retry_arrival:
+                req, attempt = requests.popleft(), 0
+            else:
+                _, _, attempt, req = heappop(scheduled_retries)
 
             if up_count == 0:
-                # Every server is down: nothing can accept the request.
-                rejected.append(req.id)
-                if events is not None:
-                    # Its own status, so outage rejections are distinguishable from full queues.
-                    events.append((now, server_map[0].id, server_map[0].running_count, server_map[0].waiting_count, "no_server_up", req.id))
+                reject(req, attempt, now, server_map[0], "no_server_up")
                 continue
 
             target_server = server_map[routing.choose()]
 
             admission = target_server.submit(req, now)
             routing.update(target_server.id)
+            if admission.status == "rejected":
+                reject(req, attempt, now, target_server, "rejected")
+                continue
             if events is not None:
+                action = f"retry_{admission.status}" if attempt else admission.status
                 events.append((now, target_server.id, target_server.running_count,
-                               target_server.waiting_count, admission.status, req.id))
+                               target_server.waiting_count, action, req.id))
 
             if admission.status == "started":
                 # Request has been sent, put id in pending
                 pending.append((admission.execution.completion_time, target_server.id, req.id))
-            elif admission.status == "rejected":
-                rejected.append(req.id)
 
             # Don't worry if admission.status is "queued", we add the id to pending when it gets pulled
             # from the server queue.

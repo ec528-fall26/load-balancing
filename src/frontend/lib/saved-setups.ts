@@ -1,3 +1,4 @@
+import { retryModes } from "./engine";
 import { defaults, policies, validServerCount, type Config } from "./engine";
 export type ExecutionMode = "one_shot" | "continuous";
 
@@ -171,6 +172,16 @@ export function validConfig(
     return false;
   if (!Object.hasOwn(policies,c.policy))
     return false;
+  if ("retry" in c) {
+    const retry = c.retry;
+    if (execution !== "one_shot" || c.request_model === "cpu_io" ||
+        !retry || typeof retry !== "object" || Object.keys(retry).length !== 3 ||
+        !Object.hasOwn(retryModes, retry.mode) ||
+        !Number.isSafeInteger(retry.limit) || retry.limit < 1 || retry.limit > 5 ||
+        typeof retry.base_ms !== "number" || !Number.isFinite(retry.base_ms) ||
+        retry.base_ms < 1 || retry.base_ms > 10_000 ||
+        (retry.mode !== "off" && requested * (1 + retry.limit) > 100_000)) return false;
+  }
   if(c.request_model!==undefined && !["simple","cpu_io"].includes(c.request_model)) return false;
   if(c.request_model==="cpu_io") {
     if(typeof c.io_fraction!=="number" || !Number.isFinite(c.io_fraction) || c.io_fraction<0 || c.io_fraction>.99 || !Number.isSafeInteger(c.outstanding_limit) || c.outstanding_limit!<1 || c.server_count*c.outstanding_limit!>100000) return false;

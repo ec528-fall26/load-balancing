@@ -8,6 +8,20 @@ export function validServerCount(count: number): boolean {
 export type DiskConfig = { read_fraction: number; read_ms: number; write_ms: number };
 export type DiskCounts = { read: number; write: number };
 
+export const retryModes = {
+  off: "Off",
+  immediate: "Immediate retries",
+  backoff: "Exponential backoff with jitter",
+} as const;
+
+export type RetryConfig = {
+  mode: keyof typeof retryModes;
+  limit: number;
+  base_ms: number;
+};
+
+export const defaultRetry: RetryConfig = { mode: "off", limit: 3, base_ms: 100 };
+
 export type Config = {
   server_count: number;
   concurrency: number;
@@ -29,7 +43,12 @@ export type Config = {
   io_capacity?: number;
   io_heavy_probability?: number;
   disk?: DiskConfig;
+  retry?: RetryConfig;
 };
+export function withoutRetries({ retry: _retry, ...config }: Config): Config {
+  return config;
+}
+
 export type Event = [number, number, number, number, string, number, number?, number?, number?, number?];
 export type Summary = {
   request_model?: "cpu_io";
@@ -49,6 +68,7 @@ export type Summary = {
   event_count?: number;
   completed_count: number;
   rejected_count: number;
+  retry_attempts?: number;
   mean_response_time: number | null;
   p95_response_time: number | null;
   response_times: number[];
