@@ -32,6 +32,22 @@ class StagedTests(unittest.TestCase):
         self.assertEqual(live.snapshot()['io_resource']['disk_completed'],
                          summary['io_resource']['disk_completed'])
 
+    def test_write_size_adds_transfer_time_without_changing_read_time(self):
+        config = {
+            **CONFIG, 'duration': .1, 'io_capacity': 1,
+            'disk': {'read_fraction': 0, 'read_ms': 5, 'write_ms': 10},
+        }
+        fixed = run_simulation(config)
+        sized = {**config, 'disk': {**config['disk'], 'write_size_kib': 1024,
+                                    'write_speed_mib_s': 2}}
+        transferred = run_simulation(sized)
+        self.assertAlmostEqual(transferred['response_times'][0] - fixed['response_times'][0], .5)
+        self.assertNotEqual(transferred['workload_sha256'], fixed['workload_sha256'])
+        faster = {**sized, 'disk': {**sized['disk'], 'write_speed_mib_s': 4}}
+        self.assertEqual(run_simulation(faster)['workload_sha256'], transferred['workload_sha256'])
+        reads = {**sized, 'disk': {**sized['disk'], 'read_fraction': 1}}
+        self.assertAlmostEqual(run_simulation(reads)['mean_io_service_time'], .005)
+
     def test_disk_validation_and_seeded_workload(self):
         config = {
             **CONFIG, 'arrival_rate': 200, 'io_capacity': 1,
@@ -46,7 +62,9 @@ class StagedTests(unittest.TestCase):
             self.assertEqual(reference.json()['summary']['workload_sha256'],
                              comparison.json()['summary']['workload_sha256'])
             for disk in (None, {}, {**config['disk'], 'write_ms': 0},
-                         {**config['disk'], 'read_fraction': True}):
+                         {**config['disk'], 'read_fraction': True},
+                         {**config['disk'], 'write_size_kib': -1},
+                         {**config['disk'], 'write_speed_mib_s': 0}):
                 invalid = client.post('/v1/runs', json={'config': {**config, 'disk': disk}})
                 self.assertEqual(invalid.status_code, 422, invalid.text)
 

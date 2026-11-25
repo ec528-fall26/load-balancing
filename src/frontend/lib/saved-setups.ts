@@ -180,9 +180,12 @@ export function validConfig(
       const disk = c.disk;
       const inRange = (value: unknown, min: number, max: number) =>
         typeof value === "number" && Number.isFinite(value) && value >= min && value <= max;
-      if (!disk || typeof disk !== "object" || Object.keys(disk).length !== 3 ||
+      if (!disk || typeof disk !== "object" || Object.keys(disk).some((key) =>
+            !["read_fraction", "read_ms", "write_ms", "write_size_kib", "write_speed_mib_s"].includes(key)) ||
           !inRange(disk.read_fraction, 0, 1) || !inRange(disk.read_ms, .001, 60000) ||
-          !inRange(disk.write_ms, .001, 60000)) return false;
+          !inRange(disk.write_ms, .001, 60000) ||
+          ("write_size_kib" in disk && !inRange(disk.write_size_kib, 0, 65536)) ||
+          ("write_speed_mib_s" in disk && !inRange(disk.write_speed_mib_s, 2, 10000))) return false;
     }
   } else if(c.disk!==undefined || c.io_fraction!==undefined || c.outstanding_limit!==undefined || c.io_capacity!==undefined || c.io_heavy_probability!==undefined) return false;
   if (

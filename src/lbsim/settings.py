@@ -44,11 +44,13 @@ def validate_config(values: Mapping, *, allow_manual_repair: bool = False) -> di
         if 'disk' in values:
             disk = values['disk']
             bounds = {'read_fraction': (0, 1), 'read_ms': (.001, 60000), 'write_ms': (.001, 60000)}
-            if not isinstance(disk, Mapping) or disk.keys() != bounds.keys():
+            optional = {'write_size_kib': (0, 65536), 'write_speed_mib_s': (2, 10000)}
+            if (not isinstance(disk, Mapping) or not bounds.keys() <= disk.keys()
+                    or not disk.keys() <= bounds.keys() | optional.keys()):
                 errors.append('disk: set read_fraction, read_ms and write_ms')
             else:
-                for key, (minimum, maximum) in bounds.items():
-                    value = disk[key]
+                for key, value in disk.items():
+                    minimum, maximum = (bounds | optional)[key]
                     if type(value) not in (int, float) or not isfinite(value) or not minimum <= value <= maximum:
                         errors.append(f'disk.{key}: use a finite value from {minimum} to {maximum}')
     elif any(k in values for k in ('io_fraction', 'outstanding_limit', 'io_capacity', 'io_heavy_probability', 'disk')):

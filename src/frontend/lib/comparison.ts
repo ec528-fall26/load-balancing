@@ -1,6 +1,6 @@
 import { policies } from "./engine";
 import { regionalPolicies } from "./policy-metadata";
-import type { Config, Run } from "./engine";
+import { DEFAULT_WRITE_SPEED_MIB_S, type Config, type Run } from "./engine";
 import type { RegionalConfig, RegionalRun } from "./regions";
 import { validConfig, type ExecutionMode } from "./saved-setups";
 import {
@@ -122,6 +122,8 @@ export function settings(config: CompareConfig): Setting[] {
         { key: "disk.read_fraction", label: "Disk read fraction", group: "Workload", value: config.disk.read_fraction, step: .01 },
         { key: "disk.read_ms", label: "Disk read time (ms)", group: "Workload", value: config.disk.read_ms, step: .001 },
         { key: "disk.write_ms", label: "Disk write time (ms)", group: "Workload", value: config.disk.write_ms, step: .001 },
+        { key: "disk.write_size_kib", label: "Disk write size (KiB)", group: "Workload", value: config.disk.write_size_kib ?? 0, step: .01 },
+        { key: "disk.write_speed_mib_s", label: "Disk write throughput (MiB/s)", group: "Workload", value: config.disk.write_speed_mib_s ?? DEFAULT_WRITE_SPEED_MIB_S, step: .01 },
       ] : []),
       ...common,
       {

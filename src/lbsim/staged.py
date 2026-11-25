@@ -195,6 +195,9 @@ class StagedSimulation(ContinuousSimulation):
                     disk_operation = 'read' if self.disk_rng.random() < self.disk['read_fraction'] else 'write'
                     io_duration = self.disk[f'{disk_operation}_ms'] / 1000
                     self.workload_digest.update(b'R' if disk_operation == 'read' else b'W')
+                    if disk_operation == 'write' and (size := self.disk.get('write_size_kib', 0)):
+                        io_duration += size / (1024 * self.disk.get('write_speed_mib_s', 100))
+                        self.workload_digest.update(pack("!d", size))
                 self.offered += 1
                 if self.outstanding[sid] >= self.config['outstanding_limit']:
                     self.rejected += 1
