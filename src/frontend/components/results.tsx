@@ -6,6 +6,8 @@ import {
   UtilizationChart,
   histogram,
 } from "./chart";
+import { metricHelp } from "@/lib/metric-help";
+import { ParameterHelp } from "./parameter-help";
 import { LatencyBreakdown } from "./latency-breakdown";
 import { Datacenter } from "./datacenter";
 import { Run, policies } from "@/lib/engine";
@@ -66,13 +68,16 @@ export function Results({ run }: { run: Run }) {
       {c.request_model==="cpu_io"&&<p className="caption">CPU → I/O → CPU · {c.disk ? `Disk: ${(c.disk.read_fraction * 100).toFixed(0)}% reads at ${c.disk.read_ms} ms; writes at ${c.disk.write_ms} ms` : c.io_heavy_probability!==undefined?`${(c.io_heavy_probability*100).toFixed(0)}% I/O-heavy requests`:`${((c.io_fraction??0)*100).toFixed(0)}% I/O share`} · {c.outstanding_limit} outstanding places per server · Mean CPU queue delay: {seconds(s.mean_cpu_queue_wait??null)}. Shared I/O: {c.io_capacity??64} operations at once. I/O releases CPU but retains admission capacity.</p>}
       <dl className="grid grid-cols-2 gap-6 border-y py-5 xl:grid-cols-4">
         {[
-          ["Completed requests", s.completed_count.toLocaleString()],
-          ["Rejected requests", s.rejected_count.toLocaleString()],
-          ["Average response time", seconds(s.mean_response_time)],
-          ["p95 response time", seconds(s.p95_response_time)],
-        ].map(([label, value]) => (
+          ["Completed requests", s.completed_count.toLocaleString(), metricHelp.completed],
+          ["Rejected requests", s.rejected_count.toLocaleString(), metricHelp.rejected],
+          ["Average response time", seconds(s.mean_response_time), metricHelp.mean],
+          ["p95 response time", seconds(s.p95_response_time), metricHelp.p95],
+        ].map(([label, value, description]) => (
           <div key={label}>
-            <dt className="text-sm text-muted-foreground">{label}</dt>
+            <dt className="flex items-center gap-1 text-sm text-muted-foreground">
+              {label}
+              <ParameterHelp label={label} description={description} />
+            </dt>
             <dd className="mt-1 text-2xl font-semibold tabular-nums">
               {value}
             </dd>

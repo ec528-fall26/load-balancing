@@ -9,8 +9,8 @@ import {
   FanoutFields,
   FanoutTraceOptions,
   FanoutWidth,
-  ParameterHelp,
 } from "@/components/fanout-fields";
+import { ParameterHelp } from "@/components/parameter-help";
 import type { ShardedConfig } from "@/lib/fanout";
 import { withoutRegionalClients, type RegionalTopology } from "@/lib/regions";
 import { RegionalSettings } from "@/components/regional-settings";
@@ -191,6 +191,7 @@ export function LabControls(p: Props) {
                   <FieldGroup className="grid gap-4 sm:grid-cols-2">
                     <NumberField
                       label="Server count"
+                      help="Number of routing targets in the single pool."
                       value={c.server_count}
                       commitOnBlur={!!c.processing_rates}
                       onChange={(server_count) => {
@@ -207,6 +208,7 @@ export function LabControls(p: Props) {
                     />
                     <NumberField
                       label="Slots per server"
+                      help="Number of requests each server can execute at once. A staged request releases its slot while waiting on I/O."
                       value={c.concurrency}
                       onChange={(n) => p.onChange({ ...c, concurrency: n })}
                     />
@@ -274,6 +276,7 @@ export function LabControls(p: Props) {
                     <FieldGroup className="grid gap-4 sm:grid-cols-2">
                       <NumberField
                         label="Requests per second"
+                        help="Offered arrival rate. A one-shot run generates arrivals for the configured window, then drains."
                         value={c.arrival_rate}
                         step={0.01}
                         onChange={(n) => p.onChange({ ...c, arrival_rate: n })}
@@ -362,12 +365,14 @@ export function LabControls(p: Props) {
                     <FieldGroup className="grid gap-4 sm:grid-cols-2">
                       <NumberField
                         label="Min service (s)"
+                        help="Lower bound for generated work. When disk timing is enabled, read and write duration are set separately."
                         value={c.service_min}
                         step={0.001}
                         onChange={(n) => p.onChange({ ...c, service_min: n })}
                       />
                       <NumberField
                         label="Max service (s)"
+                        help="Upper bound for generated work. Increasing the range can create more variation in queue waiting."
                         value={c.service_max}
                         step={0.001}
                         onChange={(n) => p.onChange({ ...c, service_max: n })}
@@ -419,6 +424,7 @@ export function LabControls(p: Props) {
                     {p.execution === "one_shot" && (
                       <NumberField
                         label="Arrival window (seconds)"
+                        help="New arrivals stop after this simulated time. Admitted requests can finish during draining."
                         value={c.duration}
                         step={0.01}
                         onChange={(n) => p.onChange({ ...c, duration: n })}

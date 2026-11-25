@@ -25,6 +25,8 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { Notice, Panel } from "@/components/surface";
+import { ParameterHelp } from "@/components/parameter-help";
+import { metricHelp } from "@/lib/metric-help";
 import {
   changedSettings,
   settingLabel,
@@ -151,9 +153,12 @@ export function ComparisonResults({ cases }: { cases: CompletedCase[] }) {
           {visibleDefinitions.map((metric) => (
             <TableRow key={metric.key}>
               <TableCell>
-                {regional && metric.key === "p95"
-                  ? "Recent-window p95 response time"
-                  : metric.label}
+                <div className="flex items-center gap-1">
+                  {regional && metric.key === "p95"
+                    ? "Recent-window p95 response time"
+                    : metric.label}
+                  <ParameterHelp label={metric.label} description={metricHelp[metric.key]} />
+                </div>
               </TableCell>
               {rows.map((row, i) => (
                 <TableCell key={row.name} className="tabular-nums">

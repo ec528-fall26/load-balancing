@@ -26,8 +26,9 @@ and Node.js 24 (the version used by CI). Dependencies are pinned by `uv.lock` an
 `src/frontend/package-lock.json`.
 
 ```sh
-git clone --branch demo-3 https://github.com/ec528-fall26/load-balancing.git
+git clone https://github.com/ec528-fall26/load-balancing.git
 cd load-balancing
+# Switch to the branch being evaluated before installing.
 uv sync --locked
 uv run --locked python -m uvicorn lbsim.api:app --host 127.0.0.1 --port 8000 --workers 1
 ```
@@ -46,6 +47,9 @@ For a smoke test, choose **Single server pool**, **One-shot**, and **Round robin
 Set one server, one slot, one waiting place, 4 requests/s, a 1-second arrival
 window, and both service-time bounds to 1 second. Run the simulation. Expect
 **2 completed, 2 rejected, and 1.75 s p95**. Keep the default seed of 42.
+
+Open [Docs](http://localhost:3000/docs) in the Lab for illustrated setup,
+live controls, comparisons, and metric definitions.
 
 See the [Demo 3 walkthroughs](docs/design-document.md#lab-walkthroughs) for
 routing comparisons, changes to live traffic, and a shard outage.
