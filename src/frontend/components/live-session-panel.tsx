@@ -322,7 +322,7 @@ export function LiveSessionPanel({
             </div>
             {s.config.request_model==="cpu_io"&&s.io_resource&&<ResourcePressure cpuActive={s.totals.running} cpuSlots={s.config.server_count*s.config.concurrency} cpuQueued={s.totals.waiting} outstanding={s.totals.outstanding??0} admissionSlots={s.config.server_count*(s.config.outstanding_limit??1)} ioActive={s.io_resource.active} ioQueued={s.io_resource.queued} ioCapacity={s.io_resource.capacity}/>}
             {s.config.request_model==="cpu_io"&&<p className="caption">CPU active: {s.totals.running} · I/O waiting: {s.totals.io_waiting} · CPU queue: {s.totals.waiting} · Outstanding: {s.totals.outstanding} · Mean CPU queue delay: {seconds(s.metrics.mean_cpu_queue_wait??null)}</p>}
-            {s.config.request_model==="cpu_io"&&<LatencyBreakdown metrics={s.metrics}/>}
+            {s.config.request_model==="cpu_io"&&<LatencyBreakdown metrics={s.metrics} disk={s.io_resource?.disk_completed}/>}
             <dl className="grid grid-cols-2 gap-5 border-y py-4 lg:grid-cols-4">
               {[
                 ["Offered", s.totals.offered.toLocaleString()],

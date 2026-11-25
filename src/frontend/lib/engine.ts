@@ -5,6 +5,9 @@ export function validServerCount(count: number): boolean {
   return Number.isSafeInteger(count) && count >= 1 && count <= MAX_SINGLE_POOL_SERVERS;
 }
 
+export type DiskConfig = { read_fraction: number; read_ms: number; write_ms: number };
+export type DiskCounts = { read: number; write: number };
+
 export type Config = {
   server_count: number;
   concurrency: number;
@@ -25,15 +28,17 @@ export type Config = {
   outstanding_limit?: number;
   io_capacity?: number;
   io_heavy_probability?: number;
+  disk?: DiskConfig;
 };
 export type Event = [number, number, number, number, string, number, number?, number?, number?, number?];
 export type Summary = {
   request_model?: "cpu_io";
+  workload_sha256?: string;
   mean_cpu_queue_wait?: number | null;
   mean_io_queue_wait?: number|null;
   mean_cpu_service_time?: number|null;
   mean_io_service_time?: number|null;
-  io_resource?: {capacity:number;utilization:number;peak_queue:number};
+  io_resource?: {capacity:number;utilization:number;peak_queue:number;disk_completed?:DiskCounts};
   per_server_mean_io_waiting?: Record<string,number>;
   per_server_mean_cpu_queued?: Record<string,number>;
   histogram?: {

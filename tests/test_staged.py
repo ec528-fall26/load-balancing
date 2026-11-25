@@ -14,6 +14,42 @@ CONFIG=dict(server_count=1,concurrency=1,queue_limit=1,arrival_rate=10.,duration
             request_model='cpu_io',io_fraction=.5,outstanding_limit=2)
 
 class StagedTests(unittest.TestCase):
+    def test_disk_duration_and_fifo_match_live_and_one_shot(self):
+        config = {
+            **CONFIG, 'io_capacity': 1,
+            'disk': {'read_fraction': 0, 'read_ms': 5, 'write_ms': 2000},
+        }
+        summary = run_simulation(config)
+        self.assertAlmostEqual(summary['response_times'][0], 4)
+        self.assertAlmostEqual(summary['response_times'][1], 5.9)
+        self.assertAlmostEqual(summary['mean_io_queue_wait'], .5)
+        self.assertEqual(summary['io_resource']['disk_completed'], {'read': 0, 'write': 2})
+        live = StagedSimulation(config)
+        live.arrival_limit = 2
+        while not live.advance(6, max_events=1):
+            pass
+        self.assertEqual(list(live.responses), summary['response_times'])
+        self.assertEqual(live.snapshot()['io_resource']['disk_completed'],
+                         summary['io_resource']['disk_completed'])
+
+    def test_disk_validation_and_seeded_workload(self):
+        config = {
+            **CONFIG, 'arrival_rate': 200, 'io_capacity': 1,
+            'disk': {'read_fraction': .7, 'read_ms': 5, 'write_ms': 20},
+        }
+        variant = {**config, 'disk': {**config['disk'], 'write_ms': 100}}
+        with TestClient(create_app()) as client:
+            reference = client.post('/v1/runs', json={'config': config})
+            comparison = client.post('/v1/runs', json={'config': variant})
+            self.assertEqual(reference.status_code, 201, reference.text)
+            self.assertEqual(comparison.status_code, 201, comparison.text)
+            self.assertEqual(reference.json()['summary']['workload_sha256'],
+                             comparison.json()['summary']['workload_sha256'])
+            for disk in (None, {}, {**config['disk'], 'write_ms': 0},
+                         {**config['disk'], 'read_fraction': True}):
+                invalid = client.post('/v1/runs', json={'config': {**config, 'disk': disk}})
+                self.assertEqual(invalid.status_code, 422, invalid.text)
+
     def test_hand_checked_one_shot_live_and_recorded_states(self):
         summary=run_simulation(CONFIG)
         self.assertEqual((summary['completed_count'],summary['rejected_count']),(2,0))

@@ -25,6 +25,8 @@ class Work:
     arrival: float
     demand: float
     io_fraction: float
+    io_duration: float
+    disk_operation: str | None
     stage: int = 0
     cpu_ready_at: float = 0.
     cpu_wait: float = 0.
@@ -40,6 +42,10 @@ class StagedSimulation(ContinuousSimulation):
         if type(self.io_capacity) is not int or not 1 <= self.io_capacity <= 4096:
             raise ValueError('Shared I/O concurrency must be an integer from 1 to 4096.')
         self.workload_digest = sha256()
+        self.disk = config.get('disk')
+        if self.disk is not None:
+            self.disk_rng = Random(config['seed'] + 3000000)
+            self.disk_completed = {'read': 0, 'write': 0}
         self.io = [0] * count
         self.io_active = [0] * count
         self.io_queued = [0] * count
@@ -101,7 +107,7 @@ class StagedSimulation(ContinuousSimulation):
             self.io_active[sid] += 1
             self.io_in_service += 1
             work.io_wait += self.now-work.io_ready_at
-            self._push(self.now+work.demand*work.io_fraction, 'io', sid, work)
+            self._push(self.now+work.io_duration, 'io', sid, work)
             self._emit(sid, 'io_started', work.id)
 
     def _emit(self, sid, action, rid):
@@ -157,7 +163,9 @@ class StagedSimulation(ContinuousSimulation):
                         self.queue_delay += work.cpu_wait
                         self.io_queue_delay += work.io_wait
                         self.cpu_service_sum += work.demand*(1-work.io_fraction)/self.servers[sid].processing_rate
-                        self.io_service_sum += work.demand*work.io_fraction
+                        self.io_service_sum += work.io_duration
+                        if work.disk_operation is not None:
+                            self.disk_completed[work.disk_operation] += 1
                         self.responses.append(response)
                         if self.record:self.all_responses.append(response)
                         action = 'completed'
@@ -181,13 +189,20 @@ class StagedSimulation(ContinuousSimulation):
                         else CPU_HEAVY_IO_FRACTION
                     )
                 self.workload_digest.update(pack("!qddd", rid, self.now, demand, fraction))
+                disk_operation = None
+                io_duration = demand * fraction
+                if self.disk is not None:
+                    disk_operation = 'read' if self.disk_rng.random() < self.disk['read_fraction'] else 'write'
+                    io_duration = self.disk[f'{disk_operation}_ms'] / 1000
+                    self.workload_digest.update(b'R' if disk_operation == 'read' else b'W')
                 self.offered += 1
                 if self.outstanding[sid] >= self.config['outstanding_limit']:
                     self.rejected += 1
                     action = 'rejected'
                 else:
                     self.outstanding[sid] += 1
-                    work = Work(rid, self.now, demand, fraction, cpu_ready_at=self.now)
+                    work = Work(rid, self.now, demand, fraction, io_duration, disk_operation,
+                                cpu_ready_at=self.now)
                     self.ready[sid].append(work)
                     self.queued[sid] += 1
                     self.waiting += 1
@@ -227,6 +242,8 @@ class StagedSimulation(ContinuousSimulation):
         busy = self.io_busy_seconds+(self.now-self.io_last_time)*self.io_in_service
         result['io_resource'] = dict(capacity=self.io_capacity, active=self.io_in_service,
                                      queued=len(self.io_ready), utilization=busy/(self.now*self.io_capacity) if self.now else 0.)
+        if self.disk is not None:
+            result['io_resource']['disk_completed'] = dict(self.disk_completed)
         for row in result['servers']['items']:
             sid = row['id']
             row.update(io_waiting=self.io[sid], io_active=self.io_active[sid], io_queued=self.io_queued[sid],
@@ -249,6 +266,11 @@ def run_staged_simulation(config):
     assert sim.offered == sim.completed+sim.rejected
     assert not sim.io_ready and not sim.io_waiting and not sim.running and not sim.waiting
     values = sorted(sim.all_responses)
+    io_resource = dict(capacity=sim.io_capacity,
+                       utilization=io_busy/(config['duration']*sim.io_capacity),
+                       peak_queue=sim.peak_io_queue)
+    if sim.disk is not None:
+        io_resource['disk_completed'] = dict(sim.disk_completed)
     return dict(completed_count=sim.completed, rejected_count=sim.rejected,
                 mean_response_time=sim.response_sum/sim.completed if sim.completed else None,
                 p95_response_time=values[ceil(.95*len(values))-1] if values else None,
@@ -256,6 +278,6 @@ def run_staged_simulation(config):
                 per_server_mean_io_waiting={i:a/config['duration'] for i,a in enumerate(io_areas)},
                 per_server_mean_cpu_queued={i:a/config['duration'] for i,a in enumerate(queue_areas)},
                 **sim.latency_breakdown(),
-                io_resource=dict(capacity=sim.io_capacity, utilization=io_busy/(config['duration']*sim.io_capacity), peak_queue=sim.peak_io_queue),
+                io_resource=io_resource,
                 workload_sha256=sim.workload_digest.hexdigest(),
                 request_model='cpu_io', events=sim.event_log, response_times=sim.all_responses)
