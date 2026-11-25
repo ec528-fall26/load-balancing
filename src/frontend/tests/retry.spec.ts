@@ -35,4 +35,3 @@ test("Compare shows how backoff recovers requests rejected by immediate retries"
   await expect(retries.nth(1)).toHaveText("1");
   await expect(retries.nth(2)).toContainText("Δ +2");
 });
-
