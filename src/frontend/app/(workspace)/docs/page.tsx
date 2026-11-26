@@ -95,7 +95,7 @@ export default function DocsPage() {
             In Single pool, choose a staged workload and open I/O capacity and request details. Set the I/O timing model to Shared disk reads and writes. Configure the read percentage, read time, write time and shared slots. The seed assigns operations to arrivals. Reads and writes use one FIFO queue, and each stage completes before the next starts.
           </p>
           <p>
-            The I/O share or CPU/I/O mix still determines the CPU portion of the original service demand. A configured disk timing replaces the proportional I/O duration. The model uses fixed service per operation and abstracts device behavior such as caching, request sizes and writeback.
+            The I/O share or CPU/I/O mix still determines the CPU portion of the original service demand. Disk timing replaces the proportional I/O duration. Reads use the configured read time. For writes, set <strong>Write size (KiB)</strong> and <strong>Write throughput (MiB/s)</strong> to add transfer time to the fixed write time. For example, 1,024 KiB at 100 MiB/s adds 10 ms. A size of 0 uses the fixed write time. Caching and writeback are outside the model.
           </p>
           <div className="grid gap-4 lg:grid-cols-2">
             <Screenshot file="disk-setup.png" alt="Setup showing the read percentage, read time, write time and concurrent I/O operation fields"

@@ -295,14 +295,19 @@ is split equally before/after I/O. Server processing-rate multipliers scale CPU
 stages only. All servers share a finite I/O resource with a FIFO queue. A call
 holds one I/O slot during service and releases its server CPU slot. This models
 one shared dependency. The optional disk setting replaces proportional I/O
-duration with one fixed read or write service time per request. Read probability
+duration with a read or write service time. Reads take the configured read time.
+Writes take the configured write time plus the payload size divided by
+throughput. For a 1,024 KiB write at 100 MiB/s, the transfer adds 10 ms of disk
+service. A zero-size write uses only the configured write time. Read probability
 determines the operation from an independent seeded stream. Both operation
 types use the same FIFO and slot capacity. CPU demand keeps the original
 profile and admitted I/O still counts against the server's outstanding limit.
 This abstraction does not simulate caching, device scheduling, or writeback.
 Set `disk: {"read_fraction": 0.9, "read_ms": 4, "write_ms": 50}` on a CPU/I/O
 configuration. Read fraction accepts 0–1, and operation times accept
-0.001–60,000 ms. `io_capacity` remains the shared concurrency ceiling.
+0.001–60,000 ms. Optional `write_size_kib` accepts 0–65,536 KiB (default 0),
+and optional `write_speed_mib_s` accepts 2–10,000 MiB/s (default 100).
+`io_capacity` remains the shared concurrency ceiling.
 One-shot summaries and live snapshots report completed read and write
 requests under `io_resource.disk_completed`. See the
 [shared disk experiment](design-document.md#final-experiment-shared-disk).

@@ -886,6 +886,13 @@ In the Lab, load **Read-heavy disk**, open Compare, and change only
 **Disk write time (ms)** to 250 in Variant A. Expect the same counts,
 and rounded p95.
 
+To compare write payloads, set **Write size (KiB)** in Setup, then change
+**Disk write size (KiB)** in Compare. Each write holds a shared disk slot for
+the fixed write time plus payload size divided by write throughput. At
+100 MiB/s, a 1,024 KiB write adds 10 ms. Zero KiB preserves the original
+fixed-timing model. The workload fingerprint includes write payload size when
+writes are offered, and changing throughput alone preserves that fingerprint.
+
 ## 5. Claims and limitations
 
 Deterministic integer outcomes, workload hashes, and full-result checks should

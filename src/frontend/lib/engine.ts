@@ -5,7 +5,15 @@ export function validServerCount(count: number): boolean {
   return Number.isSafeInteger(count) && count >= 1 && count <= MAX_SINGLE_POOL_SERVERS;
 }
 
-export type DiskConfig = { read_fraction: number; read_ms: number; write_ms: number };
+export type DiskConfig = {
+  read_fraction: number;
+  read_ms: number;
+  write_ms: number;
+  write_size_kib?: number;
+  write_speed_mib_s?: number;
+};
+
+export const DEFAULT_WRITE_SPEED_MIB_S = 100;
 export type DiskCounts = { read: number; write: number };
 
 export type Config = {
