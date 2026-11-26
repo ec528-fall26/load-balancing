@@ -83,16 +83,33 @@ export function Datacenter({ run }: { run: Run }) {
   servers.forEach(([sid]) => (states[sid] = [0, 0,0,0,0,0]));
   let completed = 0,
     rejected = 0,
+    pendingRetries = 0,
     latest;
   for (const event of events) {
     if (event[0] > now) break;
     states[event[1]] = [event[2], event[3],event[6]??0,event[7]??event[2]+event[3],event[8]??event[6]??0,event[9]??0];
-    completed += Number(event[4] === "completed");
-    rejected += Number(
-      event[4] === "rejected" ||
-        event[4] === "reroute_rejected" ||
-        event[4] === "no_server_up",
-    );
+    switch (event[4]) {
+      case "completed":
+        completed++;
+        break;
+      case "retry_scheduled":
+        pendingRetries++;
+        break;
+      case "retry_started":
+      case "retry_queued":
+        pendingRetries--;
+        break;
+      case "retry_rejected":
+      case "retry_no_server_up":
+        pendingRetries--;
+        rejected++;
+        break;
+      case "rejected":
+      case "reroute_rejected":
+      case "no_server_up":
+        rejected++;
+        break;
+    }
     latest = event;
   }
   if (run.run_id && remote) {
@@ -100,6 +117,7 @@ export function Datacenter({ run }: { run: Run }) {
       states[String(row.id)] = [row.running, row.waiting,row.io_waiting??0,row.outstanding??row.running+row.waiting,row.io_active??row.io_waiting??0,row.io_queued??0];
     completed = remote.totals.completed;
     rejected = remote.totals.rejected;
+    pendingRetries = remote.totals.pending_retries ?? 0;
     latest = remote.latest_event ?? undefined;
   }
   const running =
@@ -113,8 +131,7 @@ export function Datacenter({ run }: { run: Run }) {
     total =
       run.playback?.total_requests ??
       Math.floor(config.arrival_rate * config.duration),
-    ioWaiting = run.run_id&&remote ? remote.totals.io_waiting??0 : Object.values(states).reduce((n,s)=>n+s[2],0),
-    arrived = running + waiting + completed + rejected + ioWaiting;
+    ioWaiting = run.run_id&&remote ? remote.totals.io_waiting??0 : Object.values(states).reduce((n,s)=>n+s[2],0);
   const visible = servers.slice(page * 32, (page + 1) * 32);
   const snapshot = ([id, utilization]: [string, number]): ServerSnapshot => ({
     id,
@@ -371,6 +388,7 @@ export function Datacenter({ run }: { run: Run }) {
             ioWaiting={config.request_model==="cpu_io" ? ioWaiting : undefined}
             running={running}
             waiting={waiting}
+            pendingRetries={config.retry ? pendingRetries : undefined}
             completed={completed}
             rejected={rejected}
           />

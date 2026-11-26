@@ -285,6 +285,16 @@ export function SavedRunDownloads({
   ) {
     return null;
   }
+  if (config.retry) {
+    return (
+      <Panel title="Download run">
+        <p className="caption">
+          Saved-run downloads are unavailable with client retries. In Compare,
+          you can download case configurations and summary metrics as CSV.
+        </p>
+      </Panel>
+    );
+  }
 
   async function download(kind: "configuration" | "results") {
     try {

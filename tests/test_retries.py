@@ -34,9 +34,25 @@ class RetryTests(unittest.TestCase):
             run = response.json()
             snapshot = client.get(f"/v1/runs/{run['run_id']}/snapshot", params={"time": .75})
             self.assertEqual(snapshot.status_code, 200, snapshot.text)
-            self.assertEqual(snapshot.json()["totals"]["offered"], 2)
-            self.assertEqual(snapshot.json()["totals"]["rejected"], 0)
+            self.assertEqual(snapshot.json()["totals"], dict(
+                offered=2, completed=0, rejected=0, running=1, waiting=0, pending_retries=1,
+            ))
+            drained = client.get(f"/v1/runs/{run['run_id']}/snapshot", params={"time": 10})
+            self.assertEqual(drained.status_code, 200, drained.text)
+            self.assertEqual(drained.json()["totals"], dict(
+                offered=2, completed=2, rejected=0, running=0, waiting=0, pending_retries=0,
+            ))
             self.assertEqual(run["summary"]["retry_attempts"], 1)
+
+    def test_retry_recording_has_an_explicit_saved_run_export_error(self):
+        config = {**CONFIG, "retry": {"mode": "immediate", "limit": 1, "base_ms": 1}}
+        with TestClient(create_app()) as client:
+            run = client.post("/v1/runs", json={"config": config})
+            self.assertEqual(run.status_code, 201, run.text)
+            exported = client.post("/v1/saved/exports", json={"run_id": run.json()["run_id"]})
+            self.assertEqual(exported.status_code, 422, exported.text)
+            self.assertEqual(exported.json()["code"], "UNSUPPORTED_EXPORT")
+            self.assertIn("Saved-run export version 1 does not support client retries", exported.json()["message"])
 
     def test_api_bounds_potential_attempts_and_rejects_live_retries(self):
         config = {**CONFIG, "retry": {"mode": "immediate", "limit": 5, "base_ms": 100}}

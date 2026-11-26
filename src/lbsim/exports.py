@@ -34,6 +34,9 @@ def build_exports(config: dict, summary: dict) -> RunExports:
     values become empty cells. Events and individual response times are omitted.
     """
     config = validate_config(config)
+    if "retry" in config:
+        raise ValueError("Saved-run export version 1 does not support client retries. "
+                         "Use Compare to export retry case configurations and metrics as CSV.")
     if config.get("request_model") == "cpu_io":
         raise ValueError("CPU/I/O runs require a newer export schema; version 1 cannot represent request stages.")
     if "processing_rates" in config:

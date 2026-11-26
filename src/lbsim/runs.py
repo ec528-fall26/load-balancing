@@ -101,7 +101,7 @@ def _timeline_rows(events, server_count, totals):
             sequence, timestamp, server_id, state.running, state.waiting, action, request_id,
             totals.offered, totals.completed, totals.rejected, totals.running, totals.waiting, totals.idle,
             state.io_waiting, state.outstanding, totals.io_waiting, totals.outstanding,
-            state.io_active, state.io_queued, totals.io_active, totals.io_queued,
+            state.io_active, state.io_queued, totals.io_active, totals.io_queued, totals.pending_retries,
         )
 
 
@@ -114,11 +114,12 @@ def _write_timeline(db, events, server_count):
             action TEXT, request INTEGER, offered INTEGER, completed INTEGER, rejected INTEGER,
             total_running INTEGER, total_waiting INTEGER, idle INTEGER, io INTEGER,
             outstanding INTEGER, total_io INTEGER, total_outstanding INTEGER,
-            io_active INTEGER, io_queued INTEGER, total_io_active INTEGER, total_io_queued INTEGER
+            io_active INTEGER, io_queued INTEGER, total_io_active INTEGER, total_io_queued INTEGER,
+            pending_retries INTEGER
         )
     """)
     db.executemany(
-        'INSERT INTO events VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+        'INSERT INTO events VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
         _timeline_rows(events, server_count, totals),
     )
     db.execute('CREATE INDEX time_order ON events(at,seq)')
@@ -332,6 +333,8 @@ class RunStore:
                 running=latest['total_running'] if latest else 0,
                 waiting=latest['total_waiting'] if latest else 0,
             )
+            if 'retry' in config:
+                totals['pending_retries'] = latest['pending_retries'] if latest else 0
             snapshot = dict(
                 api_version='1', run_id=rid, simulation_time=now, totals=totals,
                 idle_servers=latest['idle'] if latest else server_count,

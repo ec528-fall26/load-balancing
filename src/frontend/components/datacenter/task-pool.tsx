@@ -13,6 +13,7 @@ export function TaskPool({
   total,
   running,
   waiting,
+  pendingRetries,
   completed,
   rejected,
   continuous = false,
@@ -27,10 +28,11 @@ export function TaskPool({
   total: number;
   running: number;
   waiting: number;
+  pendingRetries?: number;
   completed: number;
   rejected: number;
 }) {
-  const arrived = running + waiting + completed + rejected + (ioWaiting??0);
+  const arrived = running + waiting + completed + rejected + (ioWaiting ?? 0) + (pendingRetries ?? 0);
   const rows = [
     {
       label: "Not arrived",
@@ -50,6 +52,12 @@ export function TaskPool({
       color: "bg-waiting",
       variant: "waiting" as const,
     },
+    ...(pendingRetries === undefined ? [] : [{
+      label: "Waiting to retry",
+      value: pendingRetries,
+      color: "bg-chart-2",
+      variant: "outline" as const,
+    }]),
     ...(ioActive!==undefined&&ioQueued!==undefined ? [{label:"I/O in service",value:ioActive,color:"bg-chart-3",variant:"secondary" as const},{label:"I/O queue",value:ioQueued,color:"bg-chart-4",variant:"waiting" as const}] : ioWaiting!==undefined ? [{label:"I/O waiting",value:ioWaiting,color:"bg-chart-2",variant:"waiting" as const}] : []),
     {
       label: "Completed",
@@ -76,7 +84,7 @@ export function TaskPool({
       <CardContent className="flex flex-col gap-5">
         <div
           role="img"
-          aria-label={`${continuous ? `${total} requests offered so far` : `${arrived} of ${total} requests arrived`}; ${running} running, ${waiting} waiting${ioWaiting!==undefined?`, ${ioWaiting} I/O waiting`:""}, ${completed} completed, ${rejected} rejected`}
+          aria-label={`${continuous ? `${total} requests offered so far` : `${arrived} of ${total} requests arrived`}; ${running} running, ${waiting} waiting${ioWaiting!==undefined?`, ${ioWaiting} I/O waiting`:""}${pendingRetries === undefined ? "" : `, ${pendingRetries} waiting to retry`}, ${completed} completed, ${rejected} rejected`}
           className="flex h-3 overflow-hidden rounded-sm bg-muted"
         >
           {rows
