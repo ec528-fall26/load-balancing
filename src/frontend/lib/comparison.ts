@@ -1,4 +1,4 @@
-import { policies } from "./engine";
+import { defaultRetry, policies, retryModes } from "./engine";
 import { regionalPolicies } from "./policy-metadata";
 import { DEFAULT_WRITE_SPEED_MIB_S, type Config, type Run } from "./engine";
 import type { RegionalConfig, RegionalRun } from "./regions";
@@ -34,6 +34,7 @@ export const configLabels: Record<keyof Config, string> = {
   io_capacity: "Shared I/O concurrency",
   io_heavy_probability: "I/O-heavy request fraction",
   disk: "Disk read/write timing",
+  retry: "Client retry policy",
 };
 export type Setting = {
   key: string;
@@ -124,6 +125,11 @@ export function settings(config: CompareConfig): Setting[] {
         { key: "disk.write_ms", label: "Disk write time (ms)", group: "Workload", value: config.disk.write_ms, step: .001 },
         { key: "disk.write_size_kib", label: "Disk write size (KiB)", group: "Workload", value: config.disk.write_size_kib ?? 0, step: .01 },
         { key: "disk.write_speed_mib_s", label: "Disk write throughput (MiB/s)", group: "Workload", value: config.disk.write_speed_mib_s ?? DEFAULT_WRITE_SPEED_MIB_S, step: .01 },
+      ] : []),
+      ...(config.request_model !== "cpu_io" ? [
+        { key: "retry.mode", label: "Client retry policy", group: "Traffic", value: config.retry?.mode ?? defaultRetry.mode, options: retryModes },
+        { key: "retry.limit", label: "Max retries per request", group: "Traffic", value: config.retry?.limit ?? defaultRetry.limit, step: 1 },
+        { key: "retry.base_ms", label: "Base retry delay (ms)", group: "Traffic", value: config.retry?.base_ms ?? defaultRetry.base_ms, step: 1 },
       ] : []),
       ...common,
       {
@@ -219,6 +225,7 @@ export function updateSetting(
     string,
     unknown
   >;
+  if (parts[0] === "retry" && !target.retry) target.retry = { ...defaultRetry };
   for (const part of parts.slice(0, -1))
     target = target[part] as Record<string, unknown>;
   target[parts.at(-1)!] = value;
@@ -297,6 +304,7 @@ export type ComparisonRun = {
     Run["summary"],
     | "completed_count"
     | "rejected_count"
+    | "retry_attempts"
     | "mean_response_time"
     | "p95_response_time"
     | "per_server_utilization"
@@ -310,6 +318,7 @@ export function compactRun(run: Run): ComparisonRun {
     summary: {
       completed_count: s.completed_count,
       rejected_count: s.rejected_count,
+      retry_attempts: s.retry_attempts,
       mean_response_time: s.mean_response_time,
       p95_response_time: s.p95_response_time,
       per_server_utilization: s.per_server_utilization,

@@ -369,6 +369,9 @@ The Next.js Run action now uses `POST /v1/runs` rather than the full-trace legac
 - `GET /v1/runs/{run_id}/snapshot?time=1.25&server_offset=0&server_limit=32` — inclusive state after all events at or before the requested time. Time is capped at the recording end. Returns global request totals, the count of healthy idle servers, the latest event and at most 64 server rows. Exact floating-point timestamps are passed without decimal truncation.
 - `DELETE /v1/runs/{run_id}` — delete this recording and its trace file.
 
+Retry-enabled snapshots report `totals.pending_retries`, the number of
+original requests waiting for another attempt outside the server queues.
+
 Unknown/deleted recordings return `404 RUN_NOT_FOUND`. Expired or evicted recordings return `410 RUN_EXPIRED` while their bounded tombstone remains. Cache loss on API restart also returns 404. The frontend keeps completed summary metrics visible and asks users to rerun when playback expires.
 
 ### Retention
@@ -402,7 +405,8 @@ JSON configuration and CSV results. **Replay a saved run** verifies the
 configuration against its saved results fingerprint before creating new
 playback. **Compare saved results** verifies both CSV files without rerunning
 either case. Version one supports uniform processing rates and the simple
-request model.
+request model with retries off. For retry cases, Compare can export the
+configurations and summary metrics as CSV.
 
 ## Saved runs: export, verified replay and comparison (D3-03/04/05)
 

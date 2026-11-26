@@ -111,7 +111,7 @@ def checked_config(values, limits, *, allow_manual_repair=False):
     allowed = {'server_count', 'concurrency', 'queue_limit', 'arrival_rate', 'duration',
                'service_min', 'service_max', 'seed', 'policy', 'processing_rates',
                'availabilities', 'mean_repair_time',
-               'request_model', 'io_fraction', 'outstanding_limit', 'io_capacity', 'io_heavy_probability', 'disk'}
+               'request_model', 'io_fraction', 'outstanding_limit', 'io_capacity', 'io_heavy_probability', 'disk', 'retry'}
     extra = sorted(set(values) - allowed)
     if extra:
         raise APIError(422, 'INVALID_CONFIG', 'Unknown configuration fields.',
@@ -142,6 +142,9 @@ def checked_config(values, limits, *, allow_manual_repair=False):
             raise APIError(422, 'INVALID_CONFIG', 'CPU stages must be 1 ns–3,600 s and I/O delay at most 3,600 s.')
     product = config['arrival_rate'] * config['duration']
     exceeded = []
+    retry = config.get('retry')
+    if retry and product * (1 + retry['limit']) > limits.generated_requests:
+        exceeded.append(('retry.limit', f'Original requests plus potential retries must be at most {limits.generated_requests:,}.'))
     if not isfinite(product) or product > limits.generated_requests:
         exceeded.append(('arrival_rate', f'Arrival rate × duration must be at most {limits.generated_requests:,}.'))
     for value, maximum, key in (
@@ -182,6 +185,8 @@ class SessionCommand(BaseModel):
 
 
 def checked_session_config(values, limits, session_limits):
+    if 'retry' in values:
+        raise APIError(422, 'INVALID_CONFIG', 'Client retries require a one-shot run.')
     if 'duration' in values:
         raise APIError(422, 'INVALID_CONFIG', 'Continuous sessions have no arrival-window duration.',
                        [{'field': 'config.duration', 'message': 'Omit duration for a continuous session.'}])

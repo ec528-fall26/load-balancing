@@ -40,6 +40,7 @@ export type CompletedCase = { label: string; run: ComparisonRun };
 const definitions = [
   { key: "completed", label: "Completed requests", unit: "count" },
   { key: "rejected", label: "Rejected requests", unit: "count" },
+  { key: "retries", label: "Retry attempts", unit: "count" },
   { key: "mean", label: "Mean response time", unit: "seconds" },
   { key: "p95", label: "p95 response time", unit: "seconds" },
   { key: "rejection", label: "Rejection rate", unit: "percent" },
@@ -66,6 +67,8 @@ function downloadComparison(cases: CompletedCase[], regional: boolean) {
   const header = ["case", "completed", "rejected", "mean_seconds", "p95_seconds",
     "p95_scope", "rejection_percent", "mean_slot_utilization_percent",
     "workload_sha256", "config_json"];
+  const includeRetries = cases.some(({ run }) => run.summary.retry_attempts !== undefined);
+  if (includeRetries) header.push("retry_attempts");
   const quote = (value: string | number | null) => `"${String(value ?? "").replaceAll('"', '""')}"`;
   const rows = cases.map(({ label, run }) => {
     const row = metrics(run);
@@ -73,7 +76,7 @@ function downloadComparison(cases: CompletedCase[], regional: boolean) {
       regional ? "recent_completions" : "all_completions",
       row.rejection, regional ? null : row.utilization,
       run.summary.workload_sha256 ?? null,
-      JSON.stringify(run.config)];
+      JSON.stringify(run.config), ...(includeRetries ? [run.summary.retry_attempts ?? 0] : [])];
   });
   const csv = [header, ...rows].map((row) => row.map(quote).join(",")).join("\r\n") + "\r\n";
   const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
@@ -86,14 +89,16 @@ function downloadComparison(cases: CompletedCase[], regional: boolean) {
 
 export function ComparisonResults({ cases }: { cases: CompletedCase[] }) {
   const base = cases[0].run.config,
-    rows = cases.map((c) => ({ name: c.label, ...metrics(c.run) })),
+    rows = cases.map((c) => ({ name: c.label, ...metrics(c.run), retries: c.run.summary.retry_attempts ?? 0 })),
     baseline = rows[0];
   const regional = isRegional(base);
   const hashes = cases.map(({ run }) => run.summary.workload_sha256);
   const workloadMatch = hashes.every(Boolean) ? new Set(hashes).size === 1 : undefined;
-  const visibleDefinitions = regional
-    ? definitions.filter((m) => m.key !== "utilization")
-    : definitions;
+  const showRetries = cases.some(({ run }) => run.summary.retry_attempts !== undefined);
+  const visibleDefinitions = definitions.filter((metric) =>
+    (metric.key !== "utilization" || !regional) &&
+    (metric.key !== "retries" || showRetries),
+  );
   const changed = [
     ...new Set(
       cases.slice(1).flatMap((c) => changedSettings(base, c.run.config)),

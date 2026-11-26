@@ -55,6 +55,20 @@ def validate_config(values: Mapping, *, allow_manual_repair: bool = False) -> di
                         errors.append(f'disk.{key}: use a finite value from {minimum} to {maximum}')
     elif any(k in values for k in ('io_fraction', 'outstanding_limit', 'io_capacity', 'io_heavy_probability', 'disk')):
         errors.append('request_model: CPU/I/O settings require the cpu_io model')
+    retry = values.get("retry")
+    if "retry" in values:
+        if model != "simple":
+            errors.append("retry: client retries require the simple request model")
+        if not isinstance(retry, Mapping) or retry.keys() != {"mode", "limit", "base_ms"}:
+            errors.append("retry: set mode, limit and base_ms")
+        else:
+            if retry["mode"] not in ("off", "immediate", "backoff"):
+                errors.append("retry.mode: choose off, immediate or backoff")
+            if type(retry["limit"]) is not int or not 1 <= retry["limit"] <= 5:
+                errors.append("retry.limit: use 1–5 retries per request")
+            base = retry["base_ms"]
+            if type(base) not in (int, float) or not isfinite(base) or not 1 <= base <= 10000:
+                errors.append("retry.base_ms: use 1–10,000 milliseconds")
     rates = values.get("processing_rates")
     if rates is not None:
         if type(rates) not in (list, tuple):
@@ -106,4 +120,6 @@ def validate_config(values: Mapping, *, allow_manual_repair: bool = False) -> di
         if mix is not None: config["io_heavy_probability"] = mix
         if 'disk' in values:
             config['disk'] = dict(values['disk'])
+    if retry is not None and retry["mode"] != "off":
+        config["retry"] = dict(retry)
     return config

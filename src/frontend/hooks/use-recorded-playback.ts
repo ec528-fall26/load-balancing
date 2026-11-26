@@ -11,6 +11,7 @@ export type RecordedState = {
     rejected: number;
     running: number;
     waiting: number;
+    pending_retries?: number;
     io_waiting?: number;
     io_active?: number;
     io_queued?: number;
@@ -78,7 +79,9 @@ export function useRecordedPlayback(
               data.totals.completed +
                 data.totals.rejected +
                 data.totals.running +
-                data.totals.waiting + (data.totals.io_waiting ?? 0)
+                data.totals.waiting +
+                (data.totals.io_waiting ?? 0) +
+                (data.totals.pending_retries ?? 0)
           )
             throw new Error("Invalid recorded snapshot.");
           if (!cancelled) {

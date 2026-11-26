@@ -26,6 +26,9 @@ def run_simulation(values: dict) -> dict:
     )
     summary['events'] = events
     summary['response_times'] = [e.completion_time - e.request.arrival_time for e in completed]
+    if 'retry' in config:
+        summary['retry_attempts'] = sum(event[4].startswith('retry_') and
+                                        event[4] != 'retry_scheduled' for event in events)
     if outages is not None:
         # Only availability runs gain these keys, so existing summaries stay byte-identical.
         duration = config['duration']
@@ -44,8 +47,8 @@ def run_simulation(values: dict) -> dict:
         summary['rerouted_by_server'] = by_server
         # Every rejection falls in exactly one bucket; they sum to rejected_count.
         summary['rejected_breakdown'] = {
-            'queue_full': sum(e[4] == 'rejected' for e in events),
-            'no_server_up': sum(e[4] == 'no_server_up' for e in events),
+            'queue_full': sum(e[4] in ('rejected', 'retry_rejected') for e in events),
+            'no_server_up': sum(e[4] in ('no_server_up', 'retry_no_server_up') for e in events),
             'reroute_rejected': sum(e[4] == 'reroute_rejected' for e in events),
         }
         summary['outages'] = {sid: [list(i) for i in intervals] for sid, intervals in outages.items()}
