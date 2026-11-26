@@ -151,7 +151,7 @@ export function RequestModelFields({
                 help="Disk slot time for a read, excluding queue wait. Range 0.001–60,000 ms."
                 onChange={(value) => onChange({ ...config, disk: { ...disk, read_ms: value } })} />
               <NumberField label="Write time (ms)" value={disk.write_ms} step={.001}
-                help="Fixed write time before any data transfer or queue wait. Range 0.001–60,000 ms."
+                help="Fixed time added to write transfer time. Queue wait is measured separately. Range 0.001–60,000 ms."
                 onChange={(value) => onChange({ ...config, disk: { ...disk, write_ms: value } })} />
               <NumberField label="Write size (KiB)" value={disk.write_size_kib ?? 0} step={.01}
                 help="Data transferred by each write. Use 0 to keep fixed write timing. Range 0–65,536 KiB."
